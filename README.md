@@ -28,8 +28,8 @@ The commands below would generate results for dataset Rot MNIST and source domai
 
 ## Prepare Data
 
-Move to the directory: data/rot_mnist
-Execute: python3 data_gen.py resnet
+  - Move to the directory: data/rot_mnist
+  - Execute: python3 data_gen.py resnet
 
 ## Table 1
 
