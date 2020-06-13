@@ -12,3 +12,15 @@ provided by the bot. You will only need to do this once across all repos using o
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+# MNIST and Fashion MNIST
+
+The commands below would train and evaluate models corresponding to the Table 1, Table 2 and Table 3 in the paper
+
+The commands below would generate results for dataset Rot MNIST and source domains [15, 30, 45, 60, 75]
+
+* Change the input to --dataset from rot_mnist to fashion_mnist in the commands below to get results on Fashion MNIST
+
+* Change the input to --domain_abl from 0 to 2 to get results on source domains [30, 45]
+
+* Change the input to --domain_abl from 0 to 3 to get results on source domains [30, 45, 60]
