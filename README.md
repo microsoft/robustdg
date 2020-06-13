@@ -25,6 +25,12 @@ The commands below would generate results for dataset Rot MNIST and source domai
 
 * Change the input to --domain_abl from 0 to 3 to get results on source domains [30, 45, 60]
 
+
+## Prepare Data
+
+Move to the directory: data/rot_mnist
+Execute: python3 data_gen.py resnet
+
 ## Table 1
 
 * ERM: 
