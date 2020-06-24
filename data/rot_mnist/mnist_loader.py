@@ -8,19 +8,13 @@ import torch
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
-class MnistRotated(data_utils.Dataset):
+class MnistRotated(BaseDataLoader):
     def __init__(self, dataset_name, list_train_domains, mnist_subset, root, transform=None, data_case='train', download=True):
-        self.dataset_name= dataset_name
-        self.list_train_domains = list_train_domains
+        
+        super().__init__(dataset_name, list_train_domains, root, transform, data_case) 
         self.mnist_subset = mnist_subset
-        self.root = os.path.expanduser(root)
-        self.transform = transform
-        self.data_case = data_case
         self.download = download
-        self.base_domain_idx= -1
-        self.base_domain_size= 0
-        self.training_list_size=[]
-
+        
         self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
 
     def load_inds(self):
@@ -37,17 +31,8 @@ class MnistRotated(data_utils.Dataset):
                 else:
                     res= np.random.choice(60000, 1000)
             return res
-#             res=[]
-#             for subset in range(10):
-#                 temp= np.load(self.root + '/supervised_inds_' + str(subset) + '.npy' )
-#                 res.append(temp)
-#             res= np.array(res)
-#             res= np.reshape( res, (res.shape[0]*res.shape[1]) )
-#             print(res.shape)
-#             return res
         else:
             if self.dataset_name == 'rot_mnist':
-#                 data_dir= self.root + '/rot_mnist_lenet_indices'
                 data_dir= self.root + '/rot_mnist_indices'
             elif self.dataset_name == 'fashion_mnist':
                 data_dir= self.root + '/fashion_mnist_indices'
@@ -193,75 +178,3 @@ class MnistRotated(data_utils.Dataset):
         
         print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape)
         return train_imgs.unsqueeze(1), train_labels, train_domains, train_indices
-
-    def __len__(self):
-        return self.train_labels.shape[0]
-
-    def __getitem__(self, index):
-        x = self.train_data[index]
-        y = self.train_labels[index]
-        d = self.train_domain[index]
-        idx = self.train_indices[index]
-            
-        if self.transform is not None:
-            x = self.transform(x)
-        return x, y, d, idx
-
-    def get_size(self):
-        return self.train_labels.shape[0]
-
-if __name__ == "__main__":
-    from torchvision.utils import save_image
-
-    seed = 1
-
-    torch.manual_seed(seed)
-    torch.backends.cudnn.benchmark = False
-    np.random.seed(seed)
-
-    list_train_domains = ['0', '15', '30', '45', '60']
-    num_supervised = 1000
-
-    train_loader = data_utils.DataLoader(
-        MnistRotated(list_train_domains, num_supervised, seed, '../dataset/', train=True),
-        batch_size=100,
-        shuffle=False)
-
-    y_array = np.zeros(10)
-    d_array = np.zeros(5)
-
-    for i, (x, y, d) in enumerate(train_loader):
-        y_array += y.sum(dim=0).cpu().numpy()
-        d_array += d.sum(dim=0).cpu().numpy()
-
-        if i == 0:
-            print(y)
-            print(d)
-            n = min(x.size(0), 8)
-            comparison = x[:n].view(-1, 1, 16, 16)
-            save_image(comparison.cpu(),
-                       'reconstruction_rotation_train.png', nrow=n)
-
-    print(y_array, d_array)
-
-    test_loader = data_utils.DataLoader(
-        MnistRotated(list_train_domains, seed, '../dataset/', train=False),
-        batch_size=100,
-        shuffle=False)
-
-    y_array = np.zeros(10)
-    d_array = np.zeros(5)
-
-    for i, (x, y, d) in enumerate(test_loader):
-        y_array += y.sum(dim=0).cpu().numpy()
-        d_array += d.sum(dim=0).cpu().numpy()
-
-        if i == 0:
-            print(y)
-            print(d)
-            n = min(x.size(0), 8)
-            comparison = x[:n].view(-1, 1, 16, 16)
-            save_image(comparison.cpu(),
-                       'reconstruction_rotation_test.png', nrow=n)
-
-    print(y_array, d_array)
