@@ -339,30 +339,12 @@ parser.add_argument('--retain', type=float, default=0, help='0: Train from scrat
 parser.add_argument('--cuda_device', type=int, default=0 )
 args = parser.parse_args()
 
-if args.dataset == 'color_mnist':
-    from models.color_mnist import *
-    from models.ResNet import *
-    from data.color_mnist.mnist_loader import MnistRotated
-if args.dataset == 'rot_color_mnist':
-    from models.rot_mnist import *
-    from data.rot_color_mnist.mnist_loader import MnistRotated    
-# elif args.dataset == 'fashion_mnist':
-#     from models.rot_mnist import *
-#     from data.rot_fashion_mnist.fashion_mnist_loader import MnistRotated
-elif args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
-#     from models.rot_mnist import *
-#     from models.metric_rot_mnist import *
+if args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
     if args.model_name == 'lenet':
-        from models.LeNet import *
-        from models.ResNet import *
         from data.rot_mnist.mnist_loader_lenet import MnistRotated
-#         from data.rot_mnist.mnist_loader import MnistRotated
     else:
-        from models.ResNet import *
         from data.rot_mnist.mnist_loader import MnistRotated
 elif args.dataset == 'pacs':
-    from models.AlexNet import *
-    from models.ResNet import *
     from data.pacs.pacs_loader import PACS
     
 #GPU
@@ -465,118 +447,6 @@ for run in range(args.n_runs):
     # Path to save results        
     post_string= str(args.penalty_erm) + '_' +  str(args.penalty_ws) + '_' + str(args.penalty_same_ctr) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(args.test_domain) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
 
-    
-    # Parameters
-    feature_dim= 28*28
-    rep_dim= args.rep_dim
-    num_classes= args.out_classes
-    pre_trained= args.pre_trained
-    
-    if args.dataset in ['rot_mnist', 'color_mnist', 'fashion_mnist']:
-        feature_dim= 28*28
-        num_ch=1
-        pre_trained=0
-#         phi= RepNet( feature_dim, rep_dim)
-        if args.erm_base:
-            if args.model_name == 'lenet':
-                phi= LeNet5().to(cuda)
-            else:
-                phi= get_resnet('resnet18', num_classes, args.erm_base, num_ch, pre_trained).to(cuda)
-        else:
-            rep_dim=512
-            phi= get_resnet('resnet18', rep_dim, args.erm_base, num_ch, pre_trained).to(cuda)
-    elif args.dataset in ['pacs', 'vlcs']:
-        if args.model_name == 'alexnet':        
-            if args.erm_base:
-                phi= alexnet(num_classes, pre_trained, args.erm_base ).to(cuda)
-            else:
-                rep_dim= 4096                 
-                phi= alexnet(rep_dim, pre_trained, args.erm_base).to(cuda)
-        elif args.model_name == 'resnet18':
-            num_ch=3
-            if args.erm_base:
-                phi= get_resnet('resnet18', num_classes, args.erm_base, num_ch, pre_trained).to(cuda)
-            else:
-                rep_dim= 512                
-                phi= get_resnet('resnet18', rep_dim, args.erm_base, num_ch, pre_trained).to(cuda)
-    print('Model Archtecture: ', args.model_name)
-    
-    # Ensure that the rep_dim and the architecture matches
-    # Like for alexnet, resnet the rep dim would be pre determined to be the second last layer
-    phi_erm= ClfNet(phi, rep_dim, num_classes).to(cuda)
-
-    #Main Code
-    epochs=args.epochs
-    batch_size=args.batch_size
-    learning_rate= args.lr
-    lmd=args.penalty_w
-    anneal_iter= args.penalty_s
-
-    if args.opt == 'sgd':
-        opt= optim.SGD([
-                     {'params': filter(lambda p: p.requires_grad, phi.parameters()) }, 
-            ], lr= learning_rate, weight_decay= 5e-4, momentum= 0.9,  nesterov=True )        
-    elif args.opt == 'adam':
-        opt= optim.Adam([
-                    {'params': filter(lambda p: p.requires_grad, phi.parameters())},
-            ], lr= learning_rate)
-
-    patience= 25
-    scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=patience)
-    
-    if args.model_name=='alexnet':
-        opt_ws= optim.SGD([
-                {'params': filter(lambda p: p.requires_grad, phi.classifier[-1].parameters()), 'lr': learning_rate, 'weight_decay': 1e-5, 'momentum': 0.9 },
-        ] )
-
-        opt_all= optim.SGD([
-                {'params': filter(lambda p: p.requires_grad, phi.classifier[-1].parameters()), 'lr': learning_rate, 'weight_decay': 1e-5, 'momentum': 0.9 },
-        ] )
-    elif args.model_name=='resnet18' or args.method_name=='resnet50':
-        opt_ws= optim.SGD([
-                 {'params': filter(lambda p: p.requires_grad, phi.fc.parameters()), 'lr': learning_rate, 'weight_decay': 1e-5, 'momentum': 0.9 },   
-        ] )
-
-        opt_all= optim.SGD([
-                {'params': filter(lambda p: p.requires_grad, phi.fc.parameters()), 'lr': learning_rate, 'weight_decay': 1e-5, 'momentum': 0.9 },
-        ] )
-    else:
-        opt_ws=opt
-        opt_all=opt
-
-    # opt_all= optim.SGD([
-    #          {'params': filter(lambda p: p.requires_grad, phi.features.parameters()), 'lr': learning_rate/100, 'weight_decay': 5e-4, 'momentum': 0.9 },
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-1].parameters()), 'lr': learning_rate, 'weight_decay': 5e-4, 'momentum': 0.9 },
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-4].parameters()), 'lr': learning_rate, 'weight_decay': 5e-4, 'momentum': 0.9 },      
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-7].parameters()), 'lr': learning_rate, 'weight_decay': 5e-4, 'momentum': 0.9 },
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-10].parameters()), 'lr': learning_rate, 'weight_decay': 5e-4, 'momentum': 0.9 },      
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-12].parameters()), 'lr': learning_rate/100, 'weight_decay': 5e-4, 'momentum': 0.9 },   
-    #         {'params': filter(lambda p: p.requires_grad, phi.classifier[-15].parameters()), 'lr': learning_rate/100, 'weight_decay': 5e-4, 'momentum': 0.9 }   
-    # ] )
-
-    # opt= optim.Adam([
-    # #         {'params': filter(lambda p: p.requires_grad, phi.features.parameters()) },
-    #         {'params': filter(lambda p: p.requires_grad, phi_erm.rep_net.classifier[-1].parameters()) },
-    #         {'params': filter(lambda p: p.requires_grad, phi_erm.erm_net.parameters()) }
-    # ], lr=learning_rate)
-
-
-    loss_erm=[]
-    loss_irm=[]
-    loss_ws=[]
-    loss_same_ctr=[]
-    loss_diff_ctr=[]
-    match_diff=[]
-    match_acc=[]
-    match_rank=[]
-    match_top_k=[]
-    final_acc=[]
-    val_acc=[]
-
-    match_flag=args.match_flag
-    match_interrupt=args.match_interrupt
-    base_domain_idx= args.base_domain_idx
-    match_counter=0
     
     # DataLoader
     if args.dataset in ['pacs', 'vlcs']:
