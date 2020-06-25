@@ -26,27 +26,16 @@ class BaseAlgo():
         self.learning_rate= args.lr
         self.lmd=args.penalty_w
         self.anneal_iter= args.penalty_s
+        self.match_flag=args.match_flag
+        self.match_interrupt=args.match_interrupt
+        self.base_domain_idx= args.base_domain_idx
         
         self.phi= self.get_model()
         self.opt= self.get_opt()
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=25)    
         
-        self.loss_erm=[]
-        self.loss_irm=[]
-        self.loss_ws=[]
-        self.loss_same_ctr=[]
-        self.loss_diff_ctr=[]
-        self.match_diff=[]
-        self.match_acc=[]
-        self.match_rank=[]
-        self.match_top_k=[]
         self.final_acc=[]
         self.val_acc=[]
-
-        self.match_flag=args.match_flag
-        self.match_interrupt=args.match_interrupt
-        self.base_domain_idx= args.base_domain_idx
-        self.match_counter=0
                 
     
     def get_model(self):
@@ -97,5 +86,18 @@ class BaseAlgo():
         return opt
 
     
-    def get_match_function(self):
-
+    def get_match_function(self, epoch):
+        #Start initially with randomly defined batch; else find the local approximate batch
+        if epoch % match_interrupt == 0:
+            if epoch > 0:                    
+                inferred_match=1
+                if args.match_flag:
+                    data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )
+                    match_counter+=1
+                else:
+                    temp_1, temp_2, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )                
+            else:
+                inferred_match=0
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )
+        
+        return data_match_tensor, label_match_tensor

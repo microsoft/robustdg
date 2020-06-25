@@ -349,12 +349,6 @@ elif args.dataset == 'pacs':
     
 #GPU
 cuda= torch.device("cuda:" + str(args.cuda_device))
-
-# Environments
-base_data_dir='data/' + args.dataset +'/'
-base_logs_dir="results/" + args.dataset +'/'  
-base_res_dir="results/" + args.dataset + '/'
-
 if cuda:
     kwargs = {'num_workers': 1, 'pin_memory': False} 
 else:
@@ -436,6 +430,8 @@ elif args.dataset == 'pacs':
         train_domains=test_domains            
 
 final_report_accuracy=[]
+base_res_dir="results/" + args.dataset + '/'
+
 for run in range(args.n_runs):
     
     #Seed for repoduability
@@ -448,88 +444,14 @@ for run in range(args.n_runs):
     post_string= str(args.penalty_erm) + '_' +  str(args.penalty_ws) + '_' + str(args.penalty_same_ctr) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(args.test_domain) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
 
     
-    # DataLoader
-    if args.dataset in ['pacs', 'vlcs']:
-        ## TODO: Change the dataloader of PACS to incoporate the val indices
-        train_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='train')
-        val_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='val')        
-        test_data_obj= PACS(test_domains, '/pacs/train_val_splits/', data_case='test')
-    elif args.dataset in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(args.dataset, train_domains, 3+run, 'data/rot_mnist', data_case='train')
-        val_data_obj=  MnistRotated(args.dataset, train_domains, 3+run, 'data/rot_mnist', data_case='val')       
-        test_data_obj=  MnistRotated(args.dataset, test_domains, 3+run, 'data/rot_mnist', data_case='test')
-        
-    train_dataset, val_dataset, test_dataset= get_dataloader( train_data_obj, val_data_obj, test_data_obj )
-
+    # DataLoader        
+    train_dataset, val_dataset, test_dataset= get_dataloader( train_domains, test_domains )
     total_domains= len(train_domains)
     domain_size= train_data_obj.base_domain_size       
     base_domain_idx= train_data_obj.base_domain_idx
     training_list_size= train_data_obj.training_list_size
     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, domain_size, base_domain_idx, total_domains, training_list_size)
         
-    
-    # Either end to end training fashion (erm_base) or contrastive learning rep phase (ctr_phase)
-    if args.erm_base or args.ctr_phase:
-
-        for epoch in range(epochs):    
-
-            if epoch % match_interrupt == 0:
-                #Start with initially defined batch; else find the local approximate batch
-                if epoch > 0:                    
-                    inferred_match=1
-                    if args.match_flag and match_counter <100:
-                        data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )
-                        match_counter+=1
-                        #Reset the weights after very match strategy update
-        #                 phi= RotMNIST( feature_dim, num_classes ).to(cuda)
-        #                 opt= optim.Adam([
-        #                         {'params': filter(lambda p: p.requires_grad, phi.predict_conv_net.parameters()) },
-        #                         {'params': filter(lambda p: p.requires_grad, phi.predict_fc_net.parameters()) },
-        #                         {'params': filter(lambda p: p.requires_grad, phi.predict_final_net.parameters()) }                   
-        #                     ], lr=learning_rate)                
-
-                    elif args.match_flag ==0 or match_counter>=1:
-                        temp_1, temp_2, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )                
-
-                    perfect_match_rank= np.array(perfect_match_rank)
-                    if args.perfect_match:
-                        print('Mean Perfect Match Score: ', np.mean(perfect_match_rank), 100*np.sum(perfect_match_rank < 10)/perfect_match_rank.shape[0] )
-                        match_rank.append( np.mean(perfect_match_rank) )
-                        match_top_k.append( 100*np.sum( perfect_match_rank < 10 )/perfect_match_rank.shape[0] )
-
-                else:
-                    inferred_match=0
-                    data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case, inferred_match )
-
-                ## To ensure a random match keeps happening after every match interrupt
-    #             data_match_tensor, label_match_tensor, indices_matched= get_matched_pairs( args, train_dataset, domain_size, total_domains, base_domain_idx, args.match_case )          
-                if args.perfect_match:
-                    score= perfect_match_score(indices_matched)
-                    print('Perfect Match Score: ', score)
-                    match_acc.append(score)
-
-            # Decide which losses to optimizer depending on the end to end case (erm_base==1) or block wise (erm_base=0)
-            if args.erm_base:
-                bool_erm=1
-                bool_ws=1
-                bool_ctr=0
-            else:
-                bool_erm=0
-                bool_ws=1
-                bool_ctr=1
-
-            # To decide which till which layer to finetune
-            if epoch > -1:
-                penalty_erm, penalty_irm, penalty_ws, penalty_same_ctr, penalty_diff_ctr = train( train_dataset, data_match_tensor, label_match_tensor, phi, opt, opt_ws, scheduler, epoch, base_domain_idx, bool_erm, bool_ws, bool_ctr )
-            else:
-                penalty_erm, penalty_irm, penalty_ws, penalty_same_ctr, penalty_diff_ctr= train( train_dataset, data_match_tensor, label_match_tensor, phi, opt_all, opt_ws, epoch, base_domain_idx, bool_erm, bool_ws, bool_ctr )       
-
-            loss_erm.append( penalty_erm )
-            loss_irm.append( penalty_irm )
-            loss_ws.append( penalty_ws )
-            loss_same_ctr.append( penalty_same_ctr )
-            loss_diff_ctr.append( penalty_diff_ctr )
-
             if bool_erm:
                 #Validation Phase
                 test_acc= test( val_dataset, phi, epoch, 'Val' )
@@ -538,16 +460,6 @@ for run in range(args.n_runs):
                 test_acc= test( test_dataset, phi, epoch, 'Test' )
                 final_acc.append( test_acc )        
                 
-        loss_erm= np.array(loss_erm)
-        loss_irm= np.array(loss_irm)
-        loss_ws= np.array(loss_ws)
-        loss_same_ctr= np.array(loss_same_ctr)
-        loss_diff_ctr= np.array(loss_diff_ctr)
-        final_acc= np.array(final_acc)
-        val_acc= np.array(val_acc)
-        match_rank= np.array(match_rank)
-        match_top_k= np.array(match_top_k)
-    
         if args.erm_base:
             if args.domain_abl==0:
                 sub_dir= '/ERM_Base'
@@ -563,19 +475,6 @@ for run in range(args.n_runs):
             elif args.domain_abl ==3:
                 sub_dir= '/CTR/' + train_domains[0] + '_' + train_domains[1] + '_' + train_domains[2]
                     
-        np.save( base_res_dir + args.method_name + sub_dir + '/ERM_' + post_string + '.npy' , loss_erm )
-        np.save( base_res_dir + args.method_name + sub_dir + '/WS_' + post_string + '.npy', loss_ws )
-        np.save( base_res_dir + args.method_name + sub_dir + '/S_CTR_' + post_string + '.npy', loss_same_ctr )
-        np.save( base_res_dir + args.method_name + sub_dir +'/D_CTR_' + post_string + '.npy', loss_diff_ctr )
-        np.save( base_res_dir + args.method_name + sub_dir +'/ACC_' + post_string + '.npy', final_acc )
-        np.save( base_res_dir + args.method_name + sub_dir +'/Val_' + post_string + '.npy', val_acc )
-        
-
-        if args.perfect_match:
-            np.save( base_res_dir + args.method_name +  sub_dir +'/Match_Acc_' + post_string + '.npy', match_acc )
-            np.save( base_res_dir + args.method_name +  sub_dir +'/Match_Rank_' + post_string + '.npy', match_rank )
-            np.save( base_res_dir + args.method_name +  sub_dir +'/Match_TopK_' + post_string + '.npy', match_top_k )
-
         # Store the weights of the model
         torch.save(phi.state_dict(), base_res_dir + args.method_name +  sub_dir + '/Model_' + post_string + '.pth')        
         
@@ -600,23 +499,10 @@ for run in range(args.n_runs):
                 inferred_match=1
                 data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
 
-                if args.perfect_match:
-                    score= perfect_match_score(indices_matched)
-                    print('Perfect Match Score: ', score)                    
-                    perfect_match_rank= np.array(perfect_match_rank)            
-                    print('Mean Perfect Match Score: ', np.mean(perfect_match_rank), 100*np.sum(perfect_match_rank < 10)/perfect_match_rank.shape[0] )
-
             else:
                 inferred_match=0
                 # x% percentage match initial strategy
                 data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
-               
-                if args.perfect_match:
-                    score= perfect_match_score(indices_matched)
-                    print('Perfect Match Score: ', score)                    
-                    perfect_match_rank= np.array(perfect_match_rank)            
-                    print('Mean Perfect Match Score: ', np.mean(perfect_match_rank), 100*np.sum(perfect_match_rank < 10)/perfect_match_rank.shape[0] )
-
                     
             # Model and parameters
             if args.retain:

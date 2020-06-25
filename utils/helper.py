@@ -137,7 +137,17 @@ def compute_penalty( model, feature, target_label, domain_label):
         
     return ret 
 
-def get_dataloader(train_data_obj, val_data_obj, test_data_obj):
+def get_dataloader(args, train_domains, test_domains):
+    
+    if args.dataset in ['pacs', 'vlcs']:
+        train_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='train')
+        val_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='val')        
+        test_data_obj= PACS(test_domains, '/pacs/train_val_splits/', data_case='test')
+    elif args.dataset in ['rot_mnist', 'fashion_mnist']:
+        train_data_obj=  MnistRotated(args.dataset, train_domains, run, 'data/rot_mnist', data_case='train')
+        val_data_obj=  MnistRotated(args.dataset, train_domains, run, 'data/rot_mnist', data_case='val')       
+        test_data_obj=  MnistRotated(args.dataset, test_domains, run, 'data/rot_mnist', data_case='test')
+
     # Load supervised training
     train_dataset = data_utils.DataLoader(train_data_obj, batch_size=args.batch_size, shuffle=True, **kwargs )
     
