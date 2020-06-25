@@ -37,10 +37,14 @@ class ErmMatch(BaseAlgo):
         #         print('Batch Idx: ', batch_idx)
 
                 opt.zero_grad()
-
+                loss_e= torch.tensor(0.0).to(cuda)
+                
                 x_e= x_e.to(cuda)
                 y_e= torch.argmax(y_e, dim=1).to(cuda)
                 d_e= torch.argmax(d_e, dim=1).numpy()
+                
+                #Forward Pass
+                out= phi(x_e)
 
                 wasserstein_loss=torch.tensor(0.0).to(cuda)
                 erm_loss= torch.tensor(0.0).to(cuda) 
@@ -60,8 +64,8 @@ class ErmMatch(BaseAlgo):
                     label_match= label_match_tensor_split[batch_idx].to(cuda)
                     label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
         
-                    erm_loss_2+= erm_loss(feat_match, label_match)
-                    penalty_erm_2+= float(erm_loss_2)                
+                    erm_loss+= erm_loss(feat_match, label_match)
+                    penalty_erm+= float(erm_loss)                
             
                     if args.method_name=="rep_match":
                         temp_out= phi.predict_conv_net( data_match )

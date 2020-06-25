@@ -121,22 +121,7 @@ def embedding_dist(x1, x2, tau=0.05, xent=False):
         elif args.pos_metric == 'cos':
             return cosine_similarity( x1, x2 )
     
-
-def compute_penalty( model, feature, target_label, domain_label):
-    curr_domains= np.unique(domain_label)
-    ret= torch.tensor(0.).to(cuda)
-    for domain in curr_domains:
-        indices= domain_label == domain
-        temp_logits= model(feature[indices])
-        labels= target_label[indices]
-        scale = torch.tensor(1.).to(cuda).requires_grad_()
-        loss = F.cross_entropy(temp_logits*scale, labels.long()).to(cuda)
-        g = grad(loss, [scale], create_graph=True)[0].to(cuda)
-        # Since g is scalar output, do we need torch.sum?
-        ret+= torch.sum(g**2)
-        
-    return ret 
-
+    
 def get_dataloader(args, train_domains, test_domains):
     
     if args.dataset in ['pacs', 'vlcs']:
