@@ -1,5 +1,3 @@
-"""Pytorch Dataset object that loads MNIST and SVHN. It returns x,y,s where s=0 when x,y is taken from MNIST."""
-
 import os
 import random
 import copy
@@ -9,48 +7,30 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 class MnistRotated(BaseDataLoader):
-    def __init__(self, dataset_name, list_train_domains, mnist_subset, root, transform=None, data_case='train', download=True):
+    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', download=True):
         
-        super().__init__(dataset_name, list_train_domains, root, transform, data_case) 
+        super().__init__(args, list_train_domains, root, transform, data_case) 
         self.mnist_subset = mnist_subset
         self.download = download
         
         self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
 
     def load_inds(self):
-        if self.mnist_subset == -1:
-            # Select a random batch of size 2000 from the total 60,000 samples of MNIST
-            if self.dataset_name == 'rot_mnist':
-                if self.data_case != 'val':
-                    res= np.random.choice(60000, 2000)
-                else:
-                    res= np.random.choice(60000, 200)
-            elif self.dataset_name == 'fashion_mnist':
-                if self.data_case != 'val':
-                    res= np.random.choice(60000, 10000)
-                else:
-                    res= np.random.choice(60000, 1000)
-            return res
+        data_dir= self.root + '/' + self.args.dataset_name + '_' + self.args.model_name + '_indices'
+        if self.data_case != 'val':
+            return np.load(data_dir + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
         else:
-            if self.dataset_name == 'rot_mnist':
-                data_dir= self.root + '/rot_mnist_indices'
-            elif self.dataset_name == 'fashion_mnist':
-                data_dir= self.root + '/fashion_mnist_indices'
-                
-            if self.data_case != 'val':
-                return np.load(data_dir + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
-            else:
-                return np.load(data_dir + '/val' + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
+            return np.load(data_dir + '/val' + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
             
     def _get_data(self):
         
-        if self.dataset_name =='rot_mnist':
+        if self.args.dataset_name =='rot_mnist':
             data_obj= datasets.MNIST(self.root,
                                         train=True,
                                         download=self.download,
                                         transform=transforms.ToTensor()
                                     )
-        elif self.dataset_name == 'fashion_mnist':
+        elif self.args.dataset_name == 'fashion_mnist':
             data_obj= datasets.FashionMNIST(self.root,
                                                 train=True,
                                                 download=self.download,
@@ -74,11 +54,11 @@ class MnistRotated(BaseDataLoader):
 
         to_pil=  transforms.Compose([
                 transforms.ToPILImage(),
-                transforms.Resize((224, 224))
+                transforms.Resize((self.args.img_w, self.args.img_h))
             ])
         
         to_augment= transforms.Compose([
-                transforms.RandomResizedCrop(224, scale=(0.7,1.0)),
+                transforms.RandomResizedCrop(self.args.img_w, scale=(0.7,1.0)),
                 transforms.RandomHorizontalFlip(),            
             ])
         
@@ -103,7 +83,7 @@ class MnistRotated(BaseDataLoader):
         
         for domain in self.list_train_domains:
             # Run transforms
-            mnist_img_rot= torch.zeros((mnist_size, 224, 224))
+            mnist_img_rot= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))
             mnist_idx=[]
             
             # Shuffling the images to create random across domains
@@ -115,7 +95,7 @@ class MnistRotated(BaseDataLoader):
                 if domain == '0':
                     mnist_img_rot[i]= to_tensor(to_pil(mnist_imgs[i]))
                 else:
-                    if self.data_case =='train' and self.dataset_name =="fashion_mnist":
+                    if self.data_case =='train' and self.args.dataset_name =="fashion_mnist":
                         mnist_img_rot[i]= to_tensor( to_augment( transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) ) ) )        
                     else:
                         mnist_img_rot[i]= to_tensor( transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) ) )        

@@ -15,7 +15,40 @@ import torch.utils.data as data_utils
 
 from sklearn.manifold import TSNE
 
+    
+#Validation Phase
+test_acc= test( val_dataset, phi, epoch, 'Val' )
+val_acc.append( test_acc )
+#Testing Phase
+test_acc= test( test_dataset, phi, epoch, 'Test' )
+final_acc.append( test_acc )        
+
+
+def test(test_dataset, phi, epoch, case='Test'):
+    #Test Env Code
+    test_acc= 0.0
+    test_size=0
+    
+    for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(test_dataset):
+        with torch.no_grad():
+            x_e= x_e.to(cuda)
+            y_e= torch.argmax(y_e, dim=1).to(cuda)
+            d_e = torch.argmax(d_e, dim=1).numpy()       
+            #print(type(x_e), x_e.shape, y_e.shape, d_e.shape)        
+
+            #Forward Pass
+            out= phi(x_e)
+            loss_e= torch.mean(erm_loss(out, y_e))        
+
+            test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
+            test_size+= y_e.shape[0]
+            #print('Test Loss Env : ',  loss_e)
+    
+    print( case + ' Accuracy: Epoch ', epoch, 100*test_acc/test_size ) 
         
+    return (100*test_acc/test_size)
+    
+
 def test(test_dataset, phi, epoch):
     #Test Env Code
     test_acc= 0.0

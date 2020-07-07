@@ -15,7 +15,7 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 class MatchDG(BaseAlgo):
-    def __init__(self, train_dataset, data_match_tensor, label_match_tensor, phi, opt, opt_ws, scheduler, epoch, base_domain_idx, bool_erm, bool_ws, bool_ctr):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, ctr_phase=1):
         
         super().__init__() 
 
@@ -165,6 +165,46 @@ class MatchDG(BaseAlgo):
         
             
     def train_erm_phase(self):
+        
+        for run_erm in range(args.n_runs_erm):
+
+            # Load RepNet from save weights
+            sub_dir='/CTR'
+            save_path= base_res_dir + args.method_name + sub_dir + '/Model_' + post_string + '.pth'   
+            phi.load_state_dict( torch.load(save_path) )
+            phi.eval()
+            
+
+            #Inferred Match Case
+            if args.match_case_erm == -1:
+                inferred_match=1
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
+
+            else:
+                inferred_match=0
+                # x% percentage match initial strategy
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
+                    
+            # Model and parameters
+            if args.retain:
+                phi_erm= ClfNet( phi, rep_dim, num_classes ).to(cuda)
+            else:
+                if args.dataset in ['rot_mnist', 'color_mnist', 'fashion_mnist']:
+                    feature_dim= 28*28
+                    num_ch=1
+                    pre_trained=0
+                    if args.model_name == 'lenet':
+                        phi_erm= LeNet5().to(cuda)
+                    else:
+                        phi_erm= get_resnet('resnet18', num_classes, 1, num_ch, pre_trained).to(cuda)
+                    
+                elif args.dataset in ['pacs', 'vlcs']:
+                    if args.model_name == 'alexnet':        
+                        phi_erm= alexnet(num_classes, pre_trained, 1 ).to(cuda)
+                    elif args.model_name == 'resnet18':
+                        num_ch=3
+                        phi_erm= get_resnet('resnet18', num_classes, 1, num_ch, pre_trained).to(cuda)             
+        
         for epoch in range(epochs):    
             
             penalty_erm=0

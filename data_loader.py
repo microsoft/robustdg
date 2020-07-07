@@ -7,13 +7,12 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 class BaseDataLoader(data_utils.Dataset):
-    def __init__(self, dataset_name, list_train_domains, root, transform=None, data_case='train'):
-        self.dataset_name= dataset_name
+    def __init__(self, args, list_train_domains, root, transform=None, data_case='train'):
+        self.args= args
         self.list_train_domains = list_train_domains
         self.root = os.path.expanduser(root)
         self.transform = transform
         self.data_case = data_case
-        self.base_domain_idx= -1
         self.base_domain_size= 0
         self.training_list_size=[]
         self.train_data= [] 

@@ -19,17 +19,18 @@ def init_data_match_dict(args, keys, vals, variation):
             val_dim= vals[key]
         else:
             val_dim= vals
-            
-        if args.dataset == 'color_mnist':        
-            data[key]['data']=torch.rand((val_dim, 2, 28, 28))
-        elif args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
-            if args.model_name == 'lenet':            
-                data[key]['data']=torch.rand((val_dim, 1, 32, 32))      
-            elif args.model_name == 'resnet18':
-                data[key]['data']=torch.rand((val_dim, 1, 224, 224))      
-        elif args.dataset == 'pacs':
-            data[key]['data']=torch.rand((val_dim, 3, 227, 227))
         
+#         if args.dataset == 'color_mnist':        
+#             data[key]['data']=torch.rand((val_dim, 2, 28, 28))
+#         elif args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
+#             if args.model_name == 'lenet':            
+#                 data[key]['data']=torch.rand((val_dim, 1, 32, 32))      
+#             elif args.model_name == 'resnet18':
+#                 data[key]['data']=torch.rand((val_dim, 1, 224, 224))      
+#         elif args.dataset == 'pacs':
+#             data[key]['data']=torch.rand((val_dim, 3, 227, 227))
+        
+        data[key]['data']= torch.rand((val_dim, args.img_c, args.img_w, args.img_h))
         data[key]['label']=torch.rand((val_dim, 1))
         data[key]['idx']=torch.randint(0, 1, (val_dim, 1))
     return data

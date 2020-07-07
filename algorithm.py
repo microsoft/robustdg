@@ -16,7 +16,7 @@ import torch.utils.data as data_utils
 
 
 class BaseAlgo():
-    def __init__(self, args, dataset_name, list_train_domains, root, transform=None, data_case='train'):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size):
         self.args= args        
         self.rep_dim= args.rep_dim
         self.num_classes= args.out_classes
@@ -28,7 +28,6 @@ class BaseAlgo():
         self.anneal_iter= args.penalty_s
         self.match_flag=args.match_flag
         self.match_interrupt=args.match_interrupt
-        self.base_domain_idx= args.base_domain_idx
         
         self.phi= self.get_model()
         self.opt= self.get_opt()
@@ -40,36 +39,20 @@ class BaseAlgo():
     
     def get_model(self):
         
-        if self.args.dataset == 'rot_mnist' or self.args.dataset == 'fashion_mnist':
-            if self.args.model_name == 'lenet':
-                from models.LeNet import *
-            else:
-                from models.ResNet import *                
-                num_ch=1
-                pre_trained=0
-                
-        elif self.args.dataset == 'pacs':
-            if self.args.model_name == 'alexnet':
-                from models.AlexNet import *
-                num_ch=3
-                pre_trained=1                
-            elif self.args.model_name == 'resnet18':
-                from models.ResNet import *
-                num_ch=3
-                pre_trained=1
-        
         if self.args.model_name == 'lenet':
+            from models.LeNet import *
             phi= LeNet5().to(cuda)
-        elif self.args.model_name == 'alexnet':
-            phi= alexnet(self.num_classes, pre_trained, self.args.erm_base ).to(cuda)            
-        elif self.args.model_name == 'resnet18':
-            phi= get_resnet('resnet18', self.num_classes, self.args.erm_base, num_ch, pre_trained).to(cuda)
-                                        
+        if self.args.model_name == 'alexnet':
+            from models.AlexNet import *
+            phi= alexnet(self.num_classes, self.args.pre_trained, self.args.erm_base ).to(cuda)                   elif self.args.model_name == 'resnet18':
+            from models.ResNet import *
+            phi= get_resnet('resnet18', self.num_classes, self.args.erm_base, self.args.img_c, self.args.pre_trained).to(cuda)
+        
 #         else:
 #             rep_dim=512
 #             phi= get_resnet('resnet18', rep_dim, self.args.erm_base, num_ch, pre_trained).to(cuda)
                     
-        print('Model Archtecture: ', args.model_name)
+        print('Model Architecture: ', args.model_name)
         return phi
     
     
@@ -88,7 +71,7 @@ class BaseAlgo():
     
     def get_match_function(self, epoch):
         #Start initially with randomly defined batch; else find the local approximate batch
-        if epoch % match_interrupt == 0:
+        if epoch % self.args.match_interrupt == 0:
             if epoch > 0:                    
                 inferred_match=1
                 if args.match_flag:

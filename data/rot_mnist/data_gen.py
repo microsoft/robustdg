@@ -7,8 +7,13 @@ if sys.argv[1] == 'resnet':
     data_size=60000
     subset_size=2000
     val_size= 100
-    data_dir='rot_mnist_indices/'
     total_subset=10
+    data_dir='rot_mnist_indices/'
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    if not os.path.exists(data_dir+'val/'):
+        os.makedirs(data_dir+'val/')
+
 
     for idx in range(total_subset):
         # Train, Test indices
@@ -24,9 +29,13 @@ if sys.argv[1] == 'resnet':
     data_size=60000
     subset_size=10000
     val_size= 500
-    data_dir='fashion_mnist_indices/'
     total_subset=10
-
+    data_dir='fashion_mnist_indices/'
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    if not os.path.exists(data_dir+'val/'):
+        os.makedirs(data_dir+'val/')
+        
     for idx in range(total_subset):
         # Train, Test indices
         res=np.random.choice(data_size, subset_size)
@@ -41,8 +50,12 @@ elif sys.argv[1] == 'lenet':
     data_size=60000
     subset_size=1000
     val_size= 100
-    data_dir='rot_mnist_lenet_indices/'
     total_subset=10
+    data_dir='rot_mnist_lenet_indices/'
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    if not os.path.exists(data_dir+'val/'):
+        os.makedirs(data_dir+'val/')    
 
     for idx in range(total_subset):
         # Train, Test indices

@@ -15,7 +15,7 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 class ErmMatch(BaseAlgo):
-    def __init__(self, train_dataset, data_match_tensor, label_match_tensor, phi, opt, opt_ws, scheduler, epoch, base_domain_idx, bool_erm, bool_ws, bool_ctr):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size):
         
         super().__init__() 
               

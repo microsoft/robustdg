@@ -122,23 +122,36 @@ def embedding_dist(x1, x2, tau=0.05, xent=False):
             return cosine_similarity( x1, x2 )
     
     
-def get_dataloader(args, train_domains, test_domains):
+def get_dataloader(args, run, train_domains, test_domains):
     
+    if args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
+        if args.model_name == 'lenet':
+            from data.rot_mnist.mnist_loader_lenet import MnistRotated
+        else:
+            from data.rot_mnist.mnist_loader import MnistRotated
+    elif args.dataset == 'pacs':
+        from data.pacs.pacs_loader import PACS
+
     if args.dataset in ['pacs', 'vlcs']:
         train_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='train')
         val_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='val')        
         test_data_obj= PACS(test_domains, '/pacs/train_val_splits/', data_case='test')
     elif args.dataset in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(args.dataset, train_domains, run, 'data/rot_mnist', data_case='train')
-        val_data_obj=  MnistRotated(args.dataset, train_domains, run, 'data/rot_mnist', data_case='val')       
-        test_data_obj=  MnistRotated(args.dataset, test_domains, run, 'data/rot_mnist', data_case='test')
+        train_data_obj=  MnistRotated(train_domains, run, 'data/rot_mnist', data_case='train')
+        val_data_obj=  MnistRotated(train_domains, run, 'data/rot_mnist', data_case='val')       
+        test_data_obj=  MnistRotated(test_domains, run, 'data/rot_mnist', data_case='test')
 
     # Load supervised training
     train_dataset = data_utils.DataLoader(train_data_obj, batch_size=args.batch_size, shuffle=True, **kwargs )
     
     # Can select a higher batch size for val and test domains
+    ## TODO: If condition for test batch size less than total size
     test_batch=512
     val_dataset = data_utils.DataLoader(val_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
     test_dataset = data_utils.DataLoader(test_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
     
-    return train_dataset, val_dataset, test_dataset
+    total_domains= len(train_domains)
+    domain_size= train_data_obj.base_domain_size       
+    training_list_size= train_data_obj.training_list_size
+
+    return train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size
