@@ -1,17 +1,29 @@
+# Toolkit for Building Robust ML models that generalize to unseen domains (RobustDG)
 
-# Contributing
+For machine learning models to be reliable, they need to generalize to data
+beyond the train distribution. In addition, ML models should be robust to
+privacy attacks like membership inference and domain knowledge-based attacks like adversarial attacks.
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+To advance research in building robust and generalizable models, we are
+releasing a toolkit for building and evaluating ML models, *RobustDG*. RobustDG contains implementations of a few domain
+generalization algorithms and includes variety of evaluation benchmarks based
+on out-of-distribution accuracy, robustness to privacy and adversarial attacks. 
 
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+It is easily extendable. Add your own DG algorithms and evaluate them on the
+different benchmarks.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+# Demo
+
+# Installation
+To use the command-line interface of RobustDG, clone this repo and add the
+folder to your system's PATH (or alternatively, run the commands from the
+RobustDG root directory)
+
+```
+train ---<more params>
+```
+
+
 
 # MNIST and Fashion MNIST
 
@@ -80,3 +92,18 @@ The commands below would generate results for dataset Rot MNIST and source domai
 * Approx 75:
 
   - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.75 --penalty_ws 0.1
+
+
+# Contributing
+
+This project welcomes contributions and suggestions.  Most contributions require you to agree to a
+Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
+the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+
+When you submit a pull request, a CLA bot will automatically determine whether you need to provide
+a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
+provided by the bot. You will only need to do this once across all repos using our CLA.
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
+contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
