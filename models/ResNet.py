@@ -18,13 +18,14 @@ def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
         model=  torchvision.models.resnet18(pre_trained)
         n_inputs = model.fc.in_features
         n_outputs= classes
-        if erm_base:
-            model.fc = nn.Linear(n_inputs, n_outputs)
-        else:
+        
+        if erm_base == 'matchdg_ctr':
             model.fc = Identity(n_inputs)
 #             model.fc= nn.Sequential( nn.Linear(n_inputs, n_inputs),
 #                                      nn.ReLU(),
 #                                    )
+        else:
+            model.fc = nn.Linear(n_inputs, n_outputs)
         
         if num_ch==1:
             model.conv1 = nn.Conv2d(1, 64, 

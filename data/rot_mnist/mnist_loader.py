@@ -1,10 +1,16 @@
+#Common imports
 import os
 import random
 import copy
 import numpy as np
+
+#Pytorch
 import torch
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
+
+#Base Class
+from ..data_loader import BaseDataLoader
 
 class MnistRotated(BaseDataLoader):
     def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', download=True):

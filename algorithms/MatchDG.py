@@ -14,17 +14,29 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
 
-class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, ctr_phase=1):
-        
-        super().__init__() 
+from .algo import BaseAlgo
+from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
-    def train():
-        # Initialise and call train functions depending on the method's phase
+class MatchDG(BaseAlgo):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase=1):
         
+        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda) 
+        
+        self.ctr_phase= ctr_phase
+
+    def train(self):
+        # Initialise and call train functions depending on the method's phase
+        if self.ctr_phase:
+            self.train_ctr_phase()
+        else:
+            self.train_erm_phase()
         
     def train_ctr_phase(self):
-        for epoch in range(epochs):    
+        
+        for epoch in range(self.args.epochs):    
+            
+            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
+                data_match_tensor, label_match_tensor= self.get_match_function(epoch)
             
             penalty_same_ctr=0
             penalty_diff_ctr=0
@@ -34,26 +46,27 @@ class MatchDG(BaseAlgo):
             train_size=0
     
             perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], args.batch_size, dim=0)
+            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
+            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
             print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
     
             #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(train_dataset):
+            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
         #         print('Batch Idx: ', batch_idx)
 
-                opt.zero_grad()
-                loss_e= torch.tensor(0.0).to(cuda)            
+                self.opt.zero_grad()
+                loss_e= torch.tensor(0.0).to(self.cuda)            
 
-                x_e= x_e.to(cuda)
-                y_e= torch.argmax(y_e, dim=1).to(cuda)
+                x_e= x_e.to(self.cuda)
+                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                 d_e= torch.argmax(d_e, dim=1).numpy()
 
-                same_ctr_loss = torch.tensor(0.0).to(cuda)
-                diff_ctr_loss = torch.tensor(0.0).to(cuda)
-                same_hinge_loss = torch.tensor(0.0).to(cuda)
-                diff_hinge_loss = torch.tensor(0.0).to(cuda)
-                if epoch > anneal_iter:
+                same_ctr_loss = torch.tensor(0.0).to(self.cuda)
+                diff_ctr_loss = torch.tensor(0.0).to(self.cuda)
+                same_hinge_loss = torch.tensor(0.0).to(self.cuda)
+                diff_hinge_loss = torch.tensor(0.0).to(self.cuda)
+                
+                if epoch > self.args.penalty_s:
                     # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
                     total_batch_size= len(data_match_tensor_split)
                     if batch_idx >= total_batch_size:
@@ -61,35 +74,35 @@ class MatchDG(BaseAlgo):
                     curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
 
         #             data_match= data_match_tensor[idx].to(cuda)
-                    data_match= data_match_tensor_split[batch_idx].to(cuda)
+                    data_match= data_match_tensor_split[batch_idx].to(self.cuda)
                     data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
-                    feat_match= phi( data_match )
+                    feat_match= self.phi( data_match )
             
-        #             label_match= label_match_tensor[idx].to(cuda)           
-                    label_match= label_match_tensor_split[batch_idx].to(cuda)
+        #             label_match= label_match_tensor[idx].to(self.cuda)           
+                    label_match= label_match_tensor_split[batch_idx].to(self.cuda)
                     label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
                     
-                    if args.method_name=="rep_match":
-                        temp_out= phi.predict_conv_net( data_match )
+                    if self.args.method_name=="rep_match":
+                        temp_out= self.phi.predict_conv_net( data_match )
                         temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
-                        feat_match= phi.predict_fc_net(temp_out)
+                        feat_match= self.phi.predict_fc_net(temp_out)
                         del temp_out
             
                     # Creating tensor of shape ( domain size, total domains, feat size )
                     if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
+                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
                     else:
-                         feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1] )
+                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
 
-                    label_match= label_match.view( curr_batch_size, len(train_domains) )
+                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
             #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                     # Contrastive Loss
                     same_neg_counter=1
                     diff_neg_counter=1
-                    for y_c in range(args.out_classes):
+                    for y_c in range(self.args.out_classes):
 
                         pos_indices= label_match[:, 0] == y_c
                         neg_indices= label_match[:, 0] != y_c
@@ -115,7 +128,7 @@ class MatchDG(BaseAlgo):
                                 print('Reshaped X2 is Nan')
                                 sys.exit()
 
-                            neg_dist= embedding_dist( pos_feat_match[:, d_i, :], diff_neg_feat_match[:, :], args.tau, xent=True)     
+                            neg_dist= embedding_dist( pos_feat_match[:, d_i, :], diff_neg_feat_match[:, :], self.args.pos_metric, self.args.tau, xent=True)     
                             if torch.sum(torch.isnan(neg_dist)):
                                 print('Neg Dist Nan')
                                 sys.exit()
@@ -123,8 +136,8 @@ class MatchDG(BaseAlgo):
                             # Iterating pos dist for current anchor
                             for d_j in range(pos_feat_match.shape[1]):
                                 if d_i != d_j:
-                                    pos_dist= 1.0 - embedding_dist( pos_feat_match[:, d_i, :], pos_feat_match[:, d_j, :] )
-                                    pos_dist= pos_dist / args.tau
+                                    pos_dist= 1.0 - embedding_dist( pos_feat_match[:, d_i, :], pos_feat_match[:, d_j, :], self.args.pos_metric )
+                                    pos_dist= pos_dist / self.args.tau
                                     if torch.sum(torch.isnan(neg_dist)):
                                         print('Pos Dist Nan')
                                         sys.exit()
@@ -149,10 +162,10 @@ class MatchDG(BaseAlgo):
                     penalty_same_hinge+= float(same_hinge_loss)
                     penalty_diff_hinge+= float(diff_hinge_loss)
                 
-                    loss_e += ( args.penalty_diff_ctr*( epoch-anneal_iter )/(args.epochs -anneal_iter) )*diff_hinge_loss
+                    loss_e += ( self.args.penalty_diff_ctr*( epoch- self.args.penalty_s )/(self.args.epochs -self.args.penalty_s) )*diff_hinge_loss
                         
                 loss_e.backward(retain_graph=False)
-                opt.step()
+                self.opt.step()
                 
                 del same_ctr_loss
                 del diff_ctr_loss
@@ -166,13 +179,13 @@ class MatchDG(BaseAlgo):
             
     def train_erm_phase(self):
         
-        for run_erm in range(args.n_runs_erm):
+        for run_erm in range(self.args.n_runs_erm):
 
             # Load RepNet from save weights
             sub_dir='/CTR'
-            save_path= base_res_dir + args.method_name + sub_dir + '/Model_' + post_string + '.pth'   
-            phi.load_state_dict( torch.load(save_path) )
-            phi.eval()
+            save_path= base_res_dir + self.args.method_name + sub_dir + '/Model_' + post_string + '.pth'   
+            self.phi.load_state_dict( torch.load(save_path) )
+            self.phi.eval()
             
 
             #Inferred Match Case
@@ -205,7 +218,7 @@ class MatchDG(BaseAlgo):
                         num_ch=3
                         phi_erm= get_resnet('resnet18', num_classes, 1, num_ch, pre_trained).to(cuda)             
         
-        for epoch in range(epochs):    
+        for epoch in range(self.args.epochs):    
             
             penalty_erm=0
             penalty_erm_extra=0
@@ -214,48 +227,48 @@ class MatchDG(BaseAlgo):
             train_size=0
     
             perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], args.batch_size, dim=0)
+            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
+            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
             print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
     
             #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(train_dataset):
+            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
         #         print('Batch Idx: ', batch_idx)
 
-                opt.zero_grad()
-                loss_e= torch.tensor(0.0).to(cuda)
+                self.opt.zero_grad()
+                loss_e= torch.tensor(0.0).to(self.cuda)
 
-                x_e= x_e.to(cuda)
-                y_e= torch.argmax(y_e, dim=1).to(cuda)
+                x_e= x_e.to(self.cuda)
+                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                 d_e= torch.argmax(d_e, dim=1).numpy()
                 
                 #Forward Pass
-                out= phi(x_e)
+                out= self.phi(x_e)
                 erm_loss_extra= erm_loss(out, y_e)    
                 penalty_erm_extra += float(loss_extra)
 
-                wasserstein_loss=torch.tensor(0.0).to(cuda)
-                erm_loss= torch.tensor(0.0).to(cuda) 
-                if epoch > anneal_iter:
+                wasserstein_loss=torch.tensor(0.0).to(self.cuda)
+                erm_loss= torch.tensor(0.0).to(self.cuda) 
+                if epoch > self.args.penalty_s:
                     # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
                     total_batch_size= len(data_match_tensor_split)
                     if batch_idx >= total_batch_size:
                         break
                     curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
 
-        #             data_match= data_match_tensor[idx].to(cuda)
-                    data_match= data_match_tensor_split[batch_idx].to(cuda)
+        #             data_match= data_match_tensor[idx].to(self.cuda)
+                    data_match= data_match_tensor_split[batch_idx].to(self.cuda)
                     data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
                     feat_match= phi( data_match )
             
-        #             label_match= label_match_tensor[idx].to(cuda)           
-                    label_match= label_match_tensor_split[batch_idx].to(cuda)
+        #             label_match= label_match_tensor[idx].to(self.cuda)           
+                    label_match= label_match_tensor_split[batch_idx].to(self.cuda)
                     label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
         
                     erm_loss+= erm_loss(feat_match, label_match)
                     penalty_erm+= float(erm_loss)                
             
-                    if args.method_name=="rep_match":
+                    if self.args.method_name=="rep_match":
                         temp_out= phi.predict_conv_net( data_match )
                         temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
                         feat_match= phi.predict_fc_net(temp_out)
@@ -296,13 +309,12 @@ class MatchDG(BaseAlgo):
                     penalty_ws+= float(wasserstein_loss)                            
 
                     
-                        loss_e += ( args.penalty_ws_erm*( epoch-anneal_iter )/(args.epochs_erm -anneal_iter) )*wasserstein_loss
-
-                    loss_e += args.penalty_erm*erm_loss
-                    loss_e += args.penlaty_erm*erm_loss_extra
+                    loss_e += ( self.args.penalty_ws_erm*( epoch- self.args.penalty_s )/(args.epochs_erm - self.args.penalty_s) )*wasserstein_loss
+                    loss_e += self.args.penalty_erm*erm_loss
+                    loss_e += self.args.penlaty_erm*erm_loss_extra
                         
                 loss_e.backward(retain_graph=False)
-                opt.step()
+                self.opt.step()
                 
                 del erm_loss_extra
                 del erm_loss

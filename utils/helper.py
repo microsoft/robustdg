@@ -1,3 +1,6 @@
+import torch
+import torch.utils.data as data_utils
+
 def t_sne_plot(X):
     X= X.detach().cpu().numpy()
     X= TSNE(n_components=2).fit_transform(X)
@@ -52,7 +55,7 @@ def l2_dist(x1, x2):
         print('Error: Expect 1, 2 or 3 rank tensors to compute L2 Norm')
         return
     
-def embedding_dist(x1, x2, tau=0.05, xent=False):
+def embedding_dist(x1, x2, pos_metric, tau=0.05, xent=False):
     
     if xent:
         #X1 denotes the batch of anchors while X2 denotes all the negative matches
@@ -99,7 +102,7 @@ def embedding_dist(x1, x2, tau=0.05, xent=False):
         # Boradcasting the anchors vector to compute loss over all negative matches
         x1=x1.unsqueeze(1)
         cos_sim= torch.sum( x1*x2, dim=2)
-        cos_sim= cos_sim / args.tau
+        cos_sim= cos_sim / tau
         
         if torch.sum( torch.isnan( cos_sim ) ):
             print('Cos is nan')
@@ -114,32 +117,32 @@ def embedding_dist(x1, x2, tau=0.05, xent=False):
         return loss
         
     else:    
-        if args.pos_metric == 'l1':
+        if pos_metric == 'l1':
             return l1_dist(x1, x2)
-        elif args.pos_metric == 'l2':        
+        elif pos_metric == 'l2':        
             return l2_dist(x1, x2)
-        elif args.pos_metric == 'cos':
+        elif pos_metric == 'cos':
             return cosine_similarity( x1, x2 )
     
     
-def get_dataloader(args, run, train_domains, test_domains):
+def get_dataloader(args, run, train_domains, test_domains, kwargs):
     
-    if args.dataset == 'rot_mnist' or args.dataset == 'fashion_mnist':
+    if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         if args.model_name == 'lenet':
             from data.rot_mnist.mnist_loader_lenet import MnistRotated
         else:
             from data.rot_mnist.mnist_loader import MnistRotated
-    elif args.dataset == 'pacs':
+    elif args.dataset_name == 'pacs':
         from data.pacs.pacs_loader import PACS
 
-    if args.dataset in ['pacs', 'vlcs']:
+    if args.dataset_name in ['pacs', 'vlcs']:
         train_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='train')
         val_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='val')        
         test_data_obj= PACS(test_domains, '/pacs/train_val_splits/', data_case='test')
-    elif args.dataset in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(train_domains, run, 'data/rot_mnist', data_case='train')
-        val_data_obj=  MnistRotated(train_domains, run, 'data/rot_mnist', data_case='val')       
-        test_data_obj=  MnistRotated(test_domains, run, 'data/rot_mnist', data_case='test')
+    elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:
+        train_data_obj=  MnistRotated(args, train_domains, run, 'data/rot_mnist', data_case='train')
+        val_data_obj=  MnistRotated(args, train_domains, run, 'data/rot_mnist', data_case='val')       
+        test_data_obj=  MnistRotated(args, test_domains, run, 'data/rot_mnist', data_case='test')
 
     # Load supervised training
     train_dataset = data_utils.DataLoader(train_data_obj, batch_size=args.batch_size, shuffle=True, **kwargs )

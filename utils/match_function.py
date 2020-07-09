@@ -1,3 +1,6 @@
+import numpy as np
+import torch
+
 def perfect_match_score(indices_matched):
     counter=0
     score=0
@@ -35,7 +38,7 @@ def init_data_match_dict(args, keys, vals, variation):
         data[key]['idx']=torch.randint(0, 1, (val_dim, 1))
     return data
 
-def get_matched_pairs(args, train_dataset, domain_size, total_domains, training_list_size, phi, match_case, inferred_match):        
+def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, training_list_size, phi, match_case, inferred_match):        
     
     #Making Data Matched pairs
     data_matched= init_data_match_dict( args, range(domain_size), total_domains, 0 )

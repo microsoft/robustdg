@@ -1,4 +1,5 @@
 #Common imports
+import os
 import sys
 import numpy as np
 import argparse
@@ -18,8 +19,11 @@ import torch.utils.data as data_utils
 
 #Sklearn
 from sklearn.manifold import TSNE
-            
-    
+
+#robustdg
+from utils.helper import *
+from utils.match_function import *
+
 # Input Parsing
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_name', type=str, default='rot_mnist', help='Datasets: rot_mnist; fashion_mnist; pacs')
@@ -27,13 +31,13 @@ parser.add_argument('--method_name', type=str, default='erm_match', help=' Train
 parser.add_argument('--model_name', type=str, default='resnet18')
 parser.add_argument('--train_domains', type=int, default=["15", "30", "45", "60", "75"], help='List of train domains')
 parser.add_argument('--test_domains', type=int, default=["0", "90"], help='List of test domains')
-parser.add_argument('--out_classes', type=int, default=10, 'Total number of classes in the dataset')
-parser.add_argument('--img_c', type=int, default= 3, help='Number of channels of the image in dataset')
+parser.add_argument('--out_classes', type=int, default=10, help='Total number of classes in the dataset')
+parser.add_argument('--img_c', type=int, default= 1, help='Number of channels of the image in dataset')
 parser.add_argument('--img_h', type=int, default= 224, help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, help='Width of the image in dataset')
 parser.add_argument('--match_layer', type=str, default='logit_match', help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2')
-parser.add_argument('--rep_dim', type=int, default=250, 'Representation dimension for contrsative learning')
+parser.add_argument('--rep_dim', type=int, default=250, help='Representation dimension for contrsative learning')
 parser.add_argument('--pre_trained',type=int, default=0, help='0: No Pretrained Architecture; 1: Pretrained Architecture')
 parser.add_argument('--perfect_match', type=int, default=1, help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', help='Optimizer Choice: sgd; adam') 
@@ -70,7 +74,7 @@ test_domains= args.test_domains
 
 #Initialize
 final_report_accuracy=[]
-base_res_dir="results/" + args.dataset + '/' + args.method_name + '/' + args.match_layer + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
+base_res_dir="results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
@@ -83,28 +87,30 @@ for run in range(args.n_runs):
         torch.cuda.manual_seed_all(run*10)    
 
     #DataLoader        
-    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains )
+    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the curernt training method
     if args.method_name == 'erm_match':
-        from ERM_Match import ErmMatch    
-        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size)
+        from algorithms.ERM_Match import ErmMatch    
+        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda)
     elif args.method_name == 'matchdg_ctr':
-        from MatchDG import MatchDG
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, ctr_phase=1)     
+        from algorithms.MatchDG import MatchDG
+        ctr_phase=1
+        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase)     
     elif args.method_name == 'matchdg_erm':
-        from MatchDG import MatchDG
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, ctr_phase=0)
+        from algorithms.MatchDG import MatchDG
+        ctr_phase=0
+        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase)
         
     #Train the method
     train_method.train()
     
     #Path to save results        
-    post_string= str(args.penalty_ws) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(args.test_domain) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
+    post_string= str(args.penalty_ws) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
                                                         
     # Store the weights of the model
-    torch.save(phi.state_dict(), base_res_dir + '/Model_' + post_string + '.pth')
+    torch.save(train_method.phi.state_dict(), base_res_dir + '/Model_' + post_string + '.pth')
         
     # Final Report Accuacy
     if args.method_name != 'matchdg_ctr':

@@ -1,14 +1,15 @@
 import numpy as np
 import sys
+import os
 
-if sys.argv[1] == 'resnet':
+if sys.argv[1] == 'resnet18':
 
     # Generate 10 random subsets of size 2,000 each for Rotated MNIST 
     data_size=60000
     subset_size=2000
     val_size= 100
     total_subset=10
-    data_dir='rot_mnist_indices/'
+    data_dir='rot_mnist_resnet18_indices/'
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     if not os.path.exists(data_dir+'val/'):
@@ -30,7 +31,7 @@ if sys.argv[1] == 'resnet':
     subset_size=10000
     val_size= 500
     total_subset=10
-    data_dir='fashion_mnist_indices/'
+    data_dir='fashion_mnist_resnet18_indices/'
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
     if not os.path.exists(data_dir+'val/'):
