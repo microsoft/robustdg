@@ -179,7 +179,7 @@ class MatchDG(BaseAlgo):
             
     def train_erm_phase(self):
         
-        for run_erm in range(self.args.n_runs_erm):
+        for run_erm in range(self.args.n_runs):
 
             # Load RepNet from save weights
             sub_dir='/CTR'

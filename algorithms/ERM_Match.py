@@ -78,7 +78,7 @@ class ErmMatch(BaseAlgo):
                         temp_out= self.phi.predict_conv_net( data_match )
                         temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
                         feat_match= self.phi.predict_fc_net(temp_out)
-                            del temp_out
+                        del temp_out
             
                     # Creating tensor of shape ( domain size, total domains, feat size )
                     if len(feat_match.shape) == 4:
