@@ -23,9 +23,13 @@ RobustDG root directory)
 train ---<more params>
 ```
 
+# Demo
 
+A quick introduction on how to use our repository can be accessed here in the [notebook](https://github.com/microsoft/robustdg/docs/notebook/robustdg_getting_started.ipynb)
 
-# MNIST and Fashion MNIST
+# Reproducing results from the paper
+
+## MNIST and Fashion MNIST
 
 The commands below would train and evaluate models corresponding to the Table 1, Table 2 and Table 3 in the paper
 
@@ -47,51 +51,50 @@ The commands below would generate results for dataset Rot MNIST and source domai
 
 * ERM: 
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.01 --penalty_ws 0.0
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 0.01 --penalty_ws 0.0
 
 * ERM_RandomMatch:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.01 --penalty_ws 0.1
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 0.01 --penalty_ws 0.1
 
 * ERM_PerfectMatch:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 1.0 --penalty_ws 0.1
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 1.0 --penalty_ws 0.1
 
 * MatchDG:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 2 --match_case 0.01
+  - python3 train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01
+  - python3 train.py --dataset rot_mnist --method_name matchdg_erm --penalty_ws 0.1
 
 
 ## Table 2
 
 * ERM: 
 
-  - python3 eval.py --dataset rot_mnist --domain_abl 0 --test_metric other --match_dg 0 --match_case 0.01 --penalty_ws 0.0
+  - python3 eval.py --dataset rot_mnist --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --test_metric match_score 
 
 * MatchDG (Default):
 
-  - python3 eval.py --dataset rot_mnist --domain_abl 0 --test_metric other --match_dg 1 --match_case 0.01
+  - python3 eval.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --test_metric match_score
 
 * MatchDG (PerfMatch):
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 2 --match_case 1.0
-
-  - python3 eval.py --dataset rot_mnist --domain_abl 0 --test_metric other --match_dg 1 --match_case 1.0
+  - python3 eval.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --test_metric match_score
 
 
 ## Table 3
 
 * Approx 25:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.25 --penalty_ws 0.1
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 0.25 --penalty_ws 0.1
 
 * Approx 50:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.50 --penalty_ws 0.1
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 0.50 --penalty_ws 0.1
 
 * Approx 75:
 
-  - python3 train.py --dataset rot_mnist --domain_abl 0 --match_dg 0 --match_case 0.75 --penalty_ws 0.1
+  - python3 train.py --dataset rot_mnist --method_name erm_match --match_case 0.75 --penalty_ws 0.1
 
 
 # Contributing
