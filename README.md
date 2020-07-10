@@ -25,7 +25,7 @@ train ---<more params>
 
 # Demo
 
-A quick introduction on how to use our repository can be accessed here in the [notebook](https://github.com/microsoft/robustdg/docs/notebook/robustdg_getting_started.ipynb)
+A quick introduction on how to use our repository can be accessed here in the [notebook](https://github.com/microsoft/robustdg/blob/master/docs/notebook/robustdg_getting_started.ipynb)
 
 # Reproducing results from the paper
 
