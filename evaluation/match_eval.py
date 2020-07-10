@@ -19,14 +19,12 @@ from utils.match_function import get_matched_pairs, perfect_match_score
 
 class MatchEval(BaseEval):
     
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, cuda):
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, cuda)
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, top_k, cuda):
+        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, cuda)
         
-        self.match_top_1=0.0
-        self.match_top_k=0.0
-        self.match_rank=0.0
+        self.top_k= top_k
         
-    def get_match_score(self, top_k):
+    def get_metric_eval(self):
         
         inferred_match=1
         data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, inferred_match )
@@ -34,11 +32,11 @@ class MatchEval(BaseEval):
         score= perfect_match_score(indices_matched)
         perfect_match_rank= np.array(perfect_match_rank)            
 
-        self.match_top_1= score
-        self.match_top_k= 100*np.sum( perfect_match_rank <top_k )/perfect_match_rank.shape[0]
-        self.match_rank= np.mean(perfect_match_rank)
+        self.metric_score['Perfect Match Score']= score
+        self.metric_score['TopK Perfect Match Score']= 100*np.sum( perfect_match_rank < self.top_k )/perfect_match_rank.shape[0]
+        self.metric_score['Perfect Match Rank']= np.mean(perfect_match_rank)
 
-        print('Perfect Match Score: ', self.match_top_1   )                    
-        print('TopK Perfect Match Score: ',  self.match_top_k )          
-        print('Perfect Match Rank: ',  self.match_rank )            
+        print('Perfect Match Score: ', self.metric_score['Perfect Match Score']   )                    
+        print('TopK Perfect Match Score: ', self.metric_score['TopK Perfect Match Score'] )          
+        print('Perfect Match Rank: ', self.metric_score['Perfect Match Rank'] )            
         return 

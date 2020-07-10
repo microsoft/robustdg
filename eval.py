@@ -75,16 +75,20 @@ train_domains= args.train_domains
 test_domains= args.test_domains
 
 #Initialize
-final_report_accuracy=[]
-match_acc=[]
-match_rank=[]
-match_top_k=[]
-final_acc=[]
-val_acc=[]
+final_metric_score=[]
 base_res_dir="results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
+#Checks
+if args.method_name == 'matchdg_ctr' and args.test_metric == 'acc':
+    raise ValueError('Match DG during the contrastive learning phase cannot be evaluted for test accuracy metric')
+    sys.exit()
+
+if args.perfect_match == 0 and args.test_metric == 'match_score':
+    raise ValueError('Cannot evalute match function metrics when perfect match is not known')
+    sys.exit()
+    
 #Execute the method for multiple runs ( total args.n_runs )
 for run in range(args.n_runs):
     
@@ -92,6 +96,11 @@ for run in range(args.n_runs):
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
+    
+    #Save Path for the trained ML model
+    post_string= str(args.penalty_ws) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
+    
+    save_path= base_res_dir + '/Model_' + post_string + '.pth'
 
     #DataLoader        
     train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
@@ -100,46 +109,24 @@ for run in range(args.n_runs):
     #Import the testing module
     if args.test_metric == 'acc':
         from evaluation.base_eval import BaseEval
-        test_method= BaseEval(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, cuda)
+        test_method= BaseEval(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, cuda)
     elif args.test_metric == 'match_score':
         from evaluation.match_eval import MatchEval
-        test_method= MatchEval(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, cuda)   
-    
-    #Path to load model       
-    post_string= str(args.penalty_ws) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name    
-    test_method.phi.load_state_dict( torch.load(base_res_dir + '/Model_' + post_string + '.pth') )
-    test_method.phi.eval()
-    
-    #Test the method
+        test_method= MatchEval(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, args.top_k, cuda)   
     
     #Testing Phase
-    if args.test_metric == 'acc':
-        test_method.get_eval_acc('Test')
-        
-        ## TODO: Should the check of matchdg_ctr be present for evaluating final test accuracy
-        # Final Report Accuacy
-        if args.method_name != 'matchdg_ctr':
-            final_report_accuracy.append( test_method.final_acc )
-        
-    elif args.test_metric == 'match_score':
-        test_method.get_match_score(args.top_k)
-        
-        ##TODO: Is Perfect Match Check really needed here?
-        if args.perfect_match:
-            match_acc.append( test_method.match_top_1 )
-            match_rank.append( test_method.match_rank )
-            match_top_k.append( test_method.match_top_k )
+    test_method.get_metric_eval()
+    final_metric_score.append( test_method.metric_score )
     
 
 print('\n')
 print('Done for Model..')
 
-if args.test_metric == 'acc':
-    print('Test Accuracy', np.mean(final_report_accuracy), np.std(final_report_accuracy) )
-    
-elif args.test_metric == 'match_score':
-    print('Perfect Match Score: ',  np.mean(match_acc), np.std(match_acc)  )                    
-    print('TopK Perfect Match Score: ',  np.mean(match_top_k), np.std(match_top_k)  )            
-    print('Perfect Match Rank: ',  np.mean(match_rank), np.std(match_rank) )            
+keys=final_metric_score[0].keys()
+for key in keys:
+    curr_metric_score=[]
+    for item in final_metric_score:
+        curr_metric_score.append( item[key] )
+    print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score))
     
 print('\n')

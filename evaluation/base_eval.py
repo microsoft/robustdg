@@ -16,7 +16,7 @@ import torch.utils.data as data_utils
 
 
 class BaseEval():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, cuda):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, cuda):
         self.args= args
         self.train_dataset= train_dataset
         self.test_dataset= test_dataset
@@ -24,9 +24,10 @@ class BaseEval():
         self.total_domains= total_domains
         self.domain_size= domain_size 
         self.training_list_size= training_list_size
+        self.save_path= save_path
         self.cuda= cuda
         self.phi= self.get_model()        
-        self.final_acc=[]                
+        self.metric_score={}                
     
     def get_model(self):
         
@@ -43,7 +44,12 @@ class BaseEval():
         print('Model Architecture: ', self.args.model_name)
         return phi
     
-    def get_eval_acc(self, case):
+    def load_model(self):
+        
+        self.phi.load_state_dict( torch.load(self.save_path) )
+        self.phi.eval()        
+    
+    def get_metric_eval(self):
         
         #Test Env Code
         test_acc= 0.0
@@ -54,7 +60,6 @@ class BaseEval():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                 d_e = torch.argmax(d_e, dim=1).numpy()       
-                #print(type(x_e), x_e.shape, y_e.shape, d_e.shape)        
 
                 #Forward Pass
                 out= self.phi(x_e)                
@@ -62,8 +67,7 @@ class BaseEval():
                 
                 test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
                 test_size+= y_e.shape[0]
-                #print('Test Loss Env : ',  loss_e)
 
-        print( case + ' Accuracy: ', 100*test_acc/test_size ) 
-        self.final_acc= 100*test_acc/test_size  
+        print(' Accuracy: ', 100*test_acc/test_size ) 
+        self.metric_score['Test Accuracy']= 100*test_acc/test_size  
         return 
