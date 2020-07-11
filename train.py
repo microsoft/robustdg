@@ -56,7 +56,7 @@ parser.add_argument('--ctr_abl', type=int, default=0, help='0: Randomization til
 parser.add_argument('--match_abl', type=int, default=0, help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, help='Number of iterations to repeat the training process')
 parser.add_argument('--n_runs_matchdg_erm', type=int, default=2)
-parser.add_argument('--ctr_model_name', type=str, default='resnet18', help='(For matchdg_ctr phase) Architecture of the model to be trained)
+parser.add_argument('--ctr_model_name', type=str, default='resnet18', help='(For matchdg_ctr phase) Architecture of the model to be trained')
 parser.add_argument('--ctr_match_layer', type=str, default='logit_match', help='(For matchdg_ctr phase) rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--ctr_match_flag', type=int, default=0, help='(For matchdg_ctr phase) 0: No Update to Match Strategy; 1: Updates to Match Strategy')
 parser.add_argument('--ctr_match_case', type=float, default=1.0, help='(For matchdg_ctr phase) 0: Random Match; 1: Perfect Match. 0.x" x% correct Match')

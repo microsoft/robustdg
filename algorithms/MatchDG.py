@@ -4,6 +4,7 @@ import argparse
 import copy
 import random
 import json
+import os
 
 import torch
 from torch.autograd import grad
@@ -16,6 +17,7 @@ import torch.utils.data as data_utils
 
 from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
+from utils.match_function import get_matched_pairs
 
 class MatchDG(BaseAlgo):
     def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
@@ -23,7 +25,8 @@ class MatchDG(BaseAlgo):
         super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
-        self.ctr_post_string= str(self.args.ctr_match_case) + '_' + str(self.args.ctr_match_interrupt) + '_' + str(self.args.ctr_match_flag) + '_' + str(self.run) + '_' + self.args.ctr_model_name
+        self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
+        self.ctr_load_post_string= str(self.args.ctr_match_case) + '_' + str(self.args.ctr_match_interrupt) + '_' + str(self.args.ctr_match_flag) + '_' + str(self.run) + '_' + self.args.ctr_model_name
         
     def train(self):
         # Initialise and call train functions depending on the method's phase
@@ -34,11 +37,15 @@ class MatchDG(BaseAlgo):
             
     def save_model_ctr_phase(self):
         # Store the weights of the model
-        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/Model_' + self.ctr_post_string + '.pth')
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.ctr_save_post_string + '.pth')
 
     def save_model_erm_phase(self, run):
+        
+        if not os.path.exists(self.base_res_dir + '/' + self.ctr_load_post_string):
+            os.makedirs(self.base_res_dir + '/' + self.ctr_load_post_string)         
+                
         # Store the weights of the model
-        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/' + self.ctr_post_string + '/Model_' + self.post_string + '_' + run_ + '.pth')
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/' + self.ctr_load_post_string + '/Model_' + self.post_string + '_' + str(run) + '.pth')
     
     def init_erm_phase(self):
             
@@ -53,18 +60,19 @@ class MatchDG(BaseAlgo):
                 ctr_phi= get_resnet('resnet18', self.args.out_classes, 'matchdg_ctr', self.args.img_c, self.args.pre_trained).to(self.cuda)
 
             # Load MatchDG CTR phase model from the saved weights
-            save_path= '../' + self.base_res_dir + '/Model_' + self.ctr_post_string + '.pth'
-            self.ctr_phi.load_state_dict( torch.load(save_path) )
-            self.ctr_phi.eval()
+            base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains) + '_test_' + str(self.args.test_domains)             
+            save_path= base_res_dir + '/Model_' + self.ctr_load_post_string + '.pth'
+            ctr_phi.load_state_dict( torch.load(save_path) )
+            ctr_phi.eval()
 
             #Inferred Match Case
             if self.args.match_case == -1:
                 inferred_match=1
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
             # x% percentage match initial strategy
             else:
                 inferred_match=0
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
                 
             return data_match_tensor, label_match_tensor
             
@@ -218,7 +226,7 @@ class MatchDG(BaseAlgo):
             
     def train_erm_phase(self):
         
-        for run_erm in self.args.n_runs_matchdg_erm:            
+        for run_erm in range(self.args.n_runs_matchdg_erm):            
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
@@ -251,7 +259,7 @@ class MatchDG(BaseAlgo):
                     #Forward Pass
                     out= self.phi(x_e)
                     erm_loss_extra= F.cross_entropy(out, y_e.long()).to(self.cuda)
-                    penalty_erm_extra += float(loss_extra)
+                    penalty_erm_extra += float(erm_loss_extra)
 
                     wasserstein_loss=torch.tensor(0.0).to(self.cuda)
                     erm_loss= torch.tensor(0.0).to(self.cuda) 
@@ -265,7 +273,7 @@ class MatchDG(BaseAlgo):
             #             data_match= data_match_tensor[idx].to(self.cuda)
                         data_match= data_match_tensor_split[batch_idx].to(self.cuda)
                         data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
-                        feat_match= phi( data_match )
+                        feat_match= self.phi( data_match )
 
             #             label_match= label_match_tensor[idx].to(self.cuda)           
                         label_match= label_match_tensor_split[batch_idx].to(self.cuda)
@@ -276,14 +284,14 @@ class MatchDG(BaseAlgo):
 
                         # Creating tensor of shape ( domain size, total domains, feat size )
                         if len(feat_match.shape) == 4:
-                            feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
+                            feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
                         else:
-                             feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1] )
+                             feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
 
-                        label_match= label_match.view( curr_batch_size, len(train_domains) )
+                        label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
                 #             print(feat_match.shape)
-                        data_match= data_match.view( curr_batch_size, len(train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                         #Positive Match Loss
                         pos_match_counter=0
@@ -292,11 +300,11 @@ class MatchDG(BaseAlgo):
             #                     continue
                             for d_j in range(feat_match.shape[1]):
                                 if d_j > d_i:                        
-                                    if args.pos_metric == 'l2':
+                                    if self.args.pos_metric == 'l2':
                                         wasserstein_loss+= torch.sum( torch.sum( (feat_match[:, d_i, :] - feat_match[:, d_j, :])**2, dim=1 ) ) 
-                                    elif args.pos_metric == 'l1':
+                                    elif self.args.pos_metric == 'l1':
                                         wasserstein_loss+= torch.sum( torch.sum( torch.abs(feat_match[:, d_i, :] - feat_match[:, d_j, :]), dim=1 ) )        
-                                    elif args.pos_metric == 'cos':
+                                    elif self.args.pos_metric == 'cos':
                                         wasserstein_loss+= torch.sum( cosine_similarity( feat_match[:, d_i, :], feat_match[:, d_j, :] ) )
 
                                     pos_match_counter += feat_match.shape[0]
@@ -305,9 +313,9 @@ class MatchDG(BaseAlgo):
                         penalty_ws+= float(wasserstein_loss)                            
 
 
-                        loss_e += ( self.args.penalty_ws_erm*( epoch- self.args.penalty_s )/(args.epochs_erm - self.args.penalty_s) )*wasserstein_loss
-                        loss_e += self.args.penalty_erm*erm_loss
-                        loss_e += self.args.penlaty_erm*erm_loss_extra
+                        loss_e += ( self.args.penalty_ws*( epoch- self.args.penalty_s )/(self.args.epochs - self.args.penalty_s) )*wasserstein_loss
+                        loss_e += erm_loss
+                        loss_e += erm_loss_extra
 
                     loss_e.backward(retain_graph=False)
                     self.opt.step()
@@ -324,6 +332,6 @@ class MatchDG(BaseAlgo):
                 print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
                 print('Train Acc Env : ', 100*train_acc/train_size )
                 print('Done Training for epoch: ', epoch)        
-                
-        # Save the model's weights post training
-        self.save_model_erm_phase(run_erm)
+                    
+            # Save the model's weights post training
+            self.save_model_erm_phase(run_erm)

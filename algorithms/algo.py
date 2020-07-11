@@ -55,7 +55,7 @@ class BaseAlgo():
     
     def save_model(self):
         # Store the weights of the model
-        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/Model_' + self.post_string + '.pth')
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.post_string + '.pth')
     
     def get_opt(self):
         if self.args.opt == 'sgd':
@@ -76,7 +76,6 @@ class BaseAlgo():
             inferred_match=1
             if self.args.match_flag:
                 data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, inferred_match )
-                match_counter+=1
             else:
                 temp_1, temp_2, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, inferred_match )                
         else:
