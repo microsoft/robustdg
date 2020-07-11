@@ -12,8 +12,8 @@ privacy attacks like membership inference and domain knowledge-based attacks lik
 
 To advance research in building robust and generalizable models, we are
 releasing a toolkit for building and evaluating ML models, *RobustDG*. RobustDG contains implementations of domain
-generalization algorithms and includes variety of evaluation benchmarks based
-on out-of-distribution accuracy, robustness to privacy and adversarial attacks. 
+generalization algorithms and includes evaluation benchmarks based
+on out-of-distribution accuracy and robustness to membership privacy attacks. We will be adding evaluation for adversarial attacks and more privacy attacks soon. 
 
 It is easily extendable. Add your own DG algorithms and evaluate them on different benchmarks.
 
@@ -35,7 +35,12 @@ A quick introduction on how to use our repository can be accessed here in the `G
 
 If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/reproducing_results_matchdg_paper.ipynb>`_. 
 
+Roadmap
+-------
 
+* Support for more domain generalization algorithms like CSD and IRM. If you are an author of a DG algorithm and would like to contribute, please raise a  pull request `here <https://github.com/microsoft/robustdg/pulls>`_ or get in touch.
+
+* More evaluation metrics based on adversarial attacks, privacy attacks like model inversion. If you'd like to see an evaluation metric implemented, please raise an issue `here <https://github.com/microsoft/robustdg/issues>`_.
 
 Contributing
 --------------
