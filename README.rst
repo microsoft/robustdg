@@ -2,7 +2,7 @@ Toolkit for Building Robust ML models that generalize to unseen domains (RobustD
 ==================================================================================
 `Divyat Mahajan <https://divyat09.github.io/>`_, 
 `Shruti Tople <https://www.microsoft.com/en-us/research/people/shtople/>`_, 
-`Amit Sharma <http://www.amitsharma.in`_
+`Amit Sharma <http://www.amitsharma.in>`_
 
 `ICML 2020 Paper <https://arxiv.org/abs/1909.12732>`_ | `MatchDG paper <https://arxiv.org/abs/2006.07500>`_
 
@@ -31,9 +31,9 @@ train ---<more params>
 Demo
 ----
 
-A quick introduction on how to use our repository can be accessed here in the `Getting Started notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebook/robustdg_getting_started.ipynb`_.
+A quick introduction on how to use our repository can be accessed here in the `Getting Started notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebook/robustdg_getting_started.ipynb>`_.
 
-If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <>`_. 
+If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/reproducing_results_matchdg_paper.ipynb>`_. 
 
 
 
