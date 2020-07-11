@@ -28,7 +28,7 @@ from utils.match_function import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_name', type=str, default='rot_mnist', help='Datasets: rot_mnist; fashion_mnist; pacs')
 parser.add_argument('--method_name', type=str, default='erm_match', help=' Training Algorithm: erm_match; matchdg_ctr; matchdg_erm')
-parser.add_argument('--model_name', type=str, default='resnet18')
+parser.add_argument('--model_name', type=str, default='resnet18', help='Architecture of the model to be trained')
 parser.add_argument('--train_domains', type=int, default=["15", "30", "45", "60", "75"], help='List of train domains')
 parser.add_argument('--test_domains', type=int, default=["0", "90"], help='List of test domains')
 parser.add_argument('--out_classes', type=int, default=10, help='Total number of classes in the dataset')
@@ -42,7 +42,7 @@ parser.add_argument('--pre_trained',type=int, default=0, help='0: No Pretrained 
 parser.add_argument('--perfect_match', type=int, default=1, help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', help='Optimizer Choice: sgd; adam') 
 parser.add_argument('--lr', type=float, default=0.01, help='Learning rate for training the model')
-parser.add_argument('--batch_size', type=int, default=64, help='Batch size foe training the model')
+parser.add_argument('--batch_size', type=int, default=16, help='Batch size foe training the model')
 parser.add_argument('--epochs', type=int, default=15, help='Total number of epochs for training the model')
 parser.add_argument('--penalty_w', type=float, default=0.0, help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_s', type=int, default=-1, help='Epoch threshold over which Matching Loss to be optimised')
@@ -56,6 +56,11 @@ parser.add_argument('--ctr_abl', type=int, default=0, help='0: Randomization til
 parser.add_argument('--match_abl', type=int, default=0, help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, help='Number of iterations to repeat the training process')
 parser.add_argument('--n_runs_matchdg_erm', type=int, default=2)
+parser.add_argument('--ctr_model_name', type=str, default='resnet18', help='(For matchdg_ctr phase) Architecture of the model to be trained)
+parser.add_argument('--ctr_match_layer', type=str, default='logit_match', help='(For matchdg_ctr phase) rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
+parser.add_argument('--ctr_match_flag', type=int, default=0, help='(For matchdg_ctr phase) 0: No Update to Match Strategy; 1: Updates to Match Strategy')
+parser.add_argument('--ctr_match_case', type=float, default=1.0, help='(For matchdg_ctr phase) 0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
+parser.add_argument('--ctr_match_interrupt', type=int, default=5, help='(For matchdg_ctr phase) Number of epochs before inferring the match strategy')
 parser.add_argument('--mnist_seed', type=int, default=0, help='Change it between 0-6 for different subsets of Mnist and Fashion Mnist dataset')
 parser.add_argument('--retain', type=float, default=0, help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--cuda_device', type=int, default=0, help='Select the cuda device by id among the avaliable devices' )
@@ -85,7 +90,7 @@ for run in range(args.n_runs):
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
-
+            
     #DataLoader        
     train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
@@ -93,25 +98,19 @@ for run in range(args.n_runs):
     #Import the module as per the curernt training method
     if args.method_name == 'erm_match':
         from algorithms.ERM_Match import ErmMatch    
-        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda)
+        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
     elif args.method_name == 'matchdg_ctr':
         from algorithms.MatchDG import MatchDG
         ctr_phase=1
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase)     
+        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)     
     elif args.method_name == 'matchdg_erm':
         from algorithms.MatchDG import MatchDG
         ctr_phase=0
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase)
+        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)
         
-    #Train the method
+    #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()
-    
-    #Path to save results        
-    post_string= str(args.penalty_ws) + '_' + str(args.penalty_diff_ctr) + '_' + str(args.rep_dim) + '_' + str(args.match_case) + '_' + str(args.match_interrupt) + '_' + str(args.match_flag) + '_' + str(run) + '_' + args.pos_metric + '_' + args.model_name
-                                                        
-    # Store the weights of the model
-    torch.save(train_method.phi.state_dict(), base_res_dir + '/Model_' + post_string + '.pth')
-        
+            
     # Final Report Accuacy
     if args.method_name != 'matchdg_ctr':
         final_acc= train_method.final_acc

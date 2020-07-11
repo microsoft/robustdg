@@ -33,5 +33,5 @@ def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
                                 stride=(2, 2), 
                                 padding=(3, 3), 
                             bias=False)
-            
+    print(model)        
     return model

@@ -17,14 +17,19 @@ import torch.utils.data as data_utils
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
         self.args= args
         self.train_dataset= train_dataset
         self.train_domains= train_domains
         self.total_domains= total_domains
         self.domain_size= domain_size 
         self.training_list_size= training_list_size
+        self.base_res_dir= base_res_dir
+        self.run= run
         self.cuda= cuda
+        
+        self.post_string= str(self.args.penalty_ws) + '_' + str(self.args.penalty_diff_ctr) + '_' + str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.pos_metric + '_' + self.args.model_name
+        
         self.phi= self.get_model()
         self.opt= self.get_opt()
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.opt, step_size=25)    
@@ -45,13 +50,12 @@ class BaseAlgo():
             from models.ResNet import get_resnet
             phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, self.args.img_c, self.args.pre_trained).to(self.cuda)
         
-#         else:
-#             rep_dim=512
-#             phi= get_resnet('resnet18', self.args.rep_dim, self.args.erm_base, num_ch, pre_trained).to(cuda)
-                    
         print('Model Architecture: ', self.args.model_name)
         return phi
     
+    def save_model(self):
+        # Store the weights of the model
+        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/Model_' + self.post_string + '.pth')
     
     def get_opt(self):
         if self.args.opt == 'sgd':

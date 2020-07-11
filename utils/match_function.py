@@ -148,7 +148,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
             for batch_feat in base_feat_split:
                 
                 if inferred_match:
-                    # Need to compute over batches of base_fear due ot CUDA Memory out errors
+                    # Need to compute over batches of base_fear due to CUDA Memory out errors
                     # Else no ned for loop over base_feat_split; could have simply computed feat_x - base_feat
                     ws_dist= torch.sum( (feat_x - batch_feat)**2, dim=2)
                     match_idx= torch.argmin( ws_dist, dim=1 )

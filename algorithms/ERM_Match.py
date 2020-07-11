@@ -18,9 +18,9 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
 class ErmMatch(BaseAlgo):
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda):
         
-        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda) 
+        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
               
     def train(self):
         
@@ -73,13 +73,7 @@ class ErmMatch(BaseAlgo):
                 
                     erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                     penalty_erm+= float(erm_loss)                
-            
-                    if self.args.method_name=="rep_match":
-                        temp_out= self.phi.predict_conv_net( data_match )
-                        temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
-                        feat_match= self.phi.predict_fc_net(temp_out)
-                        del temp_out
-            
+                        
                     # Creating tensor of shape ( domain size, total domains, feat size )
                     if len(feat_match.shape) == 4:
                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
@@ -132,3 +126,6 @@ class ErmMatch(BaseAlgo):
             print('Train Loss Basic : ',  penalty_erm, penalty_ws )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
+
+        # Save the model's weights post training
+        self.save_model()

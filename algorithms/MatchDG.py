@@ -18,19 +18,56 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
 class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda, ctr_phase=1):
+    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
         
-        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, cuda) 
+        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
-
+        self.ctr_post_string= str(self.args.ctr_match_case) + '_' + str(self.args.ctr_match_interrupt) + '_' + str(self.args.ctr_match_flag) + '_' + str(self.run) + '_' + self.args.ctr_model_name
+        
     def train(self):
         # Initialise and call train functions depending on the method's phase
         if self.ctr_phase:
             self.train_ctr_phase()
         else:
             self.train_erm_phase()
-        
+            
+    def save_model_ctr_phase(self):
+        # Store the weights of the model
+        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/Model_' + self.ctr_post_string + '.pth')
+
+    def save_model_erm_phase(self, run):
+        # Store the weights of the model
+        torch.save(self.phi.state_dict(), '../' + self.base_res_dir + '/' + self.ctr_post_string + '/Model_' + self.post_string + '_' + run_ + '.pth')
+    
+    def init_erm_phase(self):
+            
+            if self.args.ctr_model_name == 'lenet':
+                from models.LeNet import LeNet5
+                ctr_phi= LeNet5().to(self.cuda)
+            if self.args.ctr_model_name == 'alexnet':
+                from models.AlexNet import alexnet
+                ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
+            if self.args.ctr_model_name == 'resnet18':
+                from models.ResNet import get_resnet
+                ctr_phi= get_resnet('resnet18', self.args.out_classes, 'matchdg_ctr', self.args.img_c, self.args.pre_trained).to(self.cuda)
+
+            # Load MatchDG CTR phase model from the saved weights
+            save_path= '../' + self.base_res_dir + '/Model_' + self.ctr_post_string + '.pth'
+            self.ctr_phi.load_state_dict( torch.load(save_path) )
+            self.ctr_phi.eval()
+
+            #Inferred Match Case
+            if self.args.match_case == -1:
+                inferred_match=1
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.ctr_phi, self.args.match_case, inferred_match )
+            # x% percentage match initial strategy
+            else:
+                inferred_match=0
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.ctr_phi, self.args.match_case, inferred_match )
+                
+            return data_match_tensor, label_match_tensor
+            
     def train_ctr_phase(self):
         
         for epoch in range(self.args.epochs):    
@@ -176,126 +213,85 @@ class MatchDG(BaseAlgo):
             print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
             print('Done Training for epoch: ', epoch)
         
+        # Save the model's weights post training
+        self.save_model_ctr_phase()
             
     def train_erm_phase(self):
         
-        for run_erm in range(self.args.n_runs):
-
-            # Load RepNet from save weights
-            sub_dir='/CTR'
-            save_path= base_res_dir + self.args.method_name + sub_dir + '/Model_' + post_string + '.pth'   
-            self.phi.load_state_dict( torch.load(save_path) )
-            self.phi.eval()
-            
-
-            #Inferred Match Case
-            if args.match_case_erm == -1:
-                inferred_match=1
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
-
-            else:
-                inferred_match=0
-                # x% percentage match initial strategy
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( args, train_dataset, domain_size, total_domains, training_list_size, phi, args.match_case_erm, inferred_match )                
-                    
-            # Model and parameters
-            if args.retain:
-                phi_erm= ClfNet( phi, rep_dim, num_classes ).to(cuda)
-            else:
-                if args.dataset in ['rot_mnist', 'color_mnist', 'fashion_mnist']:
-                    feature_dim= 28*28
-                    num_ch=1
-                    pre_trained=0
-                    if args.model_name == 'lenet':
-                        phi_erm= LeNet5().to(cuda)
-                    else:
-                        phi_erm= get_resnet('resnet18', num_classes, 1, num_ch, pre_trained).to(cuda)
-                    
-                elif args.dataset in ['pacs', 'vlcs']:
-                    if args.model_name == 'alexnet':        
-                        phi_erm= alexnet(num_classes, pre_trained, 1 ).to(cuda)
-                    elif args.model_name == 'resnet18':
-                        num_ch=3
-                        phi_erm= get_resnet('resnet18', num_classes, 1, num_ch, pre_trained).to(cuda)             
-        
-        for epoch in range(self.args.epochs):    
-            
-            penalty_erm=0
-            penalty_erm_extra=0
-            penalty_ws=0
-            train_acc= 0.0
-            train_size=0
-    
-            perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
-    
-            #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
-        #         print('Batch Idx: ', batch_idx)
-
-                self.opt.zero_grad()
-                loss_e= torch.tensor(0.0).to(self.cuda)
-
-                x_e= x_e.to(self.cuda)
-                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                d_e= torch.argmax(d_e, dim=1).numpy()
+        for run_erm in self.args.n_runs_matchdg_erm:            
+            for epoch in range(self.args.epochs):    
                 
-                #Forward Pass
-                out= self.phi(x_e)
-                erm_loss_extra= erm_loss(out, y_e)    
-                penalty_erm_extra += float(loss_extra)
+                if epoch ==0:
+                    data_match_tensor, label_match_tensor= self.init_erm_phase()            
+                elif epoch % self.args.match_interrupt == 0 and self.args.match_flag:
+                    data_match_tensor, label_match_tensor= self.get_match_function(epoch)
 
-                wasserstein_loss=torch.tensor(0.0).to(self.cuda)
-                erm_loss= torch.tensor(0.0).to(self.cuda) 
-                if epoch > self.args.penalty_s:
-                    # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
-                    total_batch_size= len(data_match_tensor_split)
-                    if batch_idx >= total_batch_size:
-                        break
-                    curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
+                penalty_erm=0
+                penalty_erm_extra=0
+                penalty_ws=0
+                train_acc= 0.0
+                train_size=0
 
-        #             data_match= data_match_tensor[idx].to(self.cuda)
-                    data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
-                    feat_match= phi( data_match )
-            
-        #             label_match= label_match_tensor[idx].to(self.cuda)           
-                    label_match= label_match_tensor_split[batch_idx].to(self.cuda)
-                    label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
-        
-                    erm_loss+= erm_loss(feat_match, label_match)
-                    penalty_erm+= float(erm_loss)                
-            
-                    if self.args.method_name=="rep_match":
-                        temp_out= phi.predict_conv_net( data_match )
-                        temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
-                        feat_match= phi.predict_fc_net(temp_out)
-                        del temp_out
-            
-                    # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1] )
+                perm = torch.randperm(data_match_tensor.size(0))            
+                data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
+                label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
+                print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
 
-                    label_match= label_match.view( curr_batch_size, len(train_domains) )
+                #Batch iteration over single epoch
+                for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+            #         print('Batch Idx: ', batch_idx)
 
-            #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                    self.opt.zero_grad()
+                    loss_e= torch.tensor(0.0).to(self.cuda)
 
-                    #Positive Match Loss
-                    pos_match_counter=0
-                    for d_i in range(feat_match.shape[1]):
-        #                 if d_i != base_domain_idx:
-        #                     continue
-                        for d_j in range(feat_match.shape[1]):
-                            if d_j > d_i:                        
+                    x_e= x_e.to(self.cuda)
+                    y_e= torch.argmax(y_e, dim=1).to(self.cuda)
+                    d_e= torch.argmax(d_e, dim=1).numpy()
 
-                                if args.erm_phase:
-                                    wasserstein_loss+= torch.sum( torch.sum( (feat_match[:, d_i, :] - feat_match[:, d_j, :])**2, dim=1 ) ) 
-                                else:
+                    #Forward Pass
+                    out= self.phi(x_e)
+                    erm_loss_extra= F.cross_entropy(out, y_e.long()).to(self.cuda)
+                    penalty_erm_extra += float(loss_extra)
+
+                    wasserstein_loss=torch.tensor(0.0).to(self.cuda)
+                    erm_loss= torch.tensor(0.0).to(self.cuda) 
+                    if epoch > self.args.penalty_s:
+                        # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
+                        total_batch_size= len(data_match_tensor_split)
+                        if batch_idx >= total_batch_size:
+                            break
+                        curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
+
+            #             data_match= data_match_tensor[idx].to(self.cuda)
+                        data_match= data_match_tensor_split[batch_idx].to(self.cuda)
+                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                        feat_match= phi( data_match )
+
+            #             label_match= label_match_tensor[idx].to(self.cuda)           
+                        label_match= label_match_tensor_split[batch_idx].to(self.cuda)
+                        label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+
+                        erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
+                        penalty_erm+= float(erm_loss)                
+
+                        # Creating tensor of shape ( domain size, total domains, feat size )
+                        if len(feat_match.shape) == 4:
+                            feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
+                        else:
+                             feat_match= feat_match.view( curr_batch_size, len(train_domains), feat_match.shape[1] )
+
+                        label_match= label_match.view( curr_batch_size, len(train_domains) )
+
+                #             print(feat_match.shape)
+                        data_match= data_match.view( curr_batch_size, len(train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+
+                        #Positive Match Loss
+                        pos_match_counter=0
+                        for d_i in range(feat_match.shape[1]):
+            #                 if d_i != base_domain_idx:
+            #                     continue
+                            for d_j in range(feat_match.shape[1]):
+                                if d_j > d_i:                        
                                     if args.pos_metric == 'l2':
                                         wasserstein_loss+= torch.sum( torch.sum( (feat_match[:, d_i, :] - feat_match[:, d_j, :])**2, dim=1 ) ) 
                                     elif args.pos_metric == 'l1':
@@ -303,28 +299,31 @@ class MatchDG(BaseAlgo):
                                     elif args.pos_metric == 'cos':
                                         wasserstein_loss+= torch.sum( cosine_similarity( feat_match[:, d_i, :], feat_match[:, d_j, :] ) )
 
-                                pos_match_counter += feat_match.shape[0]
+                                    pos_match_counter += feat_match.shape[0]
 
-                    wasserstein_loss = wasserstein_loss / pos_match_counter
-                    penalty_ws+= float(wasserstein_loss)                            
+                        wasserstein_loss = wasserstein_loss / pos_match_counter
+                        penalty_ws+= float(wasserstein_loss)                            
 
-                    
-                    loss_e += ( self.args.penalty_ws_erm*( epoch- self.args.penalty_s )/(args.epochs_erm - self.args.penalty_s) )*wasserstein_loss
-                    loss_e += self.args.penalty_erm*erm_loss
-                    loss_e += self.args.penlaty_erm*erm_loss_extra
-                        
-                loss_e.backward(retain_graph=False)
-                self.opt.step()
+
+                        loss_e += ( self.args.penalty_ws_erm*( epoch- self.args.penalty_s )/(args.epochs_erm - self.args.penalty_s) )*wasserstein_loss
+                        loss_e += self.args.penalty_erm*erm_loss
+                        loss_e += self.args.penlaty_erm*erm_loss_extra
+
+                    loss_e.backward(retain_graph=False)
+                    self.opt.step()
+
+                    del erm_loss_extra
+                    del erm_loss
+                    del wasserstein_loss 
+                    del loss_e
+                    torch.cuda.empty_cache()
+
+                    train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
+                    train_size+= y_e.shape[0]
+
+                print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
+                print('Train Acc Env : ', 100*train_acc/train_size )
+                print('Done Training for epoch: ', epoch)        
                 
-                del erm_loss_extra
-                del erm_loss
-                del wasserstein_loss 
-                del loss_e
-                torch.cuda.empty_cache()
-        
-                train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                train_size+= y_e.shape[0]
-                
-            print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
-            print('Train Acc Env : ', 100*train_acc/train_size )
-            print('Done Training for epoch: ', epoch)        
+        # Save the model's weights post training
+        self.save_model_erm_phase(run_erm)
