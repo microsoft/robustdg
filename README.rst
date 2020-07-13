@@ -22,7 +22,8 @@ Installation
 ------------
 To use the command-line interface of RobustDG, clone this repo and add the folder to your system's PATH (or alternatively, run the commands from the RobustDG root directory). The following commands would train and evalute the MatchDG method on the Rotated MNIST dataset.
 
-<code> python data_gen.py resnet18 (Run from the data/rot_mnist/ directory) </code>
+```
+python data_gen.py resnet18 (Run from the data/rot_mnist/ directory)
 
 python train.py --dataset rot_mnist --method_name matchdg_ctr --batch_size 128  --match_case 0.01 --match_flag 1 
 
