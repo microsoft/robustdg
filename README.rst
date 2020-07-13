@@ -24,8 +24,11 @@ To use the command-line interface of RobustDG, clone this repo and add the folde
 
 ```
 python data_gen.py resnet18 (Run from the data/rot_mnist/ directory)
+
 python train.py --dataset rot_mnist --method_name matchdg_ctr --batch_size 128  --match_case 0.01 --match_flag 1 
+
 python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 
+
 python eval.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --test_metric acc
 ```
 
