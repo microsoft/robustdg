@@ -1,9 +1,11 @@
 import sys
 import numpy as np
+import pandas as pd
 import argparse
 import copy
 import random
 import json
+import pickle
 
 import torch
 from torch.autograd import grad
@@ -90,6 +92,46 @@ class BaseEval():
                 
         self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
         self.phi.eval()        
+    
+    def get_logits(self):
+
+        #Train Environment Logits
+        final_out=[]
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+            #Random Shuffling along the batch axis
+            x_e= x_e[ torch.randperm(x_e.size()[0]) ]
+
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)
+                if self.args.mia_logit:
+                    out= self.phi(x_e)
+                else:
+                    out= F.softmax(self.phi(x_e), dim=1)
+                final_out.append(out)            
+            
+        final_out= torch.cat(final_out)
+        print('Train Logits: ', final_out.shape)
+        pickle.dump([out], open( self.save_path + "_train.pkl", 'wb'))
+
+        #Test Environment Logits
+        final_out=[]
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
+            #Random Shuffling along the batch axis
+            x_e= x_e[ torch.randperm(x_e.size()[0]) ]
+
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)
+                if self.args.mia_logit:
+                    out= self.phi(x_e)
+                else:
+                    out= F.softmax(self.phi(x_e), dim=1)
+                final_out.append(out)
+            
+        final_out= torch.cat(final_out)
+        print('Test Logits: ', final_out.shape)
+        pickle.dump([out], open( self.save_path + "_test.pkl", 'wb'))
+    
+        return
     
     def get_metric_eval(self):
         

@@ -6,6 +6,7 @@ import argparse
 import copy
 import random
 import json
+import pickle
 
 #Pytorch
 import torch
@@ -89,13 +90,22 @@ parser.add_argument('--ctr_match_case', type=float, default=0.01,
                     help='(For matchdg_ctr phase) 0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
 parser.add_argument('--ctr_match_interrupt', type=int, default=5, 
                     help='(For matchdg_ctr phase) Number of epochs before inferring the match strategy')
-parser.add_argument('--test_metric', type=str, default='acc', 
-                    help='Evaluation Metrics: acc; match_score, t_sne')
-parser.add_argument('--top_k', type=int, default=10, 
-                    help='Top K matches to consider for the match score evaluation metric')
 parser.add_argument('--mnist_seed', type=int, default=0, 
                     help='Change it between 0-6 for different subsets of Mnist and Fashion Mnist dataset')
-parser.add_argument('--retain', type=float, default=0, help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--retain', type=float, default=0, 
+                    help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--test_metric', type=str, default='acc', 
+                    help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--top_k', type=int, default=10, 
+                    help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--mia_batch_size', default=100, type=int, 
+                    help='batch size')
+parser.add_argument('--mia_dnn_steps', default=5000, type=int,
+                    help='number of training steps')
+parser.add_argument('--mia_sample_size', default=1000, type=int,
+                    help='number of samples from train/test dataset logits')
+parser.add_argument('--mia_logit', default=0, type=int,
+                    help='0: No Softmax applied to logits; 1: Softmax applied to logits')
 parser.add_argument('--ctr_abl', type=int, default=0, 
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--match_abl', type=int, default=0, 
@@ -172,6 +182,17 @@ for run in range(args.n_runs):
                               training_list_size, base_res_dir,
                               run, cuda
                              )        
+        
+    elif args.test_metric == 'mia':
+        from evaluation.privacy_attack import PrivacyAttack
+        test_method= PrivacyAttack(
+                              args, train_dataset,
+                              test_dataset, train_domains,
+                              total_domains, domain_size,
+                              training_list_size, base_res_dir,
+                              run, cuda
+                             )        
+        
     #Testing Phase
     test_method.get_metric_eval()
     final_metric_score.append( test_method.metric_score )
