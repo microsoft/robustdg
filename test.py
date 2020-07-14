@@ -17,6 +17,9 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
 
+#Sklearn
+from sklearn.manifold import TSNE
+
 #robustdg
 from utils.helper import *
 from utils.match_function import *
@@ -73,10 +76,6 @@ parser.add_argument('--match_case', type=float, default=1.0,
                     help='0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
 parser.add_argument('--match_interrupt', type=int, default=5, 
                     help='Number of epochs before inferring the match strategy')
-parser.add_argument('--ctr_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
-parser.add_argument('--match_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
 parser.add_argument('--n_runs_matchdg_erm', type=int, default=2)
@@ -90,10 +89,17 @@ parser.add_argument('--ctr_match_case', type=float, default=0.01,
                     help='(For matchdg_ctr phase) 0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
 parser.add_argument('--ctr_match_interrupt', type=int, default=5, 
                     help='(For matchdg_ctr phase) Number of epochs before inferring the match strategy')
+parser.add_argument('--test_metric', type=str, default='acc', 
+                    help='Evaluation Metrics: acc; match_score, t_sne')
+parser.add_argument('--top_k', type=int, default=10, 
+                    help='Top K matches to consider for the match score evaluation metric')
 parser.add_argument('--mnist_seed', type=int, default=0, 
                     help='Change it between 0-6 for different subsets of Mnist and Fashion Mnist dataset')
-parser.add_argument('--retain', type=float, default=0, 
-                    help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--retain', type=float, default=0, help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--ctr_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
+parser.add_argument('--match_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--cuda_device', type=int, default=0, 
                     help='Select the cuda device by id among the avaliable devices' )
 args = parser.parse_args()
@@ -110,11 +116,20 @@ train_domains= args.train_domains
 test_domains= args.test_domains
 
 #Initialize
-final_report_accuracy=[]
+final_metric_score=[]
 base_res_dir="results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
+#Checks
+if args.method_name == 'matchdg_ctr' and args.test_metric == 'acc':
+    raise ValueError('Match DG during the contrastive learning phase cannot be evaluted for test accuracy metric')
+    sys.exit()
+
+if args.perfect_match == 0 and args.test_metric == 'match_score':
+    raise ValueError('Cannot evalute match function metrics when perfect match is not known')
+    sys.exit()
+    
 #Execute the method for multiple runs ( total args.n_runs )
 for run in range(args.n_runs):
     
@@ -122,34 +137,55 @@ for run in range(args.n_runs):
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
-            
+    
     #DataLoader        
     train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
-    #Import the module as per the curernt training method
-    if args.method_name == 'erm_match':
-        from algorithms.ERM_Match import ErmMatch    
-        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
-    elif args.method_name == 'matchdg_ctr':
-        from algorithms.MatchDG import MatchDG
-        ctr_phase=1
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)     
-    elif args.method_name == 'matchdg_erm':
-        from algorithms.MatchDG import MatchDG
-        ctr_phase=0
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)
+    #Import the testing module
+    if args.test_metric == 'acc':
+        from evaluation.base_eval import BaseEval
+        test_method= BaseEval(
+                              args, train_dataset,
+                              test_dataset, train_domains,
+                              total_domains, domain_size,
+                              training_list_size, base_res_dir,
+                              run, cuda
+                             )
         
-    #Train the method: It will save the model's weights post training and evalute it on test accuracy
-    train_method.train()
-            
-    # Final Report Accuacy
-    if args.method_name != 'matchdg_ctr':
-        final_acc= train_method.final_acc
-        final_report_accuracy.append( final_acc )
-                   
-if args.method_name != 'matchdg_ctr':
+    elif args.test_metric == 'match_score':
+        from evaluation.match_eval import MatchEval
+        test_method= MatchEval(
+                               args, train_dataset, 
+                               test_dataset, train_domains, 
+                               total_domains, domain_size, 
+                               training_list_size, base_res_dir, 
+                               run, args.top_k, cuda
+                              )   
+
+    elif args.test_metric == 't_sne':
+        from evaluation.t_sne import TSNE
+        test_method= TSNE(
+                              args, train_dataset,
+                              test_dataset, train_domains,
+                              total_domains, domain_size,
+                              training_list_size, base_res_dir,
+                              run, cuda
+                             )        
+    #Testing Phase
+    test_method.get_metric_eval()
+    final_metric_score.append( test_method.metric_score )
+    
+
+if args.test_metric not in ['t_sne']:
     print('\n')
-    print('Done for the Model..')
-    print('Final Test Accuracy', np.mean(final_report_accuracy), np.std(final_report_accuracy) )
+    print('Done for Model..')
+
+    keys=final_metric_score[0].keys()
+    for key in keys:
+        curr_metric_score=[]
+        for item in final_metric_score:
+            curr_metric_score.append( item[key] )
+        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score))
+
     print('\n')

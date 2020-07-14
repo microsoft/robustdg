@@ -19,8 +19,8 @@ from utils.match_function import get_matched_pairs, perfect_match_score
 
 class MatchEval(BaseEval):
     
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, top_k, cuda):
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, cuda)
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, top_k, cuda):
+        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
         
         self.top_k= top_k
         

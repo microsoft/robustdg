@@ -14,9 +14,9 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
 
-
 class BaseEval():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, save_path, cuda):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+        
         self.args= args
         self.train_dataset= train_dataset
         self.test_dataset= test_dataset
@@ -24,8 +24,50 @@ class BaseEval():
         self.total_domains= total_domains
         self.domain_size= domain_size 
         self.training_list_size= training_list_size
-        self.save_path= save_path
+        self.base_res_dir= base_res_dir
+        self.run= run
         self.cuda= cuda
+        
+        # Model save paths depending on the method: ERM_Match, MatchDG_CTR, MatchDG_ERM
+        self.post_string=   (
+                            str(self.args.penalty_ws) + '_' 
+                            + str(self.args.penalty_diff_ctr) + '_'
+                            + str(self.args.match_case) + '_' 
+                            + str(self.args.match_interrupt) + '_' 
+                            + str(self.args.match_flag) + '_' 
+                            + str(self.run) + '_' 
+                            + self.args.pos_metric + '_' + 
+                            self.args.model_name
+                            )
+        
+        self.ctr_save_post_string=  (
+                                    str(self.args.match_case) + '_' 
+                                    + str(self.args.match_interrupt) + '_' 
+                                    + str(self.args.match_flag) + '_' 
+                                    + str(self.run) + '_' 
+                                    + self.args.model_name
+                                    )
+        
+        self.ctr_load_post_string=  (
+                                    str(self.args.ctr_match_case) + '_' 
+                                    + str(self.args.ctr_match_interrupt) + '_' 
+                                    + str(self.args.ctr_match_flag) + '_' 
+                                    + str(self.run) + '_' 
+                                    + self.args.ctr_model_name
+                                    )
+        
+        if self.args.method_name == 'erm_match':
+            self.save_path= self.base_res_dir + '/Model_' + self.post_string
+                
+        elif self.args.method_name == 'matchdg_ctr':
+            self.save_path= self.base_res_dir + '/Model_' + self.ctr_save_post_string 
+            
+        elif self.args.method_name == 'matchdg_erm':
+            self.save_path=  (
+                        self.base_res_dir + '/' + self.ctr_load_post_string 
+                        + '/Model_' + self.post_string + '_' + str(run)
+                        )
+                
         self.phi= self.get_model()        
         self.metric_score={}                
     
@@ -45,8 +87,8 @@ class BaseEval():
         return phi
     
     def load_model(self):
-        
-        self.phi.load_state_dict( torch.load(self.save_path) )
+                
+        self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
         self.phi.eval()        
     
     def get_metric_eval(self):
@@ -71,3 +113,5 @@ class BaseEval():
         print(' Accuracy: ', 100*test_acc/test_size ) 
         self.metric_score['Test Accuracy']= 100*test_acc/test_size  
         return 
+
+    

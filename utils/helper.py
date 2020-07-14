@@ -1,6 +1,9 @@
 import torch
 import torch.utils.data as data_utils
 
+#Sklearn
+from sklearn.manifold import TSNE
+
 def t_sne_plot(X):
     X= X.detach().cpu().numpy()
     X= TSNE(n_components=2).fit_transform(X)
