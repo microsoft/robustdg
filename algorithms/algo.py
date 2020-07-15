@@ -17,9 +17,10 @@ import torch.utils.data as data_utils
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
         self.args= args
         self.train_dataset= train_dataset
+        self.test_dataset= test_dataset
         self.train_domains= train_domains
         self.total_domains= total_domains
         self.domain_size= domain_size 
@@ -83,3 +84,25 @@ class BaseAlgo():
             data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, inferred_match )
         
         return data_match_tensor, label_match_tensor
+
+    def get_test_accuracy(self):
+        
+        #Test Env Code
+        test_acc= 0.0
+        test_size=0
+
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)
+                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
+                d_e = torch.argmax(d_e, dim=1).numpy()       
+
+                #Forward Pass
+                out= self.phi(x_e)                
+                
+                test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
+                test_size+= y_e.shape[0]
+
+        print(' Accuracy: ', 100*test_acc/test_size )         
+        
+        return 100*test_acc/test_size

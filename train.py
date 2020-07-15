@@ -64,7 +64,7 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
-parser.add_argument('--penalty_diff_ctr',type=float, default=0.0)
+parser.add_argument('--penalty_diff_ctr',type=float, default=1.0)
 parser.add_argument('--tau', type=float, default=0.05, 
                     help='Temperature hyper param for NTXent contrastive loss ')
 parser.add_argument('--match_flag', type=int, default=0, 
@@ -130,22 +130,22 @@ for run in range(args.n_runs):
     #Import the module as per the curernt training method
     if args.method_name == 'erm_match':
         from algorithms.ERM_Match import ErmMatch    
-        train_method= ErmMatch(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
+        train_method= ErmMatch(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
     elif args.method_name == 'matchdg_ctr':
         from algorithms.MatchDG import MatchDG
         ctr_phase=1
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)     
+        train_method= MatchDG(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)     
     elif args.method_name == 'matchdg_erm':
         from algorithms.MatchDG import MatchDG
         ctr_phase=0
-        train_method= MatchDG(args, train_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)
+        train_method= MatchDG(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()
             
     # Final Report Accuacy
     if args.method_name != 'matchdg_ctr':
-        final_acc= train_method.final_acc
+        final_acc= train_method.final_acc[-1]
         final_report_accuracy.append( final_acc )
                    
 if args.method_name != 'matchdg_ctr':

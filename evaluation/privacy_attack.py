@@ -121,7 +121,7 @@ class PrivacyAttack(BaseEval):
 #         print('\nPrecision: ', precision/args.total_seed )
 #         print('\nRecall: ', recall/args.total_seed )
 
-        self.metric_score['T-SNE Label']= {}
-        self.metric_score['T-SNE Domain']= {}
+        self.metric_score['train_acc']= final_res['tr_attack_mean']
+        self.metric_score['test_acc']= final_res['te_attack_mean']
 
         return         

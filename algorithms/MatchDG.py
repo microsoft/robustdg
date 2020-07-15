@@ -20,9 +20,9 @@ from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 from utils.match_function import get_matched_pairs
 
 class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
         
-        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
         self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
@@ -126,13 +126,7 @@ class MatchDG(BaseAlgo):
         #             label_match= label_match_tensor[idx].to(self.cuda)           
                     label_match= label_match_tensor_split[batch_idx].to(self.cuda)
                     label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
-                    
-                    if self.args.method_name=="rep_match":
-                        temp_out= self.phi.predict_conv_net( data_match )
-                        temp_out= temp_out.view(-1, temp_out.shape[1]*temp_out.shape[2]*temp_out.shape[3])
-                        feat_match= self.phi.predict_fc_net(temp_out)
-                        del temp_out
-            
+                                
                     # Creating tensor of shape ( domain size, total domains, feat size )
                     if len(feat_match.shape) == 4:
                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
@@ -331,7 +325,10 @@ class MatchDG(BaseAlgo):
 
                 print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
                 print('Train Acc Env : ', 100*train_acc/train_size )
-                print('Done Training for epoch: ', epoch)        
+                print('Done Training for epoch: ', epoch)    
+                
+                #Test Dataset Accuracy
+                self.final_acc.append( self.get_test_accuracy() )
                     
             # Save the model's weights post training
             self.save_model_erm_phase(run_erm)

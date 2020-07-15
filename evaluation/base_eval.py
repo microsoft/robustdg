@@ -71,6 +71,7 @@ class BaseEval():
                         )
                 
         self.phi= self.get_model()        
+        self.load_model()
         self.metric_score={}                
     
     def get_model(self):

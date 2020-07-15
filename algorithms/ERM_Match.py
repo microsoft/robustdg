@@ -18,9 +18,9 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
 class ErmMatch(BaseAlgo):
-    def __init__(self, args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda):
         
-        super().__init__(args, train_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
               
     def train(self):
         
@@ -126,6 +126,9 @@ class ErmMatch(BaseAlgo):
             print('Train Loss Basic : ',  penalty_erm, penalty_ws )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
+            
+            #Test Dataset Accuracy
+            self.final_acc.append( self.get_test_accuracy() )
 
         # Save the model's weights post training
         self.save_model()
