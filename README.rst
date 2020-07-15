@@ -37,8 +37,8 @@ The following commands would train and evalute the MatchDG method on the Rotated
 
 .. code:: shell
 
-    python train.py --dataset rot_mnist --method_name matchdg_ctr --batch_size 128  --match_case 0.01 --match_flag 1 
-    python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 
+    python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 30 --batch_size 64 --pos_metric cos 
+    python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1  
     python eval.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --test_metric acc
 
 
