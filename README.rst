@@ -45,7 +45,7 @@ The following commands would train and evalute the MatchDG method on the Rotated
 Demo
 ----
 
-A quick introduction on how to use our repository can be accessed here in the `Getting Started notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebook/robustdg_getting_started.ipynb>`_.
+A quick introduction on how to use our repository can be accessed here in the `Getting Started notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/robustdg_getting_started.ipynb>`_.
 
 If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/reproducing_results_matchdg_paper.ipynb>`_. 
 
