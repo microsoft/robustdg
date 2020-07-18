@@ -43,7 +43,8 @@ parser.add_argument('--img_w', type=int, default= 224,
                     help='Width of the image in dataset')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
-parser.add_argument('--pos_metric', type=str, default='l2')
+parser.add_argument('--pos_metric', type=str, default='l2', 
+                    help='Cost to function to evaluate distance between two representations; Options: l1; l2; cos')
 parser.add_argument('--rep_dim', type=int, default=250, 
                     help='Representation dimension for contrsative learning')
 parser.add_argument('--pre_trained',type=int, default=0, 
@@ -64,7 +65,8 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
-parser.add_argument('--penalty_diff_ctr',type=float, default=1.0)
+parser.add_argument('--penalty_diff_ctr',type=float, default=0.0, 
+                    help='Penalty weight for Contrastive Loss')
 parser.add_argument('--tau', type=float, default=0.05, 
                     help='Temperature hyper param for NTXent contrastive loss ')
 parser.add_argument('--match_flag', type=int, default=0, 
@@ -79,7 +81,8 @@ parser.add_argument('--match_abl', type=int, default=0,
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
-parser.add_argument('--n_runs_matchdg_erm', type=int, default=2)
+parser.add_argument('--n_runs_matchdg_erm', type=int, default=2, 
+                    help='Number of iterations to repeat training process for matchdg_erm')
 parser.add_argument('--ctr_model_name', type=str, default='resnet18', 
                     help='(For matchdg_ctr phase) Architecture of the model to be trained')
 parser.add_argument('--ctr_match_layer', type=str, default='logit_match', 
@@ -111,7 +114,10 @@ test_domains= args.test_domains
 
 #Initialize
 final_report_accuracy=[]
-base_res_dir="results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
+base_res_dir=(
+                "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
+                + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
+            )
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
@@ -129,16 +135,34 @@ for run in range(args.n_runs):
     
     #Import the module as per the curernt training method
     if args.method_name == 'erm_match':
-        from algorithms.ERM_Match import ErmMatch    
-        train_method= ErmMatch(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
+        from algorithms.erm_match import ErmMatch    
+        train_method= ErmMatch(
+                                args, train_dataset, 
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size, base_res_dir, 
+                                run, cuda
+                              )
     elif args.method_name == 'matchdg_ctr':
-        from algorithms.MatchDG import MatchDG
+        from algorithms.match_dg import MatchDG
         ctr_phase=1
-        train_method= MatchDG(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)     
+        train_method= MatchDG(
+                                args, train_dataset,
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size,  base_res_dir, 
+                                run, cuda, ctr_phase
+                             )     
     elif args.method_name == 'matchdg_erm':
-        from algorithms.MatchDG import MatchDG
+        from algorithms.match_dg import MatchDG
         ctr_phase=0
-        train_method= MatchDG(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size,  base_res_dir, run, cuda, ctr_phase)
+        train_method= MatchDG(
+                                args, train_dataset,
+                                test_dataset, train_domains,
+                                total_domains, domain_size,
+                                training_list_size,  base_res_dir,
+                                run, cuda, ctr_phase
+                             )
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()

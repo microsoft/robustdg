@@ -17,7 +17,8 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 class BaseEval():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, test_dataset, train_domains, 
+                 total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
         
         self.args= args
         self.train_dataset= train_dataset
@@ -32,30 +33,30 @@ class BaseEval():
         
         # Model save paths depending on the method: ERM_Match, MatchDG_CTR, MatchDG_ERM
         self.post_string=   (
-                            str(self.args.penalty_ws) + '_' 
-                            + str(self.args.penalty_diff_ctr) + '_'
-                            + str(self.args.match_case) + '_' 
-                            + str(self.args.match_interrupt) + '_' 
-                            + str(self.args.match_flag) + '_' 
-                            + str(self.run) + '_' 
-                            + self.args.pos_metric + '_' + 
+                            str(self.args.penalty_ws) + '_' + 
+                            str(self.args.penalty_diff_ctr) + '_' + 
+                            str(self.args.match_case) + '_' + 
+                            str(self.args.match_interrupt) + '_' + 
+                            str(self.args.match_flag) + '_' + 
+                            str(self.run) + '_' + 
+                            self.args.pos_metric + '_' + 
                             self.args.model_name
                             )
         
         self.ctr_save_post_string=  (
-                                    str(self.args.match_case) + '_' 
-                                    + str(self.args.match_interrupt) + '_' 
-                                    + str(self.args.match_flag) + '_' 
-                                    + str(self.run) + '_' 
-                                    + self.args.model_name
+                                    str(self.args.match_case) + '_' + 
+                                    str(self.args.match_interrupt) + '_' + 
+                                    str(self.args.match_flag) + '_' + 
+                                    str(self.run) + '_' + 
+                                    self.args.model_name
                                     )
         
         self.ctr_load_post_string=  (
-                                    str(self.args.ctr_match_case) + '_' 
-                                    + str(self.args.ctr_match_interrupt) + '_' 
-                                    + str(self.args.ctr_match_flag) + '_' 
-                                    + str(self.run) + '_' 
-                                    + self.args.ctr_model_name
+                                    str(self.args.ctr_match_case) + '_' + 
+                                    str(self.args.ctr_match_interrupt) + '_' + 
+                                    str(self.args.ctr_match_flag) + '_' + 
+                                    str(self.run) + '_' + 
+                                    self.args.ctr_model_name
                                     )
         
         if self.args.method_name == 'erm_match':
@@ -66,9 +67,10 @@ class BaseEval():
             
         elif self.args.method_name == 'matchdg_erm':
             self.save_path=  (
-                        self.base_res_dir + '/' + self.ctr_load_post_string 
-                        + '/Model_' + self.post_string + '_' + str(run)
-                        )
+                                self.base_res_dir + '/' + 
+                                self.ctr_load_post_string + '/Model_' + 
+                                self.post_string + '_' + str(run)
+                            )
                 
         self.phi= self.get_model()        
         self.load_model()
@@ -77,16 +79,18 @@ class BaseEval():
     def get_model(self):
         
         if self.args.model_name == 'lenet':
-            from models.LeNet import LeNet5
-            phi= LeNet5().to(self.cuda)
+            from models.lenet import LeNet5
+            phi= LeNet5()
         if self.args.model_name == 'alexnet':
-            from models.AlexNet import alexnet
-            phi= alexnet(self.args.out_classes, self.args.pre_trained, self.args.method_name).to(self.cuda)
+            from models.alexnet import alexnet
+            phi= alexnet(self.args.out_classes, self.args.pre_trained, self.args.method_name)
         if self.args.model_name == 'resnet18':
-            from models.ResNet import get_resnet
-            phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, self.args.img_c, self.args.pre_trained).to(self.cuda)
+            from models.resnet import get_resnet
+            phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, 
+                            self.args.img_c, self.args.pre_trained)
         
         print('Model Architecture: ', self.args.model_name)
+        phi= phi.to(self.cuda)
         return phi
     
     def load_model(self):

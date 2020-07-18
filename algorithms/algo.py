@@ -42,16 +42,18 @@ class BaseAlgo():
     def get_model(self):
         
         if self.args.model_name == 'lenet':
-            from models.LeNet import LeNet5
-            phi= LeNet5().to(self.cuda)
+            from models.lenet import LeNet5
+            phi= LeNet5()
         if self.args.model_name == 'alexnet':
-            from models.AlexNet import alexnet
-            phi= alexnet(self.args.out_classes, self.args.pre_trained, self.args.method_name).to(self.cuda)
+            from models.alexnet import alexnet
+            phi= alexnet(self.args.out_classes, self.args.pre_trained, self.args.method_name)
         if self.args.model_name == 'resnet18':
-            from models.ResNet import get_resnet
-            phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, self.args.img_c, self.args.pre_trained).to(self.cuda)
-        
+            from models.resnet import get_resnet
+            phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, 
+                            self.args.img_c, self.args.pre_trained)
+            
         print('Model Architecture: ', self.args.model_name)
+        phi=phi.to(self.cuda)
         return phi
     
     def save_model(self):
