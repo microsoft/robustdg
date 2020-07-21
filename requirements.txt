@@ -4,5 +4,5 @@ h5py
 scikit-learn
 torch
 torchvision
-tensorflow-gpu==1.14.0
+tensorflow-gpu==1.15.2
 mia
