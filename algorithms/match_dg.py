@@ -50,13 +50,13 @@ class MatchDG(BaseAlgo):
     def init_erm_phase(self):
             
             if self.args.ctr_model_name == 'lenet':
-                from models.LeNet import LeNet5
+                from models.lenet import LeNet5
                 ctr_phi= LeNet5().to(self.cuda)
             if self.args.ctr_model_name == 'alexnet':
-                from models.AlexNet import alexnet
+                from models.alexnet import alexnet
                 ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
             if self.args.ctr_model_name == 'resnet18':
-                from models.ResNet import get_resnet
+                from models.resnet import get_resnet
                 ctr_phi= get_resnet('resnet18', self.args.out_classes, 'matchdg_ctr', self.args.img_c, self.args.pre_trained).to(self.cuda)
 
             # Load MatchDG CTR phase model from the saved weights
@@ -201,7 +201,7 @@ class MatchDG(BaseAlgo):
                     penalty_same_hinge+= float(same_hinge_loss)
                     penalty_diff_hinge+= float(diff_hinge_loss)
                 
-                    loss_e += ( self.args.penalty_diff_ctr*( epoch- self.args.penalty_s )/(self.args.epochs -self.args.penalty_s) )*diff_hinge_loss
+                    loss_e += ( ( epoch- self.args.penalty_s )/(self.args.epochs -self.args.penalty_s) )*diff_hinge_loss
                         
                 loss_e.backward(retain_graph=False)
                 self.opt.step()

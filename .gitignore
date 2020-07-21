@@ -5,8 +5,14 @@ data/rot_mnist/fashion_mnist_resnet18_indices
 data/rot_mnist/rot_mnist_lenet_indices
 data/rot_mnist/fashion_mnist_lenet_indices
 
+#python environment
+envs/
+
 #Results dir
 results/
+
+#extra-files
+reproduce_paper.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

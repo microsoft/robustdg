@@ -69,7 +69,7 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
-parser.add_argument('--penalty_diff_ctr',type=float, default=0.0, 
+parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
                     help='Penalty weight for Contrastive Loss')
 parser.add_argument('--tau', type=float, default=0.05, 
                     help='Temperature hyper param for NTXent contrastive loss ')
