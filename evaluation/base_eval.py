@@ -115,8 +115,8 @@ class BaseEval():
                 final_out.append(out)            
             
         final_out= torch.cat(final_out)
-        print('Train Logits: ', final_out.shape)
-        pickle.dump([out], open( self.save_path + "_train.pkl", 'wb'))
+        print('Train Logits: ', final_out.shape, self.save_path)
+        pickle.dump([final_out], open( self.save_path + "_train.pkl", 'wb'))
 
         #Test Environment Logits
         final_out=[]
@@ -133,8 +133,8 @@ class BaseEval():
                 final_out.append(out)
             
         final_out= torch.cat(final_out)
-        print('Test Logits: ', final_out.shape)
-        pickle.dump([out], open( self.save_path + "_test.pkl", 'wb'))
+        print('Test Logits: ', final_out.shape, self.save_path)
+        pickle.dump([final_out], open( self.save_path + "_test.pkl", 'wb'))
     
         return
     

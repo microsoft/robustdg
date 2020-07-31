@@ -1,4 +1,4 @@
-numpy
+iumpy
 pandas
 h5py
 scikit-learn
@@ -6,3 +6,4 @@ torch
 torchvision
 tensorflow-gpu==1.15.2
 mia
+advertorch

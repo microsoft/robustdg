@@ -60,12 +60,14 @@ class PrivacyAttack(BaseEval):
         self.get_logits()
         
         # load the logits from .pkl file
-        train_data= pickle.load(open(self.save_path + "_test.pkl", 'rb'))
+        train_data= pickle.load(open(self.save_path + "_train.pkl", 'rb'))
         test_data= pickle.load(open(self.save_path + "_test.pkl", 'rb'))
+        
+        print(self.save_path)
 
         train_df = pd.DataFrame(train_data[0].cpu().detach().numpy())
         test_df = pd.DataFrame(test_data[0].cpu().detach().numpy())
-        print(train_df.shape, test_df.shape)
+        print('MIA Dataset', train_df.shape, test_df.shape, train_df)
 
         # ***********************Create data for probabilities members and non-members **********************
         X_dnn_train = train_df[:sample_size]
@@ -93,7 +95,8 @@ class PrivacyAttack(BaseEval):
         ran_idx = np.random.permutation(X_dnn_test.index)
         X_dnn_test = X_dnn_test.reindex(ran_idx)
         Y_dnn_test = Y_dnn_test.reindex(ran_idx)
-
+        
+        print('MIA Final Dataset: ', X_dnn_train.shape, X_dnn_test.shape)
         # Features for the attack dnn model
         attack_features = []
         for attack_idx in range(10):

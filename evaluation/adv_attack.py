@@ -46,39 +46,54 @@ class AdvAttack(BaseEval):
             
             ##TODO: Customise input parameters to methods like LinfPGDAttack
             adversary = LinfPGDAttack(
-                self.phi, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=0.10,
-                nb_iter=40, eps_iter=0.01, rand_init=True, clip_min=0.0, clip_max=1.0,
+                self.phi, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=0.30,
+                nb_iter=40, eps_iter=0.01, rand_init=True, clip_min=(0.0-0.1307)/0.3081, clip_max=(1.0-0.1307)/0.3081,
                 targeted=False)    
 
-            adv_untargeted = adversary.perturb(x_e, y_e)
+            pred_cln=[]
+            pred_untargeted_adv=[]
+            pred_targeted_adv=[]
+            temp_counter=0
+            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
+                x_e= x_e.to(self.cuda)
+                print(torch.min(x_e), torch.max(x_e))
+                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
 
-            target = torch.ones_like(y_e)*3
-            adversary.targeted = True
-            adv_targeted = adversary.perturb(x_e, target)
+                target = torch.ones_like(y_e)*3
+                adversary.targeted = True
+                adv_untargeted = adversary.perturb(x_e, y_e)
+                adv_targeted = adversary.perturb(x_e, target)
+                pred_cln.append( predict_from_logits(self.phi(x_e)) )
+                pred_untargeted_adv.append( predict_from_logits(self.phi(adv_untargeted)) )
+                pred_targeted_adv.append( predict_from_logits(self.phi(adv_targeted)) )
+            
+#                 temp_counter+=1
+#                 if temp_counter ==1:
+#                     break
+                    
+            pred_cln= torch.cat(pred_cln)
+            pred_untargeted_adv= torch.cat(pred_untargeted_adv)
+            pred_targeted_adv= torch.cat(pred_targeted_adv)
+            utr_score.append( torch.sum( pred_cln != pred_untargeted_adv).detach().cpu().numpy() / pred_cln.shape[0] )
+            tr_score.append( torch.sum(pred_cln!= pred_targeted_adv).detach().cpu().numpy() / pred_cln.shape[0] )
 
-            pred_cln = predict_from_logits(self.phi(x_e))
-            pred_untargeted_adv= predict_from_logits(self.phi(adv_untargeted))
-            pred_targeted_adv= predict_from_logits(self.phi(adv_targeted)) 
-            utr_score.append( torch.sum( pred_cln != pred_untargeted_adv) )
-            tr_score.append( torch.sum(pred_cln!= pred_targeted_adv) )
+#             batch_size=5
+#             plt.figure(figsize=(10, 8))
+#             for ii in range(batch_size):
+#                 plt.subplot(3, batch_size, ii + 1)
+#                 _imshow(x_e[ii])
+#                 plt.title("clean \n pred: {}".format(pred_cln[ii]))
+#                 plt.subplot(3, batch_size, ii + 1 + batch_size)
+#                 _imshow(adv_untargeted[ii])
+#                 plt.title("untargeted \n adv \n pred: {}".format(
+#                     pred_untargeted_adv[ii]))
+#                 plt.subplot(3, batch_size, ii + 1 + batch_size * 2)
+#                 _imshow(adv_targeted[ii])
+#                 plt.title("targeted to 3 \n adv \n pred: {}".format(
+#                     pred_targeted_adv[ii]))
 
-            batch_size=5
-            plt.figure(figsize=(10, 8))
-            for ii in range(batch_size):
-                plt.subplot(3, batch_size, ii + 1)
-                _imshow(x_e[ii])
-                plt.title("clean \n pred: {}".format(pred_cln[ii]))
-                plt.subplot(3, batch_size, ii + 1 + batch_size)
-                _imshow(adv_untargeted[ii])
-                plt.title("untargeted \n adv \n pred: {}".format(
-                    pred_untargeted_adv[ii]))
-                plt.subplot(3, batch_size, ii + 1 + batch_size * 2)
-                _imshow(adv_targeted[ii])
-                plt.title("targeted to 3 \n adv \n pred: {}".format(
-                    pred_targeted_adv[ii]))
-
-            plt.tight_layout()
-            plt.savefig( self.save_path + '.png' )
+#             plt.tight_layout()
+#             plt.savefig( self.save_path + '.png' )
 
 
         utr_score= np.array(utr_score)

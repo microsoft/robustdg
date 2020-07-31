@@ -30,15 +30,15 @@ def to_onehot(inp):
 def my_attack_model(features, labels, mode, params):
     """DNN with one hidden layers and learning_rate=0.1."""
     # Create three fully connected layers.
-    net = tf.compat.v1.feature_column.input_layer(features, params['feature_columns'])
+    net = tf.feature_column.input_layer(features, params['feature_columns'])
 
     for units in params['hidden_units']:
-        net = tf.compat.v1.layers.dense(net, units=units, activation=tf.nn.relu)
-        net = tf.compat.v1.layers.batch_normalization(net, training=True)
+        net = tf.layers.dense(net, units=units, activation=tf.nn.relu)
+        net = tf.layers.batch_normalization(net, training=True)
         net = tf.nn.relu(net)
     
     # Compute logits (1 per class).
-    logits = tf.compat.v1.layers.dense(net, params['n_classes'], activation=None)
+    logits = tf.layers.dense(net, params['n_classes'], activation=None)
 
     #logits = logits + 0.9
 
@@ -54,10 +54,10 @@ def my_attack_model(features, labels, mode, params):
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
 
     # Compute loss.
-    loss = tf.compat.v1.losses.sparse_softmax_cross_entropy(labels=tf.argmax(labels,1), logits=logits)
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=tf.argmax(labels,1), logits=logits)
 
     # Compute evaluation metrics.
-    accuracy = tf.compat.v1.metrics.accuracy(labels=tf.argmax(labels,1),
+    accuracy = tf.metrics.accuracy(labels=tf.argmax(labels,1),
             predictions=predicted_classes,
             name='acc_op')
     metrics = {'accuracy': accuracy}
@@ -72,14 +72,14 @@ def my_attack_model(features, labels, mode, params):
     #     learning_rate=params['learning_rate'],
     #     l2_regularization_strength=0.001
     #   )
-    optimizer = tf.compat.v1.train.AdamOptimizer(
-            learning_rate=tf.compat.v1.train.exponential_decay(
+    optimizer = tf.train.AdamOptimizer(
+            learning_rate=tf.train.exponential_decay(
             learning_rate=params['learning_rate'],
-            global_step=tf.compat.v1.train.get_global_step(),
+            global_step=tf.train.get_global_step(),
             decay_steps=1000,
             decay_rate=0.96)) 
     # optimizer = tf.train.RMSPropOptimizer(learning_rate=params['learning_rate'])
-    train_op = optimizer.minimize(loss, global_step=tf.compat.v1.train.get_global_step())
+    train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
     return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=train_op)
 
 def mia(X_att_train, y_att_train, X_att_test, y_att_test, my_feature_columns, batch_size, train_steps, mdir):
@@ -88,12 +88,12 @@ def mia(X_att_train, y_att_train, X_att_test, y_att_test, my_feature_columns, ba
                     model_fn = my_attack_model,
                     params={
                             'feature_columns': my_feature_columns,
-                            'hidden_units': [8, 4],
+                            'hidden_units': [4],
                             'n_classes': 2,
                             'n_train_examples': len(X_att_train),
                             'learning_rate': 0.001
                             },
-                    model_dir=mdir)
+                            )
     # Train the attacker classifier
     #print(X_att_train)
     #print(y_att_train)

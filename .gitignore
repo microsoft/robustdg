@@ -13,6 +13,7 @@ results/
 
 #extra-files
 reproduce_paper.sh
+adv_attack.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
