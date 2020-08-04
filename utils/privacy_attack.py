@@ -88,7 +88,7 @@ def mia(X_att_train, y_att_train, X_att_test, y_att_test, my_feature_columns, ba
                     model_fn = my_attack_model,
                     params={
                             'feature_columns': my_feature_columns,
-                            'hidden_units': [4],
+                            'hidden_units': [8, 4],
                             'n_classes': 2,
                             'n_train_examples': len(X_att_train),
                             'learning_rate': 0.001
