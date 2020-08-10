@@ -71,6 +71,8 @@ class BaseEval():
                                 self.ctr_load_post_string + '/Model_' + 
                                 self.post_string + '_' + str(run)
                             )
+        elif self.args.method_name == 'irm_match':
+            self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         self.phi= self.get_model()        
         self.load_model()
