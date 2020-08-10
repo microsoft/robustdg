@@ -18,6 +18,10 @@ def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
         model=  torchvision.models.resnet18(pre_trained)
         n_inputs = model.fc.in_features
         n_outputs= classes
+    elif model_name == 'resnet50':
+        model=  torchvision.models.resnet50(pre_trained)
+        n_inputs = model.fc.in_features
+        n_outputs= classes
         
         if erm_base == 'matchdg_ctr':
             model.fc = Identity(n_inputs)
