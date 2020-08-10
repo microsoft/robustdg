@@ -23,18 +23,18 @@ def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
         n_inputs = model.fc.in_features
         n_outputs= classes
         
-        if erm_base == 'matchdg_ctr':
+    if erm_base == 'matchdg_ctr':
             model.fc = Identity(n_inputs)
 #             model.fc= nn.Sequential( nn.Linear(n_inputs, n_inputs),
 #                                      nn.ReLU(),
 #                                    )
-        else:
-            model.fc = nn.Linear(n_inputs, n_outputs)
+    else:
+        model.fc = nn.Linear(n_inputs, n_outputs)
         
-        if num_ch==1:
-            model.conv1 = nn.Conv2d(1, 64, 
+    if num_ch==1:
+        model.conv1 = nn.Conv2d(1, 64, 
                                 kernel_size=(7, 7), 
                                 stride=(2, 2), 
                                 padding=(3, 3), 
-                            bias=False)
+                        bias=False)
     return model
