@@ -4,6 +4,16 @@ import torch.utils.data as data_utils
 #Sklearn
 from sklearn.manifold import TSNE
 
+#Pytorch
+import torch
+from torch.autograd import grad
+from torch import nn, optim
+from torch.nn import functional as F
+from torchvision import datasets, transforms
+from torchvision.utils import save_image
+from torch.autograd import Variable
+import torch.utils.data as data_utils
+
 def t_sne_plot(X):
     X= X.detach().cpu().numpy()
     X= TSNE(n_components=2).fit_transform(X)
@@ -15,6 +25,15 @@ def classifier(x_e, phi, w):
 def erm_loss(temp_logits, target_label):
     loss= F.cross_entropy(temp_logits, target_label.long()).to(cuda)
     return loss
+
+def compute_irm_penalty( logits, target_label, cuda):
+    labels= target_label
+    scale = torch.tensor(1.).to(cuda).requires_grad_()
+    loss = F.cross_entropy(logits*scale, labels.long()).to(cuda)
+    g = grad(loss, [scale], create_graph=True)[0].to(cuda)
+    # Since g is scalar output, do we need torch.sum?
+    ret= torch.sum(g**2)
+    return ret 
 
 def cosine_similarity( x1, x2 ):
     cos= torch.nn.CosineSimilarity(dim=1, eps=1e-08)
