@@ -86,9 +86,9 @@ class BaseEval():
         if self.args.model_name == 'alexnet':
             from models.alexnet import alexnet
             phi= alexnet(self.args.out_classes, self.args.pre_trained, self.args.method_name)
-        if self.args.model_name == 'resnet18':
+        if 'resnet' in self.args.model_name:
             from models.resnet import get_resnet
-            phi= get_resnet('resnet18', self.args.out_classes, self.args.method_name, 
+            phi= get_resnet(self.args.model_name, self.args.out_classes, self.args.method_name, 
                             self.args.img_c, self.args.pre_trained)
         
         print('Model Architecture: ', self.args.model_name)

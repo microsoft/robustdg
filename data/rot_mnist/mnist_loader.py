@@ -108,9 +108,6 @@ class MnistRotated(BaseDataLoader):
                     
                 mnist_idx.append( i )
             
-            #Sanity Check
-            #print('Sanity Check for alloting env indices: ', curr_indices_dict)
-
             print('Source Domain ', domain)
             training_list_img.append(mnist_img_rot)
             training_list_labels.append(mnist_labels)
