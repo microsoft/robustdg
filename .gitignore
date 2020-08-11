@@ -5,6 +5,8 @@ data/rot_mnist/rot_mnist_resnet18_indices
 data/rot_mnist/fashion_mnist_resnet18_indices
 data/rot_mnist/rot_mnist_lenet_indices
 data/rot_mnist/fashion_mnist_lenet_indices
+data/rot_mnist/rot_mnist_domain_bed_mnist_indices
+data/rot_mnist/fashion_mnist_domain_bed_mnist_indices
 
 #python environment
 envs/
