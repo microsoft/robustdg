@@ -29,28 +29,37 @@ class MnistRotated(BaseDataLoader):
             return np.load(data_dir + '/val' + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
             
     def _get_data(self):
-        
+                
         if self.args.dataset_name =='rot_mnist':
-            data_obj= datasets.MNIST(self.root,
+            data_obj_train= datasets.MNIST(self.root,
                                         train=True,
                                         download=self.download,
                                         transform=transforms.ToTensor()
                                     )
+            
+            data_obj_test= datasets.MNIST(self.root,
+                                        train=False,
+                                        download=self.download,
+                                        transform=transforms.ToTensor()
+                                    )
+            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
+            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
+            
         elif self.args.dataset_name == 'fashion_mnist':
             data_obj= datasets.FashionMNIST(self.root,
                                                 train=True,
                                                 download=self.download,
                                                 transform=transforms.ToTensor()
                                             )
-        
-        train_loader = torch.utils.data.DataLoader(data_obj,
-                                                   batch_size=60000,
-                                                   shuffle=False)
-
-        for i, (x, y) in enumerate(train_loader):
-            mnist_imgs = x
-            mnist_labels = y
-
+            
+            data_obj_test= datasets.FashionMNIST(self.root,
+                                        train=False,
+                                        download=self.download,
+                                        transform=transforms.ToTensor()
+                                    )
+            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
+            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
+            
         # Get total number of labeled examples
         sup_inds = self.load_inds()
         mnist_labels = mnist_labels[sup_inds]
