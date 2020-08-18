@@ -4,6 +4,16 @@ import torch.utils.data as data_utils
 #Sklearn
 from sklearn.manifold import TSNE
 
+#Pytorch
+import torch
+from torch.autograd import grad
+from torch import nn, optim
+from torch.nn import functional as F
+from torchvision import datasets, transforms
+from torchvision.utils import save_image
+from torch.autograd import Variable
+import torch.utils.data as data_utils
+
 def t_sne_plot(X):
     X= X.detach().cpu().numpy()
     X= TSNE(n_components=2).fit_transform(X)
@@ -15,6 +25,15 @@ def classifier(x_e, phi, w):
 def erm_loss(temp_logits, target_label):
     loss= F.cross_entropy(temp_logits, target_label.long()).to(cuda)
     return loss
+
+def compute_irm_penalty( logits, target_label, cuda):
+    labels= target_label
+    scale = torch.tensor(1.).to(cuda).requires_grad_()
+    loss = F.cross_entropy(logits*scale, labels.long()).to(cuda)
+    g = grad(loss, [scale], create_graph=True)[0].to(cuda)
+    # Since g is scalar output, do we need torch.sum?
+    ret= torch.sum(g**2)
+    return ret 
 
 def cosine_similarity( x1, x2 ):
     cos= torch.nn.CosineSimilarity(dim=1, eps=1e-08)
@@ -139,13 +158,13 @@ def get_dataloader(args, run, train_domains, test_domains, kwargs):
         from data.pacs.pacs_loader import PACS
 
     if args.dataset_name in ['pacs', 'vlcs']:
-        train_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='train')
-        val_data_obj= PACS(train_domains, '/pacs/train_val_splits/', data_case='val')        
-        test_data_obj= PACS(test_domains, '/pacs/train_val_splits/', data_case='test')
+        train_data_obj= PACS(args, train_domains, '/pacs/train_val_splits/', data_case='train')
+        val_data_obj= PACS(args, train_domains, '/pacs/train_val_splits/', data_case='val')        
+        test_data_obj= PACS(args, test_domains, '/pacs/train_val_splits/', data_case='test')
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(args, train_domains, run, 'data/rot_mnist', data_case='train')
-        val_data_obj=  MnistRotated(args, train_domains, run, 'data/rot_mnist', data_case='val')       
-        test_data_obj=  MnistRotated(args, test_domains, run, 'data/rot_mnist', data_case='test')
+        train_data_obj=  MnistRotated(args, train_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='train')
+        val_data_obj=  MnistRotated(args, train_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='val')       
+        test_data_obj=  MnistRotated(args, test_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='test')
 
     # Load supervised training
     train_dataset = data_utils.DataLoader(train_data_obj, batch_size=args.batch_size, shuffle=True, **kwargs )

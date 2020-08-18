@@ -29,9 +29,9 @@ parser.add_argument('--method_name', type=str, default='erm_match',
                     help=' Training Algorithm: erm_match; matchdg_ctr; matchdg_erm')
 parser.add_argument('--model_name', type=str, default='resnet18', 
                     help='Architecture of the model to be trained')
-parser.add_argument('--train_domains', type=int, default=["15", "30", "45", "60", "75"], 
+parser.add_argument('--train_domains', nargs='+', type=str, default=["15", "30", "45", "60", "75"], 
                     help='List of train domains')
-parser.add_argument('--test_domains', type=int, default=["0", "90"], 
+parser.add_argument('--test_domains', nargs='+', type=str, default=["0", "90"], 
                     help='List of test domains')
 parser.add_argument('--out_classes', type=int, default=10, 
                     help='Total number of classes in the dataset')
@@ -59,10 +59,10 @@ parser.add_argument('--batch_size', type=int, default=16,
                     help='Batch size foe training the model')
 parser.add_argument('--epochs', type=int, default=15, 
                     help='Total number of epochs for training the model')
-parser.add_argument('--penalty_w', type=float, default=0.0, 
-                    help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_s', type=int, default=-1, 
                     help='Epoch threshold over which Matching Loss to be optimised')
+parser.add_argument('--penalty_irm', type=float, default=0.0, 
+                    help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -133,7 +133,7 @@ for run in range(args.n_runs):
     train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
-    #Import the module as per the curernt training method
+    #Import the module as per the current training method
     if args.method_name == 'erm_match':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
@@ -163,6 +163,16 @@ for run in range(args.n_runs):
                                 training_list_size,  base_res_dir,
                                 run, cuda, ctr_phase
                              )
+    elif args.method_name == 'irm':
+        from algorithms.irm import Irm    
+        train_method= Irm(
+                                args, train_dataset, 
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size, base_res_dir, 
+                                run, cuda
+                              )
+
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()

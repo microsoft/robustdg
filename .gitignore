@@ -1,5 +1,6 @@
-#Data dir
+#Data diri
 data/rot_mnist/MNIST/
+data/rot_minst/FashionMNIST/
 data/rot_mnist/rot_mnist_resnet18_indices
 data/rot_mnist/fashion_mnist_resnet18_indices
 data/rot_mnist/rot_mnist_lenet_indices
@@ -12,8 +13,7 @@ envs/
 results/
 
 #extra-files
-reproduce_paper.sh
-adv_attack.sh
+*.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
