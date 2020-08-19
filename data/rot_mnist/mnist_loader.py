@@ -46,7 +46,7 @@ class MnistRotated(BaseDataLoader):
             mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
             
         elif self.args.dataset_name == 'fashion_mnist':
-            data_obj= datasets.FashionMNIST(self.root,
+            data_obj_train= datasets.FashionMNIST(self.root,
                                                 train=True,
                                                 download=self.download,
                                                 transform=transforms.ToTensor()
@@ -96,6 +96,9 @@ class MnistRotated(BaseDataLoader):
                 indices_dict[key]=[]
             indices_dict[key].append( i )
         
+#         if self.data_case == 'test':
+#             self.list_train_domains= ['30', '45']
+            
         for domain in self.list_train_domains:
             # Run transforms
             mnist_img_rot= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))

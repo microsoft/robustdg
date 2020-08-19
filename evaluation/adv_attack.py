@@ -45,7 +45,6 @@ class AdvAttack(BaseEval):
         for i in range(1):
             
             ##TODO: Customise input parameters to methods like LinfPGDAttack
-            ##TODO: adversary has to be dynamic; to incorporate both targeted and untargeted attacks
             adversary = LinfPGDAttack(
                 self.phi, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=self.args.adv_eps, nb_iter=70, eps_iter=0.01, rand_init=True, clip_min=(0.0-0.1307)/0.3081, clip_max=(1.0-0.1307)/0.3081,
                 targeted=False)    
@@ -71,7 +70,7 @@ class AdvAttack(BaseEval):
                 pred_targeted_adv.append( predict_from_logits(self.phi(adv_targeted)) )
             
 #                 temp_counter+=1
-#                 if temp_counter ==1:
+#                 if temp_counter ==3:
 #                     break
                     
             pred_cln= torch.cat(pred_cln)
