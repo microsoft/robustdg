@@ -59,9 +59,10 @@ class AdvAttack(BaseEval):
                 print(torch.min(x_e), torch.max(x_e))
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
 
-                target = torch.ones_like(y_e)*3
+                adversary.targeted = False
                 adv_untargeted = adversary.perturb(x_e, y_e)
                 
+                target = torch.ones_like(y_e)*3
                 adversary.targeted = True
                 adv_targeted = adversary.perturb(x_e, target)
                 print(torch.min(adv_untargeted), torch.max(adv_untargeted))
