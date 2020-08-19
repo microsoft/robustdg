@@ -101,14 +101,16 @@ parser.add_argument('--test_metric', type=str, default='acc',
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
-parser.add_argument('--mia_batch_size', default=100, type=int, 
+parser.add_argument('--mia_batch_size', default=64, type=int, 
                     help='batch size')
 parser.add_argument('--mia_dnn_steps', default=5000, type=int,
                     help='number of training steps')
 parser.add_argument('--mia_sample_size', default=1000, type=int,
                     help='number of samples from train/test dataset logits')
-parser.add_argument('--mia_logit', default=0, type=int,
-                    help='0: No Softmax applied to logits; 1: Softmax applied to logits')
+parser.add_argument('--mia_logit', default=1, type=int,
+                    help='0: Softmax applied to logits; 1: No Softmax applied to logits')
+parser.add_argument('--adv_eps', default=0.3, type=float,
+                    help='Epsilon ball dimension for PGD attacks')
 parser.add_argument('--ctr_abl', type=int, default=0, 
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--match_abl', type=int, default=0, 

@@ -46,8 +46,7 @@ class AdvAttack(BaseEval):
             
             ##TODO: Customise input parameters to methods like LinfPGDAttack
             adversary = LinfPGDAttack(
-                self.phi, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=0.30,
-                nb_iter=40, eps_iter=0.01, rand_init=True, clip_min=(0.0-0.1307)/0.3081, clip_max=(1.0-0.1307)/0.3081,
+                self.phi, loss_fn=nn.CrossEntropyLoss(reduction="sum"), eps=self.args.adv_eps, nb_iter=70, eps_iter=0.01, rand_init=True, clip_min=(0.0-0.1307)/0.3081, clip_max=(1.0-0.1307)/0.3081,
                 targeted=False)    
 
             pred_cln=[]
@@ -59,16 +58,19 @@ class AdvAttack(BaseEval):
                 print(torch.min(x_e), torch.max(x_e))
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
 
+                adversary.targeted = False
+                adv_untargeted = adversary.perturb(x_e, y_e)
+                
                 target = torch.ones_like(y_e)*3
                 adversary.targeted = True
-                adv_untargeted = adversary.perturb(x_e, y_e)
                 adv_targeted = adversary.perturb(x_e, target)
+                print(torch.min(adv_untargeted), torch.max(adv_untargeted))
                 pred_cln.append( predict_from_logits(self.phi(x_e)) )
                 pred_untargeted_adv.append( predict_from_logits(self.phi(adv_untargeted)) )
                 pred_targeted_adv.append( predict_from_logits(self.phi(adv_targeted)) )
             
 #                 temp_counter+=1
-#                 if temp_counter ==1:
+#                 if temp_counter ==3:
 #                     break
                     
             pred_cln= torch.cat(pred_cln)
@@ -98,8 +100,8 @@ class AdvAttack(BaseEval):
 
         utr_score= np.array(utr_score)
         tr_score= np.array(tr_score)
-        print('MisClassifcation on Untargetted Attack ', np.mean(utr_score), np.std(utr_score)  ) 
-        print('MisClassifcation on Targeted Atttack', np.mean(tr_score), np.std(tr_score) )
+        print('MisClassifcation on Untargetted Attack ', np.mean(utr_score), np.std(utr_score), self.args.adv_eps  ) 
+        print('MisClassifcation on Targeted Atttack', np.mean(tr_score), np.std(tr_score), self.args.adv_eps )
     
         self.metric_score['Untargetted Method']= np.mean( utr_score ) 
         self.metric_score['Targetted Method']= np.mean( tr_score )
