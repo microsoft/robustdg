@@ -1,4 +1,4 @@
-iumpy
+numpy
 pandas
 h5py
 scikit-learn
