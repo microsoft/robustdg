@@ -59,7 +59,7 @@ class BaseEval():
                                     self.args.ctr_model_name
                                     )
         
-        if self.args.method_name == 'erm_match':
+        if self.args.method_name in ['erm_match', 'erm', 'irm', 'dro']:
             self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         elif self.args.method_name == 'matchdg_ctr':
@@ -71,8 +71,6 @@ class BaseEval():
                                 self.ctr_load_post_string + '/Model_' + 
                                 self.post_string + '_' + str(run)
                             )
-        elif self.args.method_name == 'irm_match':
-            self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         self.phi= self.get_model()        
         self.load_model()

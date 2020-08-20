@@ -17,9 +17,10 @@ import torch.utils.data as data_utils
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
         self.args= args
         self.train_dataset= train_dataset
+        self.val_dataset= val_dataset
         self.test_dataset= test_dataset
         self.train_domains= train_domains
         self.total_domains= total_domains
@@ -90,11 +91,15 @@ class BaseAlgo():
         
         return data_match_tensor, label_match_tensor
 
-    def get_test_accuracy(self):
+    def get_test_accuracy(self, case):
         
         #Test Env Code
         test_acc= 0.0
         test_size=0
+        if case == 'val':
+            dataset= self.val_dataset
+        elif case == 'test':
+            dataset= self.test_dataset
 
         for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
             with torch.no_grad():
@@ -108,6 +113,6 @@ class BaseAlgo():
                 test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
                 test_size+= y_e.shape[0]
 
-        print(' Accuracy: ', 100*test_acc/test_size )         
+        print(' Accuracy: ', case, 100*test_acc/test_size )         
         
         return 100*test_acc/test_size

@@ -137,7 +137,7 @@ for run in range(args.n_runs):
     if args.method_name == 'erm_match':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
-                                args, train_dataset, 
+                                args, train_dataset, val_dataset,
                                 test_dataset, train_domains, 
                                 total_domains, domain_size, 
                                 training_list_size, base_res_dir, 
@@ -147,7 +147,7 @@ for run in range(args.n_runs):
         from algorithms.match_dg import MatchDG
         ctr_phase=1
         train_method= MatchDG(
-                                args, train_dataset,
+                                args, train_dataset, val_dataset,
                                 test_dataset, train_domains, 
                                 total_domains, domain_size, 
                                 training_list_size,  base_res_dir, 
@@ -157,16 +157,34 @@ for run in range(args.n_runs):
         from algorithms.match_dg import MatchDG
         ctr_phase=0
         train_method= MatchDG(
-                                args, train_dataset,
+                                args, train_dataset, val_dataset,
                                 test_dataset, train_domains,
                                 total_domains, domain_size,
                                 training_list_size,  base_res_dir,
                                 run, cuda, ctr_phase
                              )
+    elif args.method_name == 'erm':
+        from algorithms.erm import Erm    
+        train_method= Erm(
+                                args, train_dataset, val_dataset,
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size, base_res_dir, 
+                                run, cuda
+                              )        
     elif args.method_name == 'irm':
         from algorithms.irm import Irm    
         train_method= Irm(
-                                args, train_dataset, 
+                                args, train_dataset, val_dataset,
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size, base_res_dir, 
+                                run, cuda
+                              )
+    elif args.method_name == 'dro':
+        from algorithms.dro import DRO    
+        train_method= DRO(
+                                args, train_dataset, val_dataset,
                                 test_dataset, train_domains, 
                                 total_domains, domain_size, 
                                 training_list_size, base_res_dir, 
