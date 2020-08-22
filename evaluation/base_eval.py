@@ -58,27 +58,10 @@ class BaseEval():
                                     str(self.run) + '_' + 
                                     self.args.ctr_model_name
                                     )
-        
-        if self.args.method_name == 'erm_match':
-            self.save_path= self.base_res_dir + '/Model_' + self.post_string
-                
-        elif self.args.method_name == 'matchdg_ctr':
-            self.save_path= self.base_res_dir + '/Model_' + self.ctr_save_post_string 
-            
-        elif self.args.method_name == 'matchdg_erm':
-            self.save_path=  (
-                                self.base_res_dir + '/' + 
-                                self.ctr_load_post_string + '/Model_' + 
-                                self.post_string + '_' + str(run)
-                            )
-        elif self.args.method_name == 'irm_match':
-            self.save_path= self.base_res_dir + '/Model_' + self.post_string
-                
-        self.phi= self.get_model()        
-        self.load_model()
+                        
         self.metric_score={}                
     
-    def get_model(self):
+    def get_model(self, run_matchdg_erm=0):
         
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
@@ -95,13 +78,35 @@ class BaseEval():
                             self.args.img_c, self.args.pre_trained)
         
         print('Model Architecture: ', self.args.model_name)
-        phi= phi.to(self.cuda)
-        return phi
+        
+        self.phi= phi.to(self.cuda)        
+        self.load_model(run_matchdg_erm)
+
+        return
     
-    def load_model(self):
+    def load_model(self, run_matchdg_erm):
+        
+        if self.args.method_name == 'erm_match':
+            self.save_path= self.base_res_dir + '/Model_' + self.post_string
+                
+        elif self.args.method_name == 'matchdg_ctr':
+            self.save_path= self.base_res_dir + '/Model_' + self.ctr_save_post_string 
+            
+        elif self.args.method_name == 'matchdg_erm':
+            self.save_path=  (
+                                self.base_res_dir + '/' + 
+                                self.ctr_load_post_string + '/Model_' + 
+                                self.post_string + '_' + str(run_matchdg_erm)
+                            )
+            
+        elif self.args.method_name == 'irm_match':
+            self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
-        self.phi.eval()        
+        self.phi.eval()      
+        
+        return
+    
     
     def get_logits(self):
 
