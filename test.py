@@ -212,8 +212,15 @@ for run in range(args.n_runs):
                              )        
         
     #Testing Phase
-    test_method.get_metric_eval()
-    final_metric_score.append( test_method.metric_score )
+    if args.method_name == 'matchdg_erm':
+        for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+            test_method.get_model(run_matchdg_erm)        
+            test_method.get_metric_eval()
+            final_metric_score.append( test_method.metric_score )
+    else:
+        test_method.get_model()        
+        test_method.get_metric_eval()
+        final_metric_score.append( test_method.metric_score )
     
 
 if args.test_metric not in ['t_sne']:
