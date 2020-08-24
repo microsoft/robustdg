@@ -116,7 +116,7 @@ test_domains= args.test_domains
 final_report_accuracy=[]
 base_res_dir=(
                 "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
-                + '/' + 'train_' + str(args.train_domains) + '_test_' + str(args.test_domains) 
+                + '/' + 'train_' + str(args.train_domains)
             )
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
