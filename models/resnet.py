@@ -13,7 +13,7 @@ class Identity(nn.Module):
         return x
 
     
-def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
+def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained):
     if model_name == 'resnet18':
         model=  torchvision.models.resnet18(pre_trained)
         n_inputs = model.fc.in_features
@@ -23,13 +23,14 @@ def get_resnet(model_name, classes, erm_base, num_ch, pre_trained):
         n_inputs = model.fc.in_features
         n_outputs= classes
         
-    if erm_base == 'matchdg_ctr':
-            model.fc = Identity(n_inputs)
-#             model.fc= nn.Sequential( nn.Linear(n_inputs, n_inputs),
-#                                      nn.ReLU(),
-#                                    )
-    else:
+    if fc_layer:
         model.fc = nn.Linear(n_inputs, n_outputs)
+    else:
+        print('Here')
+        model.fc = Identity(n_inputs)
+#         model.fc= nn.Sequential( nn.Linear(n_inputs, n_inputs),
+#                                  nn.ReLU(),
+#                                )
         
     if num_ch==1:
         model.conv1 = nn.Conv2d(1, 64, 

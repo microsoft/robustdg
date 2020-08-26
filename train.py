@@ -41,10 +41,12 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
+parser.add_argument('--fc_layer', type=int, default= 1, 
+                    help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2', 
-                    help='Cost to function to evaluate distance between two representations; Options: l1; l2; cos')
+                    help='Cost function to evaluate distance between two representations; Options: l1; l2; cos')
 parser.add_argument('--rep_dim', type=int, default=250, 
                     help='Representation dimension for contrsative learning')
 parser.add_argument('--pre_trained',type=int, default=0, 
@@ -184,6 +186,15 @@ for run in range(args.n_runs):
     elif args.method_name == 'dro':
         from algorithms.dro import DRO    
         train_method= DRO(
+                                args, train_dataset, val_dataset,
+                                test_dataset, train_domains, 
+                                total_domains, domain_size, 
+                                training_list_size, base_res_dir, 
+                                run, cuda
+                              )
+    elif args.method_name == 'csd':
+        from algorithms.csd import CSD   
+        train_method= CSD(
                                 args, train_dataset, val_dataset,
                                 test_dataset, train_domains, 
                                 total_domains, domain_size, 
