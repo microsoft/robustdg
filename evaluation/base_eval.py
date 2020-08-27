@@ -74,7 +74,11 @@ class BaseEval():
             phi= DomainBed( self.args.img_c )
         if 'resnet' in self.args.model_name:
             from models.resnet import get_resnet
-            phi= get_resnet(self.args.model_name, self.args.out_classes, self.args.method_name, 
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
                             self.args.img_c, self.args.pre_trained)
         
         print('Model Architecture: ', self.args.model_name)
