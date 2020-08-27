@@ -159,3 +159,10 @@ class CSD(BaseAlgo):
         print(' Accuracy: ', case,  100*test_acc/test_size )         
         
         return 100*test_acc/test_size
+    
+    def save_model(self):
+        # Store the weights of the model
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.post_string + '.pth')
+        # Store the parameters
+        torch.save(self.sms, self.base_res_dir + '/Sms_' + self.post_string + ".pt")
+        torch.save(self.sm_biases, self.base_res_dir + '/SmBiases_' + self.post_string + ".pt")
