@@ -86,7 +86,7 @@ class BaseEval():
     
     def load_model(self, run_matchdg_erm):
         
-        if self.args.method_name == 'erm_match':
+        if self.args.method_name in ['erm_match', 'csd', 'irm']:
             self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         elif self.args.method_name == 'matchdg_ctr':
@@ -99,14 +99,29 @@ class BaseEval():
                                 self.post_string + '_' + str(run_matchdg_erm)
                             )
             
-        elif self.args.method_name == 'irm_match':
-            self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
         self.phi.eval()      
         
+        if self.args.method_name == 'csd':
+            self.save_path= self.base_res_dir + '/Sms_' + self.post_string 
+            self.sms= torch.load(self.save_path + '.pt')
+            
+            self.save_path= self.base_res_dir + '/SmBiases_' + self.post_string 
+            self.sm_biases= torch.load(self.save_path + '.pt')
+
         return
     
+    def forward(self, x_e):
+        
+        if self.args.method_name == 'csd':
+            x_e = self.phi(x_e)        
+            w_c, b_c = self.sms[0, :, :], self.sm_biases[0, :]
+            logits= torch.matmul(x_e, w_c) + b_c            
+        else:
+            logits= self.phi(x_e)
+        
+        return logits
     
     def get_logits(self):
 
@@ -119,9 +134,9 @@ class BaseEval():
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 if self.args.mia_logit:
-                    out= self.phi(x_e)
+                    out= self.forward(x_e)
                 else:
-                    out= F.softmax(self.phi(x_e), dim=1)
+                    out= F.softmax(self.forward(x_e), dim=1)
                 final_out.append(out)            
             
         final_out= torch.cat(final_out)
@@ -137,9 +152,9 @@ class BaseEval():
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 if self.args.mia_logit:
-                    out= self.phi(x_e)
+                    out= self.forward(x_e)
                 else:
-                    out= F.softmax(self.phi(x_e), dim=1)
+                    out= F.softmax(self.forward(x_e), dim=1)
                 final_out.append(out)
             
         final_out= torch.cat(final_out)
@@ -150,25 +165,30 @@ class BaseEval():
     
     def get_metric_eval(self):
         
-        #Test Env Code
-        test_acc= 0.0
-        test_size=0
+        for case in ['train', 'test']:        
+            if case == 'train':
+                dataset= self.train_dataset
+            elif case == 'test':
+                dataset= self.test_dataset
 
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
-            with torch.no_grad():
-                x_e= x_e.to(self.cuda)
-                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                d_e = torch.argmax(d_e, dim=1).numpy()       
+            test_acc= 0.0
+            test_size=0
+            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
+                with torch.no_grad():
+                    x_e= x_e.to(self.cuda)
+                    y_e= torch.argmax(y_e, dim=1).to(self.cuda)
+                    d_e = torch.argmax(d_e, dim=1).numpy()       
 
-                #Forward Pass
-                out= self.phi(x_e)                
-                loss_e= torch.mean(F.cross_entropy(out, y_e.long()).to(self.cuda))
-                
-                test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
-                test_size+= y_e.shape[0]
+                    #Forward Pass
+                    out= self.forward(x_e)                
+                    loss_e= torch.mean(F.cross_entropy(out, y_e.long()).to(self.cuda))
 
-        print(' Accuracy: ', 100*test_acc/test_size ) 
-        self.metric_score['Test Accuracy']= 100*test_acc/test_size  
+                    test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
+                    test_size+= y_e.shape[0]
+
+            print(' Accuracy: ', 100*test_acc/test_size ) 
+            self.metric_score[case +' accuracy']= 100*test_acc/test_size  
+            
         return 
 
     
