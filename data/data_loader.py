@@ -10,7 +10,7 @@ class BaseDataLoader(data_utils.Dataset):
     def __init__(self, args, list_train_domains, root, transform=None, data_case='train'):
         self.args= args
         self.list_train_domains = list_train_domains
-        self.root = os.path.expanduser('~' ) + root
+        self.root = 'data/datasets/' + root
         self.transform = transform
         self.data_case = data_case
         self.base_domain_size= 0

@@ -150,20 +150,17 @@ def embedding_dist(x1, x2, pos_metric, tau=0.05, xent=False):
 def get_dataloader(args, run, train_domains, test_domains, kwargs):
     
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
-        if args.model_name == 'lenet':
-            from data.rot_mnist.mnist_loader_lenet import MnistRotated
-        else:
-            from data.rot_mnist.mnist_loader import MnistRotated
+        from data.mnist_loader import MnistRotated
     elif args.dataset_name == 'pacs':
-        from data.pacs.pacs_loader import PACS
+        from data.pacs_loader import PACS
 
     if args.dataset_name in ['pacs', 'vlcs']:
-        train_data_obj= PACS(args, train_domains, '/pacs/train_val_splits/', data_case='train')
-        val_data_obj= PACS(args, train_domains, '/pacs/train_val_splits/', data_case='val')        
-        test_data_obj= PACS(args, test_domains, '/pacs/train_val_splits/', data_case='test')
+        train_data_obj= PACS(args, train_domains, 'pacs/train_val_splits/', data_case='train')
+        val_data_obj= PACS(args, train_domains, 'pacs/train_val_splits/', data_case='val')        
+        test_data_obj= PACS(args, test_domains, 'pacs/train_val_splits/', data_case='test')
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(args, train_domains, run, '/rot_mnist/', data_case='train')
-        val_data_obj=  MnistRotated(args, train_domains, run, '/rot_mnist/', data_case='val')
+        train_data_obj=  MnistRotated(args, train_domains, run, 'rot_mnist/', data_case='train')
+        val_data_obj=  MnistRotated(args, train_domains, run, 'rot_mnist/', data_case='val')
         
         try:
             if args.test_metric in [ 'acc', 'match_score', 'mia', 'adv_attack']:
