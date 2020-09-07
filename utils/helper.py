@@ -175,11 +175,26 @@ def get_dataloader(args, run, train_domains, test_domains, kwargs):
                 test_data_obj=  MnistRotated(args, test_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='test')            
 
     # Load supervised training
-    train_dataset = data_utils.DataLoader(train_data_obj, batch_size=args.batch_size, shuffle=True, **kwargs )
+    try:
+        if args.test_metric in ['logit_hist']:
+            train_batch=1
+        else:
+            train_batch= args.batch_size
+    except AttributeError:
+        train_batch= args.batch_size
+        
+    train_dataset = data_utils.DataLoader(train_data_obj, batch_size=train_batch, shuffle=True, **kwargs )
     
     # Can select a higher batch size for val and test domains
     ## TODO: If condition for test batch size less than total size
-    test_batch=512
+    try:
+        if args.test_metric in ['logit_hist']:
+            test_batch=1
+        else:
+            test_batch= 512
+    except AttributeError:
+        test_batch= 512
+    
     val_dataset = data_utils.DataLoader(val_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
     test_dataset = data_utils.DataLoader(test_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
     

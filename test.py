@@ -45,6 +45,8 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
+parser.add_argument('--fc_layer', type=int, default= 1, 
+                    help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2', 
@@ -111,6 +113,8 @@ parser.add_argument('--mia_logit', default=1, type=int,
                     help='0: Softmax applied to logits; 1: No Softmax applied to logits')
 parser.add_argument('--adv_eps', default=0.3, type=float,
                     help='Epsilon ball dimension for PGD attacks')
+parser.add_argument('--logit_plot_path', default='', type=str,
+                    help='File name to save logit/loss plots')
 parser.add_argument('--ctr_abl', type=int, default=0, 
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--match_abl', type=int, default=0, 
@@ -201,6 +205,16 @@ for run in range(args.n_runs):
                               run, cuda
                              )        
 
+    elif args.test_metric == 'logit_hist':
+        from evaluation.logit_hist import LogitHist
+        test_method= LogitHist(
+                              args, train_dataset,
+                              test_dataset, train_domains,
+                              total_domains, domain_size,
+                              training_list_size, base_res_dir,
+                              run, cuda
+                             )        
+        
     elif args.test_metric == 'adv_attack':
         from evaluation.adv_attack import AdvAttack
         test_method= AdvAttack(
@@ -223,7 +237,7 @@ for run in range(args.n_runs):
         final_metric_score.append( test_method.metric_score )
     
 
-if args.test_metric not in ['t_sne']:
+if args.test_metric not in ['t_sne', 'logit_hist']:
     print('\n')
     print('Done for Model..')
 

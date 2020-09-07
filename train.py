@@ -41,6 +41,8 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
+parser.add_argument('--fc_layer', type=int, default= 1, 
+                    help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2', 
