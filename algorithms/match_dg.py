@@ -20,9 +20,9 @@ from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 from utils.match_function import get_matched_pairs
 
 class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
         
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
         self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
@@ -327,8 +327,11 @@ class MatchDG(BaseAlgo):
                 print('Train Acc Env : ', 100*train_acc/train_size )
                 print('Done Training for epoch: ', epoch)    
                 
+                #Val Dataset Accuracy
+                self.val_acc.append( self.get_test_accuracy('val') )
+
                 #Test Dataset Accuracy
-                self.final_acc.append( self.get_test_accuracy() )
+                self.final_acc.append( self.get_test_accuracy('test') )
                     
             # Save the model's weights post training
             self.save_model_erm_phase(run_erm)

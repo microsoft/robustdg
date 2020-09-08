@@ -17,9 +17,10 @@ import torch.utils.data as data_utils
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
         self.args= args
         self.train_dataset= train_dataset
+        self.val_dataset= val_dataset
         self.test_dataset= test_dataset
         self.train_domains= train_domains
         self.total_domains= total_domains
@@ -52,7 +53,11 @@ class BaseAlgo():
             phi= DomainBed( self.args.img_c )
         if 'resnet' in self.args.model_name:
             from models.resnet import get_resnet
-            phi= get_resnet(self.args.model_name, self.args.out_classes, self.args.method_name, 
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
                             self.args.img_c, self.args.pre_trained)
             
         print('Model Architecture: ', self.args.model_name)
@@ -90,11 +95,15 @@ class BaseAlgo():
         
         return data_match_tensor, label_match_tensor
 
-    def get_test_accuracy(self):
+    def get_test_accuracy(self, case):
         
         #Test Env Code
         test_acc= 0.0
         test_size=0
+        if case == 'val':
+            dataset= self.val_dataset
+        elif case == 'test':
+            dataset= self.test_dataset
 
         for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
             with torch.no_grad():
@@ -108,6 +117,6 @@ class BaseAlgo():
                 test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
                 test_size+= y_e.shape[0]
 
-        print(' Accuracy: ', 100*test_acc/test_size )         
+        print(' Accuracy: ', case, 100*test_acc/test_size )         
         
         return 100*test_acc/test_size
