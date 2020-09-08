@@ -166,8 +166,8 @@ def get_dataloader(args, run, train_domains, test_domains, kwargs):
         val_data_obj=  MnistRotated(args, train_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='val')
         
         try:
-            if args.test_metric == 'mia':
-                print('Common Test Dataset for MIA evaluation')
+            if args.test_metric in [ 'mia', 'adv_attack']:
+                print('Common Test Dataset for MIA / Adversarial Attack evaluation')
                 test_data_obj=  MnistRotated(args, test_domains, 9, '/RobustDG/robustdg/data/rot_mnist', data_case='test')
             else:
                 test_data_obj=  MnistRotated(args, test_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='test')            
