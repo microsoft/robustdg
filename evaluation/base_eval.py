@@ -17,16 +17,12 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 class BaseEval():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, 
-                 total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, test_dataset, base_res_dir, run, cuda):
         
         self.args= args
         self.train_dataset= train_dataset
         self.test_dataset= test_dataset
-        self.train_domains= train_domains
-        self.total_domains= total_domains
-        self.domain_size= domain_size 
-        self.training_list_size= training_list_size
+        
         self.base_res_dir= base_res_dir
         self.run= run
         self.cuda= cuda
@@ -131,7 +127,7 @@ class BaseEval():
 
         #Train Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -149,7 +145,7 @@ class BaseEval():
 
         #Test Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -171,9 +167,9 @@ class BaseEval():
         
         for case in ['train', 'test']:        
             if case == 'train':
-                dataset= self.train_dataset
+                dataset= self.train_dataset['data_loader']
             elif case == 'test':
-                dataset= self.test_dataset
+                dataset= self.test_dataset['data_loader']
 
             test_acc= 0.0
             test_size=0

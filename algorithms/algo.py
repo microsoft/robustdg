@@ -17,14 +17,17 @@ import torch.utils.data as data_utils
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         self.args= args
-        self.train_dataset= train_dataset
-        self.test_dataset= test_dataset
-        self.train_domains= train_domains
-        self.total_domains= total_domains
-        self.domain_size= domain_size 
-        self.training_list_size= training_list_size
+        self.train_dataset= train_dataset['data_loader']
+        self.val_dataset= val_dataset['data_loader']
+        self.test_dataset= test_dataset['data_loader']
+        
+        self.train_domains= train_dataset['domain_list']
+        self.total_domains= train_dataset['total_domains']
+        self.domain_size= train_dataset['base_domain_size'] 
+        self.training_list_size= train_dataset['domain_size_list']
+        
         self.base_res_dir= base_res_dir
         self.run= run
         self.cuda= cuda
@@ -66,6 +69,10 @@ class BaseAlgo():
     def save_model(self):
         # Store the weights of the model
         torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.post_string + '.pth')
+        
+        # Store the validation, test loss over the training epochs
+        np.save( self.base_res_dir + '/Val_Acc_' + self.post_string + '.npy', np.array(self.val_acc) )
+        np.save( self.base_res_dir + '/Test_Acc_' + self.post_string + '.npy', np.array(self.final_acc))
     
     def get_opt(self):
         if self.args.opt == 'sgd':
@@ -94,11 +101,15 @@ class BaseAlgo():
         
         return data_match_tensor, label_match_tensor
 
-    def get_test_accuracy(self):
+    def get_test_accuracy(self, case):
         
         #Test Env Code
         test_acc= 0.0
         test_size=0
+        if case == 'val':
+            dataset= self.val_dataset
+        elif case == 'test':
+            dataset= self.test_dataset
 
         for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
             with torch.no_grad():
@@ -112,6 +123,6 @@ class BaseAlgo():
                 test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
                 test_size+= y_e.shape[0]
 
-        print(' Accuracy: ', 100*test_acc/test_size )         
+        print(' Accuracy: ', case, 100*test_acc/test_size )         
         
         return 100*test_acc/test_size

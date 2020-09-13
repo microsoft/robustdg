@@ -16,9 +16,9 @@ from torchvision import datasets, transforms
 from .data_loader import BaseDataLoader
 
 class PACS(BaseDataLoader):
-    def __init__(self, args, list_train_domains, root, transform=None, data_case='train'):
+    def __init__(self, args, list_train_domains, root, transform=None, data_case='train', match_func=False):
         
-        super().__init__(args, list_train_domains, root, transform, data_case) 
+        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
         self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
 
     def _get_data(self):
@@ -80,7 +80,8 @@ class PACS(BaseDataLoader):
             training_list_size.append(len(pacs_imgs))            
             training_out_classes.append( len(np.unique(pacs_labels)) )
         
-        if self.data_case == 'train':
+        if self.match_func:
+            print('Match Function Updates')
             num_classes= 7
             for y_c in range(num_classes):
                 base_class_size=0

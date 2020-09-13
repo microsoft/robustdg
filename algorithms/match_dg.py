@@ -20,9 +20,9 @@ from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 from utils.match_function import get_matched_pairs
 
 class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda, ctr_phase=1):
         
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
         self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
@@ -57,10 +57,11 @@ class MatchDG(BaseAlgo):
                 ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
             if self.args.ctr_model_name == 'resnet18':
                 from models.resnet import get_resnet
-                ctr_phi= get_resnet('resnet18', self.args.out_classes, 'matchdg_ctr', self.args.img_c, self.args.pre_trained).to(self.cuda)
+                fc_layer=0                
+                ctr_phi= get_resnet('resnet18', self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained).to(self.cuda)
 
             # Load MatchDG CTR phase model from the saved weights
-            base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains) + '_test_' + str(self.args.test_domains)             
+            base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
             save_path= base_res_dir + '/Model_' + self.ctr_load_post_string + '.pth'
             ctr_phi.load_state_dict( torch.load(save_path) )
             ctr_phi.eval()
@@ -327,8 +328,10 @@ class MatchDG(BaseAlgo):
                 print('Train Acc Env : ', 100*train_acc/train_size )
                 print('Done Training for epoch: ', epoch)    
                 
+                #Val Dataset Accuracy
+                self.val_acc.append( self.get_test_accuracy('val') )
+
                 #Test Dataset Accuracy
-                self.final_acc.append( self.get_test_accuracy() )
-                    
+                self.final_acc.append( self.get_test_accuracy('test') )                    
             # Save the model's weights post training
             self.save_model_erm_phase(run_erm)

@@ -13,6 +13,8 @@ results/
 #philly_tools
 .ptignore
 pt/
+*.yaml
+.ptconfig
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

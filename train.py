@@ -6,6 +6,7 @@ import argparse
 import copy
 import random
 import json
+import sklearn
 
 #Pytorch
 import torch
@@ -101,6 +102,8 @@ parser.add_argument('--retain', type=float, default=0,
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--cuda_device', type=int, default=0, 
                     help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 args = parser.parse_args()
 
 #GPU
@@ -115,9 +118,14 @@ train_domains= args.train_domains
 test_domains= args.test_domains
 
 #Initialize
-final_report_accuracy=[]
+final_accuracy_target_val=[]
+final_accuracy_source_val=[]
+if args.os_env:
+    res_dir= os.getenv('PT_OUTPUT_DIR') + '/'
+else:
+    res_dir= 'results/'
 base_res_dir=(
-                "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
+                res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )
 if not os.path.exists(base_res_dir):
@@ -132,46 +140,40 @@ for run in range(args.n_runs):
         torch.cuda.manual_seed_all(run*10)    
             
     #DataLoader        
-    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
-    print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
+    train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )    
+    val_dataset= get_dataloader( args, run, train_domains, 'val', kwargs )    
+    test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )    
+#     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
     if args.method_name == 'erm_match':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
-                                args, train_dataset, 
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
     elif args.method_name == 'matchdg_ctr':
         from algorithms.match_dg import MatchDG
         ctr_phase=1
         train_method= MatchDG(
-                                args, train_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size,  base_res_dir, 
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
                                 run, cuda, ctr_phase
                              )     
     elif args.method_name == 'matchdg_erm':
         from algorithms.match_dg import MatchDG
         ctr_phase=0
         train_method= MatchDG(
-                                args, train_dataset,
-                                test_dataset, train_domains,
-                                total_domains, domain_size,
-                                training_list_size,  base_res_dir,
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir,
                                 run, cuda, ctr_phase
                              )
     elif args.method_name == 'irm':
         from algorithms.irm import Irm    
         train_method= Irm(
-                                args, train_dataset, 
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
 
@@ -181,11 +183,16 @@ for run in range(args.n_runs):
             
     # Final Report Accuacy
     if args.method_name != 'matchdg_ctr':
-        final_acc= train_method.final_acc[-1]
-        final_report_accuracy.append( final_acc )
+        final_acc= np.max(train_method.final_acc)
+        final_accuracy_target_val.append( final_acc )
+        
+        idx= np.argmax(train_method.val_acc)
+        final_acc= train_method.final_acc[idx]
+        final_accuracy_source_val.append( final_acc  )
                    
 if args.method_name != 'matchdg_ctr':
     print('\n')
     print('Done for the Model..')
-    print('Final Test Accuracy', np.mean(final_report_accuracy), np.std(final_report_accuracy) )
+    print('Final Test Accuracy (Source Validation)', np.mean(final_accuracy_source_val), np.std(final_accuracy_source_val) )
+    print('Final Test Accuracy (Target Validation)', np.mean(final_accuracy_target_val), np.std(final_accuracy_target_val) )
     print('\n')

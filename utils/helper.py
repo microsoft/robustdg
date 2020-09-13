@@ -147,56 +147,57 @@ def embedding_dist(x1, x2, pos_metric, tau=0.05, xent=False):
             return cosine_similarity( x1, x2 )
     
     
-def get_dataloader(args, run, train_domains, test_domains, kwargs):
+def get_dataloader(args, run, domains, data_case, kwargs):
     
+    dataset={}
+
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         from data.mnist_loader import MnistRotated
     elif args.dataset_name == 'pacs':
         from data.pacs_loader import PACS
-
+    
+    if data_case == 'train':
+        match_func=True
+        batch_size= args.batch_size
+    else:
+        match_func=False            
+        # Can select a higher batch size for val and test domains
+        ## TODO: If condition for test batch size less than total size
+        batch_size= 512
+    
+    # Set match_func to True in case of test metric as match_score
+    try:
+        if args.test_metric in ['match_score']:
+            match_func=True
+    except AttributeError:
+        match_func= match_func
+            
+    try:
+        if args.test_metric in ['logit_hist']:
+            batch_size=1
+    except AttributeError:
+        batch_size= batch_size
+    
     if args.dataset_name in ['pacs', 'vlcs']:
-        train_data_obj= PACS(args, train_domains, 'pacs/train_val_splits/', data_case='train')
-        val_data_obj= PACS(args, train_domains, 'pacs/train_val_splits/', data_case='val')        
-        test_data_obj= PACS(args, test_domains, 'pacs/train_val_splits/', data_case='test')
+        data_obj= PACS(args, domains, '/pacs/train_val_splits/', data_case=data_case, match_func=match_func)
+        
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:
-        train_data_obj=  MnistRotated(args, train_domains, run, 'rot_mnist/', data_case='train')
-        val_data_obj=  MnistRotated(args, train_domains, run, 'rot_mnist/', data_case='val')
         
+        mnist_subset=run        
         try:
-            if args.test_metric in [ 'acc', 'match_score', 'mia', 'adv_attack']:
+            if data_case == 'test' and args.test_metric in [ 'acc', 'match_score', 'mia', 'adv_attack']:
                 print('Common Test Dataset for MIA / Adversarial Attack evaluation')
-                test_data_obj=  MnistRotated(args, test_domains, 9, '/RobustDG/robustdg/data/rot_mnist', data_case='test')
-            else:
-                test_data_obj=  MnistRotated(args, test_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='test')            
+                mnist_subset=9
         except AttributeError:
-                test_data_obj=  MnistRotated(args, test_domains, run, '/RobustDG/robustdg/data/rot_mnist', data_case='test')            
-
-    # Load supervised training
-    try:
-        if args.test_metric in ['logit_hist']:
-            train_batch=1
-        else:
-            train_batch= args.batch_size
-    except AttributeError:
-        train_batch= args.batch_size
+            mnist_subset=run
         
-    train_dataset = data_utils.DataLoader(train_data_obj, batch_size=train_batch, shuffle=True, **kwargs )
-    
-    # Can select a higher batch size for val and test domains
-    ## TODO: If condition for test batch size less than total size
-    try:
-        if args.test_metric in ['logit_hist']:
-            test_batch=1
-        else:
-            test_batch= 512
-    except AttributeError:
-        test_batch= 512
-    
-    val_dataset = data_utils.DataLoader(val_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
-    test_dataset = data_utils.DataLoader(test_data_obj, batch_size=test_batch, shuffle=True, **kwargs )
-    
-    total_domains= len(train_domains)
-    domain_size= train_data_obj.base_domain_size       
-    training_list_size= train_data_obj.training_list_size
+        data_obj=  MnistRotated(args, domains, mnist_subset, 'rot_mnist/', data_case=data_case, match_func=match_func)
 
-    return train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size
+        
+    dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )
+    dataset['total_domains']= len(domains)
+    dataset['domain_list']= domains
+    dataset['base_domain_size']= data_obj.base_domain_size       
+    dataset['domain_size_list']= data_obj.training_list_size    
+    
+    return dataset

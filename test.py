@@ -103,6 +103,8 @@ parser.add_argument('--test_metric', type=str, default='acc',
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--match_func_data_case', type=str, default='train', 
+                    help='Dataset Train/Val/Test for the match score evaluation metric')
 parser.add_argument('--mia_batch_size', default=64, type=int, 
                     help='batch size')
 parser.add_argument('--mia_dnn_steps', default=5000, type=int,
@@ -121,6 +123,9 @@ parser.add_argument('--match_abl', type=int, default=0,
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--cuda_device', type=int, default=0, 
                     help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
 args = parser.parse_args()
 
 #GPU
@@ -161,17 +166,30 @@ for run in range(args.n_runs):
         torch.cuda.manual_seed_all(run*10)    
     
     #DataLoader        
-    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
-    print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
+    train_dataset= torch.empty(0)
+    val_dataset= torch.empty(0)
+    test_dataset= torch.empty(0)
+    if args.test_metric == 'match_score':
+        if args.match_func_data_case== 'train':
+            train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
+        elif args.match_func_data_case== 'val':
+            val_dataset= get_dataloader( args, run, train_domains, 'val', kwargs )
+        elif args.match_func_data_case== 'test':
+            test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+    elif args.test_metric == 'mia':
+        train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
+        test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+    else:
+        test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+        
+#     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the testing module
     if args.test_metric == 'acc':
         from evaluation.base_eval import BaseEval
         test_method= BaseEval(
                               args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )
         
@@ -179,19 +197,15 @@ for run in range(args.n_runs):
         from evaluation.match_eval import MatchEval
         test_method= MatchEval(
                                args, train_dataset, 
-                               test_dataset, train_domains, 
-                               total_domains, domain_size, 
-                               training_list_size, base_res_dir, 
-                               run, args.top_k, cuda
+                               test_dataset, base_res_dir, 
+                               run, cuda
                               )   
 
     elif args.test_metric == 't_sne':
         from evaluation.t_sne import TSNE
         test_method= TSNE(
                               args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
         
@@ -199,9 +213,7 @@ for run in range(args.n_runs):
         from evaluation.privacy_attack import PrivacyAttack
         test_method= PrivacyAttack(
                               args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
 
@@ -209,9 +221,7 @@ for run in range(args.n_runs):
         from evaluation.logit_hist import LogitHist
         test_method= LogitHist(
                               args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
         
@@ -219,23 +229,32 @@ for run in range(args.n_runs):
         from evaluation.adv_attack import AdvAttack
         test_method= AdvAttack(
                               args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
         
     #Testing Phase
-    if args.method_name == 'matchdg_erm':
-        for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
-            test_method.get_model(run_matchdg_erm)        
-            test_method.get_metric_eval()
-            final_metric_score.append( test_method.metric_score )
+    if args.test_metric == 'mia':
+        for mia_run in range(3):
+            if args.method_name == 'matchdg_erm':
+                for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+                    test_method.get_model(run_matchdg_erm)        
+                    test_method.get_metric_eval()
+                    final_metric_score.append( test_method.metric_score )
+            else:
+                test_method.get_model()        
+                test_method.get_metric_eval()
+                final_metric_score.append( test_method.metric_score )
     else:
-        test_method.get_model()        
-        test_method.get_metric_eval()
-        final_metric_score.append( test_method.metric_score )
-    
+        if args.method_name == 'matchdg_erm':
+            for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+                test_method.get_model(run_matchdg_erm)        
+                test_method.get_metric_eval()
+                final_metric_score.append( test_method.metric_score )
+        else:
+            test_method.get_model()        
+            test_method.get_metric_eval()
+            final_metric_score.append( test_method.metric_score )    
 
 if args.test_metric not in ['t_sne', 'logit_hist']:
     print('\n')

@@ -13,9 +13,9 @@ from torchvision import datasets, transforms
 from .data_loader import BaseDataLoader
 
 class MnistRotated(BaseDataLoader):
-    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', download=True):
+    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
         
-        super().__init__(args, list_train_domains, root, transform, data_case) 
+        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
         self.mnist_subset = mnist_subset
         self.download = download
         
@@ -126,8 +126,8 @@ class MnistRotated(BaseDataLoader):
             training_list_idx.append(mnist_idx)
             training_list_size.append(mnist_img_rot.shape[0])
              
-        # Making domain size equivalent everywhere by random sampling
-        if self.data_case == 'train':
+        if self.match_func:
+            print('Match Function Updates')
             num_classes= 10
             for y_c in range(num_classes):
                 base_class_size=0
