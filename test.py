@@ -101,6 +101,8 @@ parser.add_argument('--retain', type=float, default=0,
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--test_metric', type=str, default='acc', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--acc_data_case', type=str, default='train', 
+                    help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
 parser.add_argument('--match_func_data_case', type=str, default='train', 
@@ -176,7 +178,12 @@ for run in range(args.n_runs):
             val_dataset= get_dataloader( args, run, train_domains, 'val', kwargs )
         elif args.match_func_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
-    elif args.test_metric == 'mia':
+    elif args.test_metric == 'acc':
+        if args.acc_data_case== 'train':
+            train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
+        elif args.acc_data_case== 'test':
+            test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+    elif args.test_metric == 'mia' or 'privacy_entropy':
         train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
     else:
@@ -212,6 +219,14 @@ for run in range(args.n_runs):
     elif args.test_metric == 'mia':
         from evaluation.privacy_attack import PrivacyAttack
         test_method= PrivacyAttack(
+                              args, train_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )        
+        
+    elif args.test_metric == 'privacy_entropy':
+        from evaluation.privacy_entropy import PrivacyEntropy
+        test_method= PrivacyEntropy(
                               args, train_dataset,
                               test_dataset, base_res_dir,
                               run, cuda

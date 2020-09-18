@@ -72,6 +72,9 @@ class Irm(BaseAlgo):
                 erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                 penalty_erm+= float(erm_loss)                
                 loss_e += erm_loss                
+                
+                train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
+                train_size+= label_match.shape[0]                
                         
                 if epoch > self.args.penalty_s:
                     # Creating tensor of shape ( domain size, total domains, feat size )
@@ -105,11 +108,7 @@ class Irm(BaseAlgo):
                 del irm_loss 
                 del loss_e
                 torch.cuda.empty_cache()
-        
-                train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                train_size+= y_e.shape[0]
-                
-   
+           
             print('Train Loss Basic : ',  penalty_erm, penalty_irm )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)

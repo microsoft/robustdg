@@ -275,7 +275,10 @@ class MatchDG(BaseAlgo):
                         label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
 
                         erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
-                        penalty_erm+= float(erm_loss)                
+                        penalty_erm+= float(erm_loss) 
+                        
+                        train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
+                        train_size+= label_match.shape[0]                        
 
                         # Creating tensor of shape ( domain size, total domains, feat size )
                         if len(feat_match.shape) == 4:
@@ -320,9 +323,6 @@ class MatchDG(BaseAlgo):
                     del wasserstein_loss 
                     del loss_e
                     torch.cuda.empty_cache()
-
-                    train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                    train_size+= y_e.shape[0]
 
                 print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
                 print('Train Acc Env : ', 100*train_acc/train_size )

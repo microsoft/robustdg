@@ -111,7 +111,7 @@ class BaseAlgo():
         elif case == 'test':
             dataset= self.test_dataset
 
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)

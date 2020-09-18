@@ -181,17 +181,13 @@ def get_dataloader(args, run, domains, data_case, kwargs):
     if args.dataset_name in ['pacs', 'vlcs']:
         data_obj= PACS(args, domains, '/pacs/train_val_splits/', data_case=data_case, match_func=match_func)
         
-    elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:
-        
-        mnist_subset=run        
-        try:
-            if data_case == 'test' and args.test_metric in [ 'acc', 'match_score', 'mia', 'adv_attack']:
-                print('Common Test Dataset for MIA / Adversarial Attack evaluation')
-                mnist_subset=9
-        except AttributeError:
-            mnist_subset=run
-        
-        data_obj=  MnistRotated(args, domains, mnist_subset, 'rot_mnist/', data_case=data_case, match_func=match_func)
+    elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:        
+        if data_case == 'test':
+            mnist_subset=9
+        else:
+            mnist_subset=run            
+        print('MNIST Subset: ', run)
+        data_obj=  MnistRotated(args, domains, mnist_subset, '/rot_mnist/', data_case=data_case, match_func=match_func)
 
         
     dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )

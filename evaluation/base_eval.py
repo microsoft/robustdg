@@ -109,7 +109,7 @@ class BaseEval():
             
             self.save_path= self.base_res_dir + '/SmBiases_' + self.post_string 
             self.sm_biases= torch.load(self.save_path + '.pt')
-
+        
         return
     
     def forward(self, x_e):
@@ -165,30 +165,46 @@ class BaseEval():
     
     def get_metric_eval(self):
         
-        for case in ['train', 'test']:        
-            if case == 'train':
-                dataset= self.train_dataset['data_loader']
-            elif case == 'test':
-                dataset= self.test_dataset['data_loader']
+        case= self.args.acc_data_case        
+        if case=='train':
+            dataset= self.train_dataset['data_loader']
+            total_domains= self.train_dataset['total_domains']
+            domain_list= self.train_dataset['domain_list']
+            base_domain_size= self.train_dataset['base_domain_size']
+            domain_size_list= self.train_dataset['domain_size_list']
 
-            test_acc= 0.0
-            test_size=0
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
-                with torch.no_grad():
-                    x_e= x_e.to(self.cuda)
-                    y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                    d_e = torch.argmax(d_e, dim=1).numpy()       
+        elif case== 'val':
+            dataset= self.val_dataset['data_loader']
+            total_domains= self.val_dataset['total_domains']
+            domain_list= self.val_dataset['domain_list']
+            base_domain_size= self.val_dataset['base_domain_size']
+            domain_size_list= self.val_dataset['domain_size_list']
 
-                    #Forward Pass
-                    out= self.forward(x_e)                
-                    loss_e= torch.mean(F.cross_entropy(out, y_e.long()).to(self.cuda))
+        elif case== 'test':
+            dataset= self.test_dataset['data_loader']
+            total_domains= self.test_dataset['total_domains']
+            domain_list= self.test_dataset['domain_list']
+            base_domain_size= self.test_dataset['base_domain_size']
+            domain_size_list= self.test_dataset['domain_size_list']
+        
+        test_acc= 0.0
+        test_size=0
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)
+                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
+                d_e = torch.argmax(d_e, dim=1).numpy()       
 
-                    test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
-                    test_size+= y_e.shape[0]
+                #Forward Pass
+                out= self.forward(x_e)                
+                loss_e= torch.mean(F.cross_entropy(out, y_e.long()).to(self.cuda))
 
-            print(' Accuracy: ', 100*test_acc/test_size ) 
-            self.metric_score[case +' accuracy']= 100*test_acc/test_size  
-            
+                test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
+                test_size+= y_e.shape[0]
+
+        print(' Accuracy: ', 100*test_acc/test_size ) 
+        self.metric_score[case +' accuracy']= 100*test_acc/test_size  
+
         return 
 
     

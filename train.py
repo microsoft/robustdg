@@ -169,6 +169,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir,
                                 run, cuda, ctr_phase
                              )
+    elif args.method_name == 'erm':
+        from algorithms.erm import Erm    
+        train_method= Erm(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )           
     elif args.method_name == 'irm':
         from algorithms.irm import Irm    
         train_method= Irm(
@@ -176,7 +183,20 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-
+    elif args.method_name == 'dro':
+        from algorithms.dro import DRO    
+        train_method= DRO(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
+    elif args.method_name == 'csd':
+        from algorithms.csd import CSD   
+        train_method= CSD(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()

@@ -13,7 +13,7 @@ class BaseDataLoader(data_utils.Dataset):
         if self.args.os_env:
             self.root = os.getenv('PT_DATA_DIR') + root
         else:
-            self.root = 'data/datasets/' + root
+            self.root = 'data/datasets' + root
         self.transform = transform
         self.data_case = data_case
         self.match_func= match_func
