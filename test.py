@@ -249,8 +249,19 @@ for run in range(args.n_runs):
                              )        
         
     #Testing Phase
-    if args.test_metric == 'mia':
-        for mia_run in range(3):
+    with torch.no_grad():
+        if args.test_metric == 'mia':
+            for mia_run in range(3):
+                if args.method_name == 'matchdg_erm':
+                    for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+                        test_method.get_model(run_matchdg_erm)        
+                        test_method.get_metric_eval()
+                        final_metric_score.append( test_method.metric_score )
+                else:
+                    test_method.get_model()        
+                    test_method.get_metric_eval()
+                    final_metric_score.append( test_method.metric_score )
+        else:
             if args.method_name == 'matchdg_erm':
                 for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
                     test_method.get_model(run_matchdg_erm)        
@@ -259,17 +270,7 @@ for run in range(args.n_runs):
             else:
                 test_method.get_model()        
                 test_method.get_metric_eval()
-                final_metric_score.append( test_method.metric_score )
-    else:
-        if args.method_name == 'matchdg_erm':
-            for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
-                test_method.get_model(run_matchdg_erm)        
-                test_method.get_metric_eval()
-                final_metric_score.append( test_method.metric_score )
-        else:
-            test_method.get_model()        
-            test_method.get_metric_eval()
-            final_metric_score.append( test_method.metric_score )    
+                final_metric_score.append( test_method.metric_score )    
 
 if args.test_metric not in ['t_sne', 'logit_hist']:
     print('\n')

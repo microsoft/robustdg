@@ -154,7 +154,10 @@ def get_dataloader(args, run, domains, data_case, kwargs):
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         from data.mnist_loader import MnistRotated
     elif args.dataset_name == 'pacs':
-        from data.pacs_loader import PACS
+        if args.method_name == 'hybrid' and data_case == 'train':            
+            from data.pacs_loader_aug import PACSAug as PACS
+        else:
+            from data.pacs_loader import PACS
     
     if data_case == 'train':
         match_func=True

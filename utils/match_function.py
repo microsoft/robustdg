@@ -53,22 +53,40 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
         domain_count[domain]= 0
         
     # Create dictionary: class label -> list of ordered indices
-    for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(train_dataset):
-        x_e= x_e
-        y_e= torch.argmax(y_e, dim=1)
-        d_e= torch.argmax(d_e, dim=1).numpy()
-        
-        domain_indices= np.unique(d_e)
-        for domain_idx in domain_indices:                        
-            indices= d_e == domain_idx
-            ordered_indices= idx_e[indices]
-            for idx in range(ordered_indices.shape[0]):                
-                #Matching points across domains
-                perfect_indice= ordered_indices[idx].item()
-                domain_data[domain_idx]['data'][perfect_indice]= x_e[indices][idx] 
-                domain_data[domain_idx]['label'][perfect_indice]= y_e[indices][idx]
-                domain_data[domain_idx]['idx'][perfect_indice]= idx_e[indices][idx]
-                domain_count[domain_idx]+= 1        
+    if args.method_name == 'hybrid':
+        for batch_idx, (x_e, _, y_e ,d_e, idx_e) in enumerate(train_dataset):
+            x_e= x_e
+            y_e= torch.argmax(y_e, dim=1)
+            d_e= torch.argmax(d_e, dim=1).numpy()
+
+            domain_indices= np.unique(d_e)
+            for domain_idx in domain_indices:                        
+                indices= d_e == domain_idx
+                ordered_indices= idx_e[indices]
+                for idx in range(ordered_indices.shape[0]):                
+                    #Matching points across domains
+                    perfect_indice= ordered_indices[idx].item()
+                    domain_data[domain_idx]['data'][perfect_indice]= x_e[indices][idx] 
+                    domain_data[domain_idx]['label'][perfect_indice]= y_e[indices][idx]
+                    domain_data[domain_idx]['idx'][perfect_indice]= idx_e[indices][idx]
+                    domain_count[domain_idx]+= 1                
+    else:
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(train_dataset):
+            x_e= x_e
+            y_e= torch.argmax(y_e, dim=1)
+            d_e= torch.argmax(d_e, dim=1).numpy()
+
+            domain_indices= np.unique(d_e)
+            for domain_idx in domain_indices:                        
+                indices= d_e == domain_idx
+                ordered_indices= idx_e[indices]
+                for idx in range(ordered_indices.shape[0]):                
+                    #Matching points across domains
+                    perfect_indice= ordered_indices[idx].item()
+                    domain_data[domain_idx]['data'][perfect_indice]= x_e[indices][idx] 
+                    domain_data[domain_idx]['label'][perfect_indice]= y_e[indices][idx]
+                    domain_data[domain_idx]['idx'][perfect_indice]= idx_e[indices][idx]
+                    domain_count[domain_idx]+= 1        
     
     #Sanity Check: To check if the domain_data was updated for all the data points
     for domain in range(total_domains):

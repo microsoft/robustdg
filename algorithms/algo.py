@@ -78,7 +78,7 @@ class BaseAlgo():
         if self.args.opt == 'sgd':
             opt= optim.SGD([
                          {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) }, 
-                ], lr= self.args.lr, weight_decay= 5e-4, momentum= 0.9,  nesterov=True )        
+                ], lr= self.args.lr, weight_decay= self.args.weight_decay, momentum= 0.9,  nesterov=True )        
         elif self.args.opt == 'adam':
             opt= optim.Adam([
                         {'params': filter(lambda p: p.requires_grad, self.phi.parameters())},

@@ -76,26 +76,28 @@ class Irm(BaseAlgo):
                 train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
                 train_size+= label_match.shape[0]                
                         
+                # Creating tensor of shape ( domain size, total domains, feat size )
+                if len(feat_match.shape) == 4:
+                    feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
+                else:
+                     feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
+
+                label_match= label_match.view( curr_batch_size, len(self.train_domains) )
+
+        #             print(feat_match.shape)
+                data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+
+                #IRM Penalty
+                domain_counter=0
+                for d_i in range(feat_match.shape[1]):
+                    irm_loss+= compute_irm_penalty( feat_match[:, d_i, :], label_match[:, d_i], self.cuda )
+                    domain_counter+=1
+
+                irm_loss = irm_loss/domain_counter
+                penalty_irm+= float(irm_loss)                                            
+                
+                #IRM Penalty to be minimized only after threshold epoch
                 if epoch > self.args.penalty_s:
-                    # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-            #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
-                    
-                    #IRM Penalty
-                    domain_counter=0
-                    for d_i in range(feat_match.shape[1]):
-                        irm_loss+= compute_irm_penalty( feat_match[:, d_i, :], label_match[:, d_i], self.cuda )
-                        domain_counter+=1
-
-                    irm_loss = irm_loss/domain_counter
-                    penalty_irm+= float(irm_loss)                                            
                     loss_e += self.args.penalty_irm*irm_loss
                     if self.args.penalty_irm > 1.0:
                       # Rescale the entire loss to keep gradients in a reasonable range

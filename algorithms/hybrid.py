@@ -19,26 +19,14 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 from utils.match_function import get_matched_pairs
 
-class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda, ctr_phase=1):
+class Hybrid(BaseAlgo):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda):
         
         super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda) 
         
-        self.ctr_phase= ctr_phase
         self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
         self.ctr_load_post_string= str(self.args.ctr_match_case) + '_' + str(self.args.ctr_match_interrupt) + '_' + str(self.args.ctr_match_flag) + '_' + str(self.run) + '_' + self.args.ctr_model_name
-        
-    def train(self):
-        # Initialise and call train functions depending on the method's phase
-        if self.ctr_phase:
-            self.train_ctr_phase()
-        else:
-            self.train_erm_phase()
-            
-    def save_model_ctr_phase(self, epoch):
-        # Store the weights of the model
-        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + 'epoch_' + str(epoch) + '_' + self.ctr_save_post_string + '.pth')
-
+                    
     def save_model_erm_phase(self, run):
         
         if not os.path.exists(self.base_res_dir + '/' + self.ctr_load_post_string):
@@ -80,150 +68,8 @@ class MatchDG(BaseAlgo):
                 
             return data_match_tensor, label_match_tensor
             
-    def train_ctr_phase(self):
-        
-        for epoch in range(self.args.epochs):    
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                data_match_tensor, label_match_tensor= self.get_match_function(epoch)
-            
-            penalty_same_ctr=0
-            penalty_diff_ctr=0
-            penalty_same_hinge=0
-            penalty_diff_hinge=0           
-            train_acc= 0.0
-            train_size=0
-    
-            perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
-    
-            #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
-        #         print('Batch Idx: ', batch_idx)
-
-                self.opt.zero_grad()
-                loss_e= torch.tensor(0.0).to(self.cuda)            
-
-                x_e= x_e.to(self.cuda)
-                y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                d_e= torch.argmax(d_e, dim=1).numpy()
-
-                same_ctr_loss = torch.tensor(0.0).to(self.cuda)
-                diff_ctr_loss = torch.tensor(0.0).to(self.cuda)
-                same_hinge_loss = torch.tensor(0.0).to(self.cuda)
-                diff_hinge_loss = torch.tensor(0.0).to(self.cuda)
-                
-                if epoch > self.args.penalty_s:
-                    # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
-                    total_batch_size= len(data_match_tensor_split)
-                    if batch_idx >= total_batch_size:
-                        break
-                    curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
-
-        #             data_match= data_match_tensor[idx].to(cuda)
-                    data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
-                    feat_match= self.phi( data_match )
-            
-        #             label_match= label_match_tensor[idx].to(self.cuda)           
-                    label_match= label_match_tensor_split[batch_idx].to(self.cuda)
-                    label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
-                                
-                    # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-            #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
-
-                    # Contrastive Loss
-                    same_neg_counter=1
-                    diff_neg_counter=1
-                    for y_c in range(self.args.out_classes):
-
-                        pos_indices= label_match[:, 0] == y_c
-                        neg_indices= label_match[:, 0] != y_c
-                        pos_feat_match= feat_match[pos_indices]
-                        neg_feat_match= feat_match[neg_indices]
-
-                        if pos_feat_match.shape[0] > neg_feat_match.shape[0]:
-                            print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
-
-                        # If no instances of label y_c in the current batch then continue
-                        if pos_feat_match.shape[0] ==0 or neg_feat_match.shape[0] == 0:
-                            continue
-
-                        # Iterating over anchors from different domains
-                        for d_i in range(pos_feat_match.shape[1]):
-                            if torch.sum( torch.isnan(neg_feat_match) ):
-                                print('Non Reshaped X2 is Nan')
-                                sys.exit()
-
-                            diff_neg_feat_match= neg_feat_match.view(  neg_feat_match.shape[0]*neg_feat_match.shape[1], neg_feat_match.shape[2] )
-
-                            if torch.sum( torch.isnan(diff_neg_feat_match) ):
-                                print('Reshaped X2 is Nan')
-                                sys.exit()
-
-                            neg_dist= embedding_dist( pos_feat_match[:, d_i, :], diff_neg_feat_match[:, :], self.args.pos_metric, self.args.tau, xent=True)     
-                            if torch.sum(torch.isnan(neg_dist)):
-                                print('Neg Dist Nan')
-                                sys.exit()
-
-                            # Iterating pos dist for current anchor
-                            for d_j in range(pos_feat_match.shape[1]):
-                                if d_i != d_j:
-                                    pos_dist= 1.0 - embedding_dist( pos_feat_match[:, d_i, :], pos_feat_match[:, d_j, :], self.args.pos_metric )
-                                    pos_dist= pos_dist / self.args.tau
-                                    if torch.sum(torch.isnan(neg_dist)):
-                                        print('Pos Dist Nan')
-                                        sys.exit()
-
-                                    if torch.sum( torch.isnan( torch.log( torch.exp(pos_dist) + neg_dist ) ) ):
-                                        print('Xent Nan')
-                                        sys.exit()
-
-    #                                 print( 'Pos Dist', pos_dist )
-    #                                 print( 'Log Dist ', torch.log( torch.exp(pos_dist) + neg_dist ))
-                                    diff_hinge_loss+= -1*torch.sum( pos_dist - torch.log( torch.exp(pos_dist) + neg_dist ) )                                 
-                                    diff_ctr_loss+= torch.sum(neg_dist)
-                                    diff_neg_counter+= pos_dist.shape[0]
-
-                    same_ctr_loss = same_ctr_loss / same_neg_counter
-                    diff_ctr_loss = diff_ctr_loss / diff_neg_counter
-                    same_hinge_loss = same_hinge_loss / same_neg_counter
-                    diff_hinge_loss = diff_hinge_loss / diff_neg_counter      
-
-                    penalty_same_ctr+= float(same_ctr_loss)
-                    penalty_diff_ctr+= float(diff_ctr_loss)
-                    penalty_same_hinge+= float(same_hinge_loss)
-                    penalty_diff_hinge+= float(diff_hinge_loss)
-                
-                    loss_e += ( ( epoch- self.args.penalty_s )/(self.args.epochs -self.args.penalty_s) )*diff_hinge_loss
-                        
-                loss_e.backward(retain_graph=False)
-                self.opt.step()
-                
-                del same_ctr_loss
-                del diff_ctr_loss
-                del same_hinge_loss
-                del diff_hinge_loss
-                torch.cuda.empty_cache()
-   
-            print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
-            print('Done Training for epoch: ', epoch)
-            
-            if (epoch+1)%10 == 0:
-                # Save the model's weights post training
-                self.save_model_ctr_phase(epoch)
-            
-    def train_erm_phase(self):
+    def train(self):
         
         for run_erm in range(self.args.n_runs_matchdg_erm):            
             for epoch in range(self.args.epochs):    
@@ -236,6 +82,7 @@ class MatchDG(BaseAlgo):
                 penalty_erm=0
                 penalty_erm_extra=0
                 penalty_ws=0
+                penalty_aug=0
                 train_acc= 0.0
                 train_size=0
 
@@ -245,13 +92,14 @@ class MatchDG(BaseAlgo):
                 print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
 
                 #Batch iteration over single epoch
-                for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+                for batch_idx, (x_e, x_org_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
             #         print('Batch Idx: ', batch_idx)
 
                     self.opt.zero_grad()
                     loss_e= torch.tensor(0.0).to(self.cuda)
 
                     x_e= x_e.to(self.cuda)
+                    x_org_e= x_org_e.to(self.cuda)
                     y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                     d_e= torch.argmax(d_e, dim=1).numpy()
 
@@ -259,6 +107,23 @@ class MatchDG(BaseAlgo):
                     out= self.phi(x_e)
                     erm_loss_extra= F.cross_entropy(out, y_e.long()).to(self.cuda)
                     penalty_erm_extra += float(erm_loss_extra)
+                    
+                    #Perfect Match on Augmentations
+                    out_org= self.phi(x_org_e)
+#                     diff_indices= out != out_org
+#                     out= out[diff_indices]
+#                     out_org= out_org[diff_indices]
+                    augmentation_loss=torch.tensor(0.0).to(self.cuda)
+                    if self.args.pos_metric == 'l2':
+                        augmentation_loss+= torch.sum( torch.sum( (out -out_org)**2, dim=1 ) ) 
+                    elif self.args.pos_metric == 'l1':
+                        augmentation_loss+= torch.sum( torch.sum( torch.abs(out -out_org), dim=1 ) )        
+                    elif self.args.pos_metric == 'cos':
+                        augmentation_loss+= torch.sum( cosine_similarity( out, out_org ) )
+
+                    augmentation_loss = augmentation_loss / out.shape[0]
+#                     print('Augmented Images Fraction: ', out.shape, self.args.batch_size, augmentation_loss)
+                    penalty_aug+= float(augmentation_loss)                            
 
                     wasserstein_loss=torch.tensor(0.0).to(self.cuda)
                     erm_loss= torch.tensor(0.0).to(self.cuda) 
@@ -316,8 +181,10 @@ class MatchDG(BaseAlgo):
 
 
                         loss_e += ( self.args.penalty_ws*( epoch- self.args.penalty_s )/(self.args.epochs - self.args.penalty_s) )*wasserstein_loss
+                        loss_e += self.args.penalty_aug*augmentation_loss
                         loss_e += erm_loss
                         loss_e += erm_loss_extra
+                        
 
                     loss_e.backward(retain_graph=False)
                     self.opt.step()
@@ -328,7 +195,7 @@ class MatchDG(BaseAlgo):
                     del loss_e
                     torch.cuda.empty_cache()
 
-                print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
+                print('Train Loss Basic : ', penalty_erm_extra, penalty_aug, penalty_erm, penalty_ws )
                 print('Train Acc Env : ', 100*train_acc/train_size )
                 print('Done Training for epoch: ', epoch)    
                 

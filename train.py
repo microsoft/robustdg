@@ -56,6 +56,8 @@ parser.add_argument('--perfect_match', type=int, default=1,
                     help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', 
                     help='Optimizer Choice: sgd; adam') 
+parser.add_argument('--weight_decay', type=float, default=5e-4,
+                   help='Weight Decay in SGD')
 parser.add_argument('--lr', type=float, default=0.01, 
                     help='Learning rate for training the model')
 parser.add_argument('--batch_size', type=int, default=16, 
@@ -66,6 +68,8 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_irm', type=float, default=0.0, 
                     help='Penalty weight for IRM invariant classifier loss')
+parser.add_argument('--penalty_aug', type=float, default=1.0, 
+                    help='Penalty weight for Augmentation in Hybrid approach loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -84,7 +88,7 @@ parser.add_argument('--match_abl', type=int, default=0,
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
-parser.add_argument('--n_runs_matchdg_erm', type=int, default=2, 
+parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
                     help='Number of iterations to repeat training process for matchdg_erm')
 parser.add_argument('--ctr_model_name', type=str, default='resnet18', 
                     help='(For matchdg_ctr phase) Architecture of the model to be trained')
@@ -109,7 +113,7 @@ args = parser.parse_args()
 #GPU
 cuda= torch.device("cuda:" + str(args.cuda_device))
 if cuda:
-    kwargs = {'num_workers': 1, 'pin_memory': False} 
+    kwargs = {'num_workers': 0, 'pin_memory': False} 
 else:
     kwargs= {}
 
@@ -169,6 +173,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir,
                                 run, cuda, ctr_phase
                              )
+    elif args.method_name == 'hybrid':
+        from algorithms.hybrid import Hybrid
+        train_method= Hybrid(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir,
+                                run, cuda
+                             )        
     elif args.method_name == 'erm':
         from algorithms.erm import Erm    
         train_method= Erm(

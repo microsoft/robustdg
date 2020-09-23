@@ -22,7 +22,7 @@ class MnistRotated(BaseDataLoader):
         self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
 
     def load_inds(self):
-        data_dir= self.root + '/' + self.args.dataset_name + '_' + self.args.model_name + '_indices'
+        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '_indices'
         if self.data_case != 'val':
             return np.load(data_dir + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
         else:
