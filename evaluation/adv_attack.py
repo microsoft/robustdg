@@ -33,9 +33,9 @@ from .base_eval import BaseEval
 
 class AdvAttack(BaseEval):
     
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, test_dataset, base_res_dir, run, cuda):
         
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
+        super().__init__(args, train_dataset, test_dataset, base_res_dir, run, cuda)
         
         
     def get_metric_eval(self):        
@@ -69,9 +69,9 @@ class AdvAttack(BaseEval):
                 pred_untargeted_adv.append( predict_from_logits(self.phi(adv_untargeted)) )
                 pred_targeted_adv.append( predict_from_logits(self.phi(adv_targeted)) )
             
-#                 temp_counter+=1
-#                 if temp_counter ==3:
-#                     break
+                temp_counter+=1
+                if temp_counter ==5:
+                    break
                     
             pred_cln= torch.cat(pred_cln)
             pred_untargeted_adv= torch.cat(pred_untargeted_adv)
