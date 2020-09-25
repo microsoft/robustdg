@@ -1,7 +1,9 @@
+import torch
 from torch import nn
 from torch.utils import model_zoo
 import torchvision
 from torchvision.models.resnet import BasicBlock, model_urls, Bottleneck
+import os
 
 # bypass layer
 class Identity(nn.Module):
@@ -13,13 +15,26 @@ class Identity(nn.Module):
         return x
 
     
-def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained):
+def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained, os_env):    
     if model_name == 'resnet18':
-        model=  torchvision.models.resnet18(pre_trained)
+        if os_env:        
+            model=  torchvision.models.resnet18()
+            if pre_trained:
+                model.load_state_dict(torch.load( os.getenv('PT_DATA_DIR') + '/checkpoints/resnet18-5c106cde.pth' ))
+        else:
+            model=  torchvision.models.resnet18(pre_trained)
+            
         n_inputs = model.fc.in_features
         n_outputs= classes
+        
     elif model_name == 'resnet50':
-        model=  torchvision.models.resnet50(pre_trained)
+        if os_env:        
+            model=  torchvision.models.resnet50()
+            if pre_trained:
+                model.load_state_dict(torch.load( os.getenv('PT_DATA_DIR') + '/checkpoints/resnet50-19c8e357.pth' ))
+        else:
+            model=  torchvision.models.resnet50(pre_trained)
+            
         n_inputs = model.fc.in_features
         n_outputs= classes
         

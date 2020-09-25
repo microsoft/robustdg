@@ -4,6 +4,7 @@ import argparse
 import copy
 import random
 import json
+import os
 
 import torch
 from torch.autograd import grad
@@ -60,7 +61,7 @@ class BaseAlgo():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
-                            self.args.img_c, self.args.pre_trained)
+                            self.args.img_c, self.args.pre_trained, self.args.os_env)
             
         print('Model Architecture: ', self.args.model_name)
         phi=phi.to(self.cuda)

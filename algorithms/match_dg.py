@@ -55,10 +55,10 @@ class MatchDG(BaseAlgo):
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
                 ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
-            if self.args.ctr_model_name == 'resnet18':
+            if 'resnet' in self.args.ctr_model_name:
                 from models.resnet import get_resnet
                 fc_layer=0                
-                ctr_phi= get_resnet('resnet18', self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained).to(self.cuda)
+                ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
 
             # Load MatchDG CTR phase model from the saved weights
             if self.args.os_env:
