@@ -153,6 +153,8 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
 
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         from data.mnist_loader import MnistRotated
+    elif args.dataset_name == 'chestxray':
+        from data.chestxray_loader import ChestXRay
     elif args.dataset_name == 'pacs':
         if eval_case:
             if args.test_metric in ['match_score']:
@@ -189,7 +191,10 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     
     if args.dataset_name in ['pacs', 'vlcs']:
         data_obj= PACS(args, domains, '/pacs/train_val_splits/', data_case=data_case, match_func=match_func)
-        
+    
+    elif args.dataset_name in ['chestxray']:
+        data_obj= ChestXRay(args, domains, '/chestxray/', data_case=data_case, match_func=match_func)
+    
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist']:        
         if data_case == 'test':
             mnist_subset=9
