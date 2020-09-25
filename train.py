@@ -144,9 +144,9 @@ for run in range(args.n_runs):
         torch.cuda.manual_seed_all(run*10)    
             
     #DataLoader        
-    train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )    
-    val_dataset= get_dataloader( args, run, train_domains, 'val', kwargs )    
-    test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )    
+    train_dataset= get_dataloader( args, run, train_domains, 'train', 0, kwargs )    
+    val_dataset= get_dataloader( args, run, train_domains, 'val', 0, kwargs )    
+    test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method

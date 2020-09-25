@@ -147,17 +147,23 @@ def embedding_dist(x1, x2, pos_metric, tau=0.05, xent=False):
             return cosine_similarity( x1, x2 )
     
     
-def get_dataloader(args, run, domains, data_case, kwargs):
+def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     
     dataset={}
 
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         from data.mnist_loader import MnistRotated
     elif args.dataset_name == 'pacs':
-        if args.method_name == 'hybrid' and data_case == 'train':            
-            from data.pacs_loader_aug import PACSAug as PACS
+        if eval_case:
+            if args.test_metric in ['match_score']:
+                from data.pacs_loader_match_eval import PACSAugEval as PACS                
+            else:
+                from data.pacs_loader import PACS
         else:
-            from data.pacs_loader import PACS
+            if args.method_name == 'hybrid' and data_case == 'train':            
+                from data.pacs_loader_aug import PACSAug as PACS
+            else:
+                from data.pacs_loader import PACS
     
     if data_case == 'train':
         match_func=True
@@ -194,9 +200,14 @@ def get_dataloader(args, run, domains, data_case, kwargs):
 
         
     dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )
+    
     dataset['total_domains']= len(domains)
     dataset['domain_list']= domains
     dataset['base_domain_size']= data_obj.base_domain_size       
     dataset['domain_size_list']= data_obj.training_list_size    
+    
+    if eval_case and args.dataset_name == 'pacs' and args.test_metric in ['match_score']:
+            dataset['total_domains']= 2
+            dataset['domain_list']= ['aug', 'org']        
     
     return dataset

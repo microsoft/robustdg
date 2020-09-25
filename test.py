@@ -173,21 +173,21 @@ for run in range(args.n_runs):
     test_dataset= torch.empty(0)
     if args.test_metric == 'match_score':
         if args.match_func_data_case== 'train':
-            train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
+            train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.match_func_data_case== 'val':
-            val_dataset= get_dataloader( args, run, train_domains, 'val', kwargs )
+            val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
         elif args.match_func_data_case== 'test':
-            test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+            test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
     elif args.test_metric == 'acc':
         if args.acc_data_case== 'train':
-            train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
+            train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.acc_data_case== 'test':
-            test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+            test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
     elif args.test_metric == 'mia' or 'privacy_entropy':
-        train_dataset= get_dataloader( args, run, train_domains, 'train', kwargs )
-        test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+        train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
     else:
-        test_dataset= get_dataloader( args, run, test_domains, 'test', kwargs )
+        test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
         
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     

@@ -90,7 +90,7 @@ class BaseEval():
             self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         elif self.args.method_name == 'matchdg_ctr':
-            self.save_path= self.base_res_dir + '/Model_epoch_59_' + self.ctr_save_post_string 
+            self.save_path= self.base_res_dir + '/Model_epoch_29_' + self.ctr_save_post_string 
             
         elif self.args.method_name == 'matchdg_erm':
             self.save_path=  (
