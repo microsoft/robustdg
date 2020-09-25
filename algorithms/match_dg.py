@@ -55,6 +55,10 @@ class MatchDG(BaseAlgo):
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
                 ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
+            if 'resnet' in self.args.ctr_model_name:
+                from models.resnet import get_resnet
+                fc_layer=0                
+                ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained).to(self.cuda)
             if self.args.ctr_model_name == 'resnet18':
                 from models.resnet import get_resnet
                 fc_layer=0                
@@ -225,7 +229,10 @@ class MatchDG(BaseAlgo):
             
     def train_erm_phase(self):
         
-        for run_erm in range(self.args.n_runs_matchdg_erm):            
+        for run_erm in range(self.args.n_runs_matchdg_erm):   
+            
+            self.max_epoch= -1
+            self.max_val_acc= 0.0
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
@@ -336,6 +343,12 @@ class MatchDG(BaseAlgo):
                 self.val_acc.append( self.get_test_accuracy('val') )
 
                 #Test Dataset Accuracy
-                self.final_acc.append( self.get_test_accuracy('test') )                    
-            # Save the model's weights post training
-            self.save_model_erm_phase(run_erm)
+                self.final_acc.append( self.get_test_accuracy('test') ) 
+                
+                #Save the model if current best epoch as per validation loss
+                if self.vac_acc[-1] > self.max_val_acc:
+                    self.max_val_acc= self.vac_acc[-1]
+                    self.max_epoch= epoch
+                    print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
+                    self.save_model_erm_phase(run_erm)
+

@@ -14,6 +14,7 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
 
+
 from utils.match_function import get_matched_pairs
 
 class BaseAlgo():
@@ -60,6 +61,14 @@ class BaseAlgo():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
+                            self.args.img_c, self.args.pre_trained)            
+        if 'densenet' in self.args.model_name:
+            from models.densenet import get_densenet
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= get_densenet(self.args.model_name, self.args.out_classes, fc_layer, 
                             self.args.img_c, self.args.pre_trained)
             
         print('Model Architecture: ', self.args.model_name)
