@@ -15,7 +15,7 @@ class Identity(nn.Module):
         return x
 
     
-def get_densenet(model_name, classes, fc_layer, num_ch, pre_trained):
+def get_densenet(model_name, classes, fc_layer, num_ch, pre_trained, os_env):
     if model_name == 'densenet121':
         model= xrv.models.DenseNet(num_classes=classes, in_channels=num_ch, 
                                         **xrv.models.get_densenet_params('densenet121'))         
@@ -23,10 +23,10 @@ def get_densenet(model_name, classes, fc_layer, num_ch, pre_trained):
         n_outputs= classes
         
     if fc_layer:
-        model.fc = nn.Linear(n_inputs, n_outputs)
+        model.classifier = nn.Linear(n_inputs, n_outputs)
     else:
-        print('Here')
-        model.fc = Identity(n_inputs)
+        print('DenseNet Contrastive')
+        model.classifier = Identity(n_inputs)
 #         model.fc= nn.Sequential( nn.Linear(n_inputs, n_inputs),
 #                                  nn.ReLU(),
 #                                )

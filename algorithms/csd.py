@@ -24,8 +24,7 @@ class CSD(BaseAlgo):
         super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda)         
         
         # H_dim as per the feature layer dimension of ResNet-18
-        ## TODO: Make it customizable with arg parser
-        H_dim= 512
+        H_dim= self.args.rep_dim
         self.K, m, self.num_classes = 1, H_dim, self.args.out_classes 
         num_domains = self.total_domains
 
