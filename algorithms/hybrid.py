@@ -71,7 +71,10 @@ class Hybrid(BaseAlgo):
             
     def train(self):
         
-        for run_erm in range(self.args.n_runs_matchdg_erm):            
+        for run_erm in range(self.args.n_runs_matchdg_erm):  
+            
+            self.max_epoch=-1
+            self.max_val_acc=0.0
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
@@ -204,5 +207,11 @@ class Hybrid(BaseAlgo):
 
                 #Test Dataset Accuracy
                 self.final_acc.append( self.get_test_accuracy('test') )                    
-            # Save the model's weights post training
-            self.save_model_erm_phase(run_erm)
+                
+                #Save the model if current best epoch as per validation loss
+                if self.val_acc[-1] > self.max_val_acc:
+                    self.max_val_acc= self.val_acc[-1]
+                    self.max_epoch= epoch
+                    self.save_model_erm_phase(run_erm)
+                    
+                print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])

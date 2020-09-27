@@ -139,5 +139,6 @@ class ErmMatch(BaseAlgo):
             if self.val_acc[-1] > self.max_val_acc:
                 self.max_val_acc=self.val_acc[-1]
                 self.max_epoch= epoch
-                print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
                 self.save_model()
+                
+            print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
