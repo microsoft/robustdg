@@ -154,7 +154,10 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
         from data.mnist_loader import MnistRotated
     elif args.dataset_name == 'chestxray':
-        from data.chestxray_loader import ChestXRay
+        if args.method_name == 'hybrid' and data_case == 'train':            
+            from data.chestxray_loader_aug import ChestXRayAug as ChestXRay
+        else:
+            from data.chestxray_loader import ChestXRay
     elif args.dataset_name == 'pacs':
         if eval_case:
             if args.test_metric in ['match_score']:
