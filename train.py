@@ -145,8 +145,12 @@ for run in range(args.n_runs):
             
     #DataLoader        
     train_dataset= get_dataloader( args, run, train_domains, 'train', 0, kwargs )    
-    val_dataset= get_dataloader( args, run, train_domains, 'val', 0, kwargs )    
-    test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
+    if args.method_name == 'matchdg_ctr':
+        val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )            
+        test_dataset= torch.empty(0)
+    else:
+        val_dataset= get_dataloader( args, run, train_domains, 'val', 0, kwargs )    
+        test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method

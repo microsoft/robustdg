@@ -151,10 +151,18 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     
     dataset={}
 
-    if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':
-        from data.mnist_loader import MnistRotated
+    if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':        
+        if eval_case:
+            if args.test_metric in ['match_score']:
+                from data.mnist_loader_match_eval import MnistRotatedAugEval as MnistRotated
+            else:
+                from data.mnist_loader import MnistRotated
+        else:
+            from data.mnist_loader import MnistRotated
+            
     elif args.dataset_name == 'chestxray':
         from data.chestxray_loader import ChestXRay
+        
     elif args.dataset_name == 'pacs':
         if eval_case:
             if args.test_metric in ['match_score']:
@@ -211,7 +219,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     dataset['base_domain_size']= data_obj.base_domain_size       
     dataset['domain_size_list']= data_obj.training_list_size    
     
-    if eval_case and args.dataset_name == 'pacs' and args.test_metric in ['match_score']:
+    if eval_case and args.test_metric in ['match_score']:
             dataset['total_domains']= 2
             dataset['domain_list']= ['aug', 'org']        
     

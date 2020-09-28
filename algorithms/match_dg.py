@@ -82,6 +82,8 @@ class MatchDG(BaseAlgo):
             
     def train_ctr_phase(self):
         
+        self.max_epoch= -1
+        self.max_val_score= 0.0
         for epoch in range(self.args.epochs):    
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
@@ -218,10 +220,27 @@ class MatchDG(BaseAlgo):
    
             print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
             print('Done Training for epoch: ', epoch)
-            
-            if (epoch+1)%10 == 0:
+                        
+            if (epoch+1)%1 == 0:
+                                
+                from evaluation.match_eval import MatchEval
+                test_method= MatchEval(
+                                   self.args, self.train_dataset, self.val_dataset,
+                                   self.test_dataset, self.base_res_dir, 
+                                   self.run, self.cuda
+                                  )   
+                #Compute test metrics: Mean Rank
+                test_method.get_model()        
+                test_method.get_metric_eval()
+                                
                 # Save the model's weights post training
-                self.save_model_ctr_phase(epoch)
+                if test_method.metric_score['TopK Perfect Match Score'] > self.max_val_score:
+                    self.max_val_score= self.max_val_score
+                    self.max_epoch= epoch
+                    self.save_model_ctr_phase(epoch)
+
+                print('Current Best Epoch: ', self.max_epoch, ' with TopK Overlap: ', self.max_val_score)                
+                
             
     def train_erm_phase(self):
         

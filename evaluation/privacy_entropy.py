@@ -36,9 +36,9 @@ from utils.privacy_attack import to_onehot, mia
 
 class PrivacyEntropy(BaseEval):
     
-    def __init__(self, args, train_dataset, test_dataset, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
-        super().__init__(args, train_dataset, test_dataset, base_res_dir, run, cuda)
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda)
         
     
     def get_label_logits(self):

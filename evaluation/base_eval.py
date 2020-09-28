@@ -17,10 +17,11 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 class BaseEval():
-    def __init__(self, args, train_dataset, test_dataset, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
         self.args= args
         self.train_dataset= train_dataset
+        self.val_dataset= val_dataset
         self.test_dataset= test_dataset
         
         self.base_res_dir= base_res_dir
