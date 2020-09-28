@@ -69,6 +69,7 @@ class BaseEval():
         if self.args.model_name == 'domain_bed_mnist':
             from models.domain_bed_mnist import DomainBed
             phi= DomainBed( self.args.img_c )
+            
         if 'resnet' in self.args.model_name:
             from models.resnet import get_resnet
             if self.args.method_name in ['csd', 'matchdg_ctr']:
@@ -76,8 +77,17 @@ class BaseEval():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
-                            self.args.img_c, self.args.pre_trained)
-        
+                            self.args.img_c, self.args.pre_trained, self.args.os_env)
+            
+        if 'densenet' in self.args.model_name:
+            from models.densenet import get_densenet
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= get_densenet(self.args.model_name, self.args.out_classes, fc_layer, 
+                            self.args.img_c, self.args.pre_trained, self.args.os_env)
+                    
         print('Model Architecture: ', self.args.model_name)
         
         self.phi= phi.to(self.cuda)        

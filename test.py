@@ -105,6 +105,8 @@ parser.add_argument('--acc_data_case', type=str, default='train',
                     help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--match_func_aug_case', type=int, default=0, 
+                    help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
 parser.add_argument('--match_func_data_case', type=str, default='train', 
                     help='Dataset Train/Val/Test for the match score evaluation metric')
 parser.add_argument('--mia_batch_size', default=64, type=int, 

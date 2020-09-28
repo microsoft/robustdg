@@ -153,7 +153,8 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
 
     if args.dataset_name == 'rot_mnist' or args.dataset_name == 'fashion_mnist':        
         if eval_case:
-            if args.test_metric in ['match_score']:
+            if args.test_metric in ['match_score'] and args.match_func_aug_case:
+                print('Match Function evaluation on self augmentations')
                 from data.mnist_loader_match_eval import MnistRotatedAugEval as MnistRotated
             else:
                 from data.mnist_loader import MnistRotated
@@ -162,19 +163,21 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
             
     elif args.dataset_name == 'chestxray':
         if eval_case:
-            if args.test_metric in ['match_score']:
+            if args.test_metric in ['match_score'] and args.match_func_aug_case:
+                print('Match Function evaluation on self augmentations')
                 from data.chestxray_loader_match_eval import ChestXRayAugEval as ChestXRay
             else:
                 from data.chestxray_loader import ChestXRay
         else:            
             if args.method_name == 'hybrid' and data_case == 'train':            
+                print('Match Function evaluation on self augmentations')
                 from data.chestxray_loader_aug import ChestXRayAug as ChestXRay
             else:
                 from data.chestxray_loader import ChestXRay
                 
     elif args.dataset_name == 'pacs':
         if eval_case:
-            if args.test_metric in ['match_score']:
+            if args.test_metric in ['match_score'] and args.match_func_aug_case:
                 from data.pacs_loader_match_eval import PACSAugEval as PACS                
             else:
                 from data.pacs_loader import PACS
@@ -228,8 +231,8 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     dataset['base_domain_size']= data_obj.base_domain_size       
     dataset['domain_size_list']= data_obj.training_list_size    
     
-    if eval_case and args.test_metric in ['match_score']:
-            dataset['total_domains']= 2
-            dataset['domain_list']= ['aug', 'org']        
+    if eval_case and args.test_metric in ['match_score'] and args.match_func_aug_case:
+        dataset['total_domains']= 2
+        dataset['domain_list']= ['aug', 'org']
     
     return dataset

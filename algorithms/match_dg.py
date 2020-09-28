@@ -221,7 +221,7 @@ class MatchDG(BaseAlgo):
             print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
             print('Done Training for epoch: ', epoch)
                         
-            if (epoch+1)%1 == 0:
+            if (epoch+1)%10 == 0:
                                 
                 from evaluation.match_eval import MatchEval
                 test_method= MatchEval(
@@ -230,12 +230,12 @@ class MatchDG(BaseAlgo):
                                    self.run, self.cuda
                                   )   
                 #Compute test metrics: Mean Rank
-                test_method.get_model()        
+                test_method.phi= self.phi
                 test_method.get_metric_eval()
                                 
                 # Save the model's weights post training
                 if test_method.metric_score['TopK Perfect Match Score'] > self.max_val_score:
-                    self.max_val_score= self.max_val_score
+                    self.max_val_score= test_method.metric_score['TopK Perfect Match Score']
                     self.max_epoch= epoch
                     self.save_model_ctr_phase(epoch)
 

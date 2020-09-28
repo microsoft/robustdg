@@ -108,6 +108,17 @@ parser.add_argument('--cuda_device', type=int, default=0,
                     help='Select the cuda device by id among the avaliable devices' )
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+#Test Based Args
+parser.add_argument('--test_metric', type=str, default='match_score', 
+                    help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--top_k', type=int, default=10, 
+                    help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--match_func_aug_case', type=int, default=1, 
+                    help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
+parser.add_argument('--match_func_data_case', type=str, default='val', 
+                    help='Dataset Train/Val/Test for the match score evaluation metric')
+
 args = parser.parse_args()
 
 #GPU
@@ -147,10 +158,9 @@ for run in range(args.n_runs):
     train_dataset= get_dataloader( args, run, train_domains, 'train', 0, kwargs )    
     if args.method_name == 'matchdg_ctr':
         val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )            
-        test_dataset= torch.empty(0)
     else:
         val_dataset= get_dataloader( args, run, train_domains, 'val', 0, kwargs )    
-        test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
+    test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
