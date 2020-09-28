@@ -46,11 +46,14 @@ class MatchEval(BaseEval):
             domain_size_list= self.test_dataset['domain_size_list']
     
         inferred_match=1        
+        
         # Self Augmentation Match Function evaluation will always follow perfect matches
         if self.args.match_func_aug_case:
-            self.args.perfect_match= 1
-        
-        data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, inferred_match )
+            perfect_match= 1
+        else:
+            perfect_match= self.args.perfect_match
+            
+        data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, perfect_match, inferred_match )
         
         score= perfect_match_score(indices_matched)
         perfect_match_rank= np.array(perfect_match_rank)            
