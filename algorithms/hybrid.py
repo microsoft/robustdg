@@ -78,7 +78,8 @@ class Hybrid(BaseAlgo):
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
-                    data_match_tensor, label_match_tensor= self.init_erm_phase()            
+#                     data_match_tensor, label_match_tensor= self.init_erm_phase()      
+                    data_match_tensor, label_match_tensor= self.get_match_function(epoch)                    
                 elif epoch % self.args.match_interrupt == 0 and self.args.match_flag:
                     data_match_tensor, label_match_tensor= self.get_match_function(epoch)
 

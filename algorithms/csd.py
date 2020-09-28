@@ -28,11 +28,11 @@ class CSD(BaseAlgo):
         self.K, m, self.num_classes = 1, H_dim, self.args.out_classes 
         num_domains = self.total_domains
 
-        self.sms = torch.nn.Parameter(torch.normal(0, 1e-3, size=[self.K+1, m, self.num_classes], dtype=torch.float, device='cuda:0'), requires_grad=True)
-        self.sm_biases = torch.nn.Parameter(torch.normal(0, 1e-3, size=[self.K+1, self.num_classes], dtype=torch.float, device='cuda:0'), requires_grad=True)
+        self.sms = torch.nn.Parameter(torch.normal(0, 1e-1, size=[self.K+1, m, self.num_classes], dtype=torch.float, device='cuda:0'), requires_grad=True)
+        self.sm_biases = torch.nn.Parameter(torch.normal(0, 1e-1, size=[self.K+1, self.num_classes], dtype=torch.float, device='cuda:0'), requires_grad=True)
     
         self.embs = torch.nn.Parameter(torch.normal(mean=0., std=1e-1, size=[num_domains, self.K], dtype=torch.float, device='cuda:0'), requires_grad=True)
-        self.cs_wt = torch.nn.Parameter(torch.normal(mean=0, std=1e-3, size=[], dtype=torch.float, device='cuda:0'), requires_grad=True)
+        self.cs_wt = torch.nn.Parameter(torch.normal(mean=.1, std=1e-4, size=[], dtype=torch.float, device='cuda:0'), requires_grad=True)
 
         self.opt= optim.SGD([
                          {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) },
@@ -48,7 +48,7 @@ class CSD(BaseAlgo):
         x = self.phi(x)        
         w_c, b_c = self.sms[0, :, :], self.sm_biases[0, :]
         logits_common = torch.matmul(x, w_c) + b_c
-        
+       
         if eval_case:
             return logits_common
  
@@ -70,7 +70,7 @@ class CSD(BaseAlgo):
         cps = torch.stack([torch.matmul(sms[:, :, _], torch.transpose(sms[:, :, _], 0, 1)) for _ in range(self.num_classes)], dim=0)
         orth_loss = torch.mean((1-diag_tensor)*(cps - diag_tensor)**2)
 
-        loss = 0.5*class_loss + 0.5*specific_loss + orth_loss 
+        loss = class_loss + specific_loss + orth_loss 
         return loss, logits_common
     
     def epoch_callback(self, nepoch, final=False):

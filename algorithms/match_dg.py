@@ -154,8 +154,8 @@ class MatchDG(BaseAlgo):
                         pos_feat_match= feat_match[pos_indices]
                         neg_feat_match= feat_match[neg_indices]
 
-                        if pos_feat_match.shape[0] > neg_feat_match.shape[0]:
-                            print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
+#                         if pos_feat_match.shape[0] > neg_feat_match.shape[0]:
+#                             print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
 
                         # If no instances of label y_c in the current batch then continue
                         if pos_feat_match.shape[0] ==0 or neg_feat_match.shape[0] == 0:
