@@ -47,6 +47,11 @@ class Hybrid(BaseAlgo):
                 from models.resnet import get_resnet
                 fc_layer=0                
                 ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
+            if 'densenet' in self.args.ctr_model_name:
+                from models.densenet import get_densenet
+                fc_layer=0
+                ctr_phi= get_densenet(self.args.ctr_model_name, self.args.out_classes, fc_layer, 
+                                self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
 
             # Load MatchDG CTR phase model from the saved weights
             if self.args.os_env:
@@ -60,11 +65,11 @@ class Hybrid(BaseAlgo):
             #Inferred Match Case
             if self.args.match_case == -1:
                 inferred_match=1
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
             # x% percentage match initial strategy
             else:
                 inferred_match=0
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
                 
             return data_match_tensor, label_match_tensor
             
@@ -78,8 +83,7 @@ class Hybrid(BaseAlgo):
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
-#                     data_match_tensor, label_match_tensor= self.init_erm_phase()      
-                    data_match_tensor, label_match_tensor= self.get_match_function(epoch)                    
+                    data_match_tensor, label_match_tensor= self.init_erm_phase()     
                 elif epoch % self.args.match_interrupt == 0 and self.args.match_flag:
                     data_match_tensor, label_match_tensor= self.get_match_function(epoch)
 

@@ -197,7 +197,7 @@ for run in range(args.n_runs):
     if args.test_metric == 'acc':
         from evaluation.base_eval import BaseEval
         test_method= BaseEval(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )
@@ -205,7 +205,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 'match_score':
         from evaluation.match_eval import MatchEval
         test_method= MatchEval(
-                               args, train_dataset, 
+                               args, train_dataset, val_dataset,
                                test_dataset, base_res_dir, 
                                run, cuda
                               )   
@@ -213,7 +213,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 't_sne':
         from evaluation.t_sne import TSNE
         test_method= TSNE(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )        
@@ -221,7 +221,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 'mia':
         from evaluation.privacy_attack import PrivacyAttack
         test_method= PrivacyAttack(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )        
@@ -229,7 +229,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 'privacy_entropy':
         from evaluation.privacy_entropy import PrivacyEntropy
         test_method= PrivacyEntropy(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )        
@@ -237,7 +237,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 'logit_hist':
         from evaluation.logit_hist import LogitHist
         test_method= LogitHist(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )        
@@ -245,7 +245,7 @@ for run in range(args.n_runs):
     elif args.test_metric == 'adv_attack':
         from evaluation.adv_attack import AdvAttack
         test_method= AdvAttack(
-                              args, train_dataset,
+                              args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
                              )        

@@ -37,7 +37,7 @@ class MatchDG(BaseAlgo):
             
     def save_model_ctr_phase(self, epoch):
         # Store the weights of the model
-        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + 'epoch_' + str(epoch) + '_' + self.ctr_save_post_string + '.pth')
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_'  + '_' + self.ctr_save_post_string + '.pth')
 
     def save_model_erm_phase(self, run):
         
@@ -59,7 +59,13 @@ class MatchDG(BaseAlgo):
                 from models.resnet import get_resnet
                 fc_layer=0                
                 ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
+            if 'densenet' in self.args.ctr_model_name:
+                from models.densenet import get_densenet
+                fc_layer=0
+                ctr_phi= get_densenet(self.args.ctr_model_name, self.args.out_classes, fc_layer, 
+                                self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
 
+                
             # Load MatchDG CTR phase model from the saved weights
             if self.args.os_env:
                 base_res_dir=os.getenv('PT_DATA_DIR') + '/' + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
@@ -72,11 +78,11 @@ class MatchDG(BaseAlgo):
             #Inferred Match Case
             if self.args.match_case == -1:
                 inferred_match=1
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
-            # x% percentage match initial strategy
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
+            # x% percentage match initial strategy 
             else:
                 inferred_match=0
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
                 
             return data_match_tensor, label_match_tensor
             
