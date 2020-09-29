@@ -103,14 +103,14 @@ class BaseEval():
         elif self.args.method_name == 'matchdg_ctr':
             self.save_path= self.base_res_dir + '/Model_' + self.ctr_save_post_string 
             
-        elif self.args.method_name == 'matchdg_erm':
+        elif self.args.method_name in ['matchdg_erm', 'hybrid']:
             self.save_path=  (
                                 self.base_res_dir + '/' + 
                                 self.ctr_load_post_string + '/Model_' + 
                                 self.post_string + '_' + str(run_matchdg_erm)
                             )
             
-                
+        print(self.save_path)        
         self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
         self.phi.eval()      
         

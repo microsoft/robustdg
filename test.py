@@ -83,7 +83,7 @@ parser.add_argument('--match_interrupt', type=int, default=5,
                     help='Number of epochs before inferring the match strategy')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
-parser.add_argument('--n_runs_matchdg_erm', type=int, default=2, 
+parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
                     help='Number of iterations to repeat training process for matchdg_erm')
 parser.add_argument('--ctr_model_name', type=str, default='resnet18', 
                     help='(For matchdg_ctr phase) Architecture of the model to be trained')
@@ -101,7 +101,7 @@ parser.add_argument('--retain', type=float, default=0,
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--test_metric', type=str, default='acc', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
-parser.add_argument('--acc_data_case', type=str, default='train', 
+parser.add_argument('--acc_data_case', type=str, default='test', 
                     help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
@@ -254,7 +254,7 @@ for run in range(args.n_runs):
     with torch.no_grad():
         if args.test_metric == 'mia':
             for mia_run in range(3):
-                if args.method_name == 'matchdg_erm':
+                if args.method_name in ['matchdg_erm', 'hybrid']:
                     for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
                         test_method.get_model(run_matchdg_erm)        
                         test_method.get_metric_eval()
@@ -264,7 +264,7 @@ for run in range(args.n_runs):
                     test_method.get_metric_eval()
                     final_metric_score.append( test_method.metric_score )
         else:
-            if args.method_name == 'matchdg_erm':
+            if args.method_name in ['matchdg_erm', 'hybrid']:
                 for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
                     test_method.get_model(run_matchdg_erm)        
                     test_method.get_metric_eval()
