@@ -150,6 +150,7 @@ if not os.path.exists(base_res_dir):
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    

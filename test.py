@@ -157,7 +157,7 @@ if args.method_name == 'matchdg_ctr' and args.test_metric == 'acc':
     raise ValueError('Match DG during the contrastive learning phase cannot be evaluted for test accuracy metric')
     sys.exit()
 
-if args.perfect_match == 0 and args.test_metric == 'match_score':
+if args.perfect_match == 0 and args.test_metric == 'match_score' and args.match_func_aug_case==0:
     raise ValueError('Cannot evalute match function metrics when perfect match is not known')
     sys.exit()
     
@@ -165,6 +165,7 @@ if args.perfect_match == 0 and args.test_metric == 'match_score':
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
@@ -185,9 +186,12 @@ for run in range(args.n_runs):
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.acc_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'mia' or 'privacy_entropy':
+    elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
         train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
+    elif args.test_metric == 'attribute_attack':
+        train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
+        test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
     else:
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
         
@@ -221,6 +225,22 @@ for run in range(args.n_runs):
     elif args.test_metric == 'mia':
         from evaluation.privacy_attack import PrivacyAttack
         test_method= PrivacyAttack(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )       
+        
+    elif args.test_metric == 'attribute_attack':
+        from evaluation.attribute_attack import AttributeAttack
+        test_method= AttributeAttack(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )        
+
+    elif args.test_metric == 'privacy_loss_attack':
+        from evaluation.privacy_loss_attack import PrivacyLossAttack
+        test_method= PrivacyLossAttack(
                               args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda
@@ -283,6 +303,7 @@ if args.test_metric not in ['t_sne', 'logit_hist']:
         curr_metric_score=[]
         for item in final_metric_score:
             curr_metric_score.append( item[key] )
-        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score))
+        curr_metric_score= np.array(curr_metric_score)
+        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score)/np.sqrt(curr_metric_score.shape[0]))
 
     print('\n')

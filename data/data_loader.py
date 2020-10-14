@@ -41,3 +41,13 @@ class BaseDataLoader(data_utils.Dataset):
     def get_size(self):
         return self.train_labels.shape[0]
     
+    def get_item_spur(self, index):
+        x = self.train_data[index]
+        y = self.train_labels[index]
+        d = self.train_domain[index]
+        idx = self.train_indices[index]
+        spur = self.train_spur[index]
+            
+        if self.transform is not None:
+            x = self.transform(x)
+        return x, y, d, idx, spur

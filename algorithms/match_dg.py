@@ -37,7 +37,7 @@ class MatchDG(BaseAlgo):
             
     def save_model_ctr_phase(self, epoch):
         # Store the weights of the model
-        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_'  + '_' + self.ctr_save_post_string + '.pth')
+        torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.ctr_save_post_string + '.pth')
 
     def save_model_erm_phase(self, run):
         

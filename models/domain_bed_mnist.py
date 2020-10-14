@@ -11,9 +11,9 @@ MNIST CNN architecture from the the paper DomainBed: https://github.com/facebook
 """
 class DomainBed(torch.nn.Module):          
      
-    
     def __init__(self, num_ch):     
         super(DomainBed, self).__init__()
+        print('DomainBed CNN')
         
         self.n_outputs = 128
         self.num_classes= 10

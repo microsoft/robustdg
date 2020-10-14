@@ -74,7 +74,7 @@ class MnistRotated(BaseDataLoader):
         
         to_augment= transforms.Compose([
                 transforms.RandomResizedCrop(self.args.img_w, scale=(0.7,1.0)),
-                transforms.RandomHorizontalFlip(),            
+                transforms.RandomHorizontalFlip()
             ])
         
         to_tensor=  transforms.Compose([

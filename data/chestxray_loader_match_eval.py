@@ -92,6 +92,7 @@ class ChestXRayAugEval(BaseDataLoader):
         train_labels = torch.cat(training_list_labels['aug'] + training_list_labels['org'] )
         train_indices = np.array(training_list_idx['aug']+training_list_idx['org']) 
         train_indices= np.hstack(train_indices)
+        print('Train indices', len(np.unique(train_indices)) )
         training_out_classes= training_out_classes['aug'] + training_out_classes['org']
         self.training_list_size = [ training_list_size['aug'],  training_list_size['org'] ]           
         

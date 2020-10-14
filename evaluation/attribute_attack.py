@@ -30,16 +30,73 @@ from sklearn.metrics import average_precision_score
 from mia.estimators import ShadowModelBundle, AttackModelBundle, prepare_attack_data
 
 from .base_eval import BaseEval
-from utils.privacy_attack import to_onehot, mia
+from utils.attribute_attack import to_onehot, mia
 
 
 
-class PrivacyAttack(BaseEval):
+class AttributeAttack(BaseEval):
     
     def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
         super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda)
         
+    
+    def get_logits(self):
+
+        #Train Environment Data
+        train_data={}
+        train_data['logits']=[]
+        train_data['labels']=[]
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+            #Random Shuffling along the batch axis
+            rand_indices= torch.randperm(x_e.size()[0])
+            x_e= x_e[rand_indices]
+            d_e= d_e[rand_indices]
+            
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)                
+                d_e= d_e.to(self.cuda)
+                
+                if self.args.mia_logit:
+                    out= self.forward(x_e)
+                else:
+                    out= F.softmax(self.forward(x_e), dim=1)
+                train_data['logits'].append(out)
+                train_data['labels'].append(d_e)
+        
+        train_data['logits']= torch.cat(train_data['logits'], dim=0)
+        train_data['labels']= torch.argmax( torch.cat(train_data['labels'], dim=0), dim=1 ).cpu().numpy()
+
+        #Test Environment Data
+        test_data={}
+        test_data['logits']=[]
+        test_data['labels']=[]
+        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+            #Random Shuffling along the batch axis
+            rand_indices= torch.randperm(x_e.size()[0])
+            x_e= x_e[rand_indices]
+            d_e= d_e[rand_indices]
+
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)                
+                d_e= d_e.to(self.cuda)
+                
+                if self.args.mia_logit:
+                    out= self.forward(x_e)
+                else:
+                    out= F.softmax(self.forward(x_e), dim=1)
+                test_data['logits'].append(out)
+                test_data['labels'].append(d_e)
+        
+        test_data['logits']= torch.cat(test_data['logits'], dim=0)
+        test_data['labels']= torch.argmax( torch.cat(test_data['labels'], dim=0), dim=1 ).cpu().numpy()
+        
+        print('Train Logits: ', train_data['logits'].shape, 'Train Labels: ', train_data['labels'].shape )
+        print('Test Logits: ', test_data['logits'].shape, 'Test Labels: ', test_data['labels'].shape )
+    
+        return train_data, test_data
+
+    
     
     def get_metric_eval(self):
         
@@ -57,56 +114,49 @@ class PrivacyAttack(BaseEval):
         sample_size= self.args.mia_sample_size
         
         # Save the logits in .pkl file
-        self.get_logits()
+        train_data, test_data= self.get_logits()
         
-        # load the logits from .pkl file
-        train_data= pickle.load(open(self.save_path + "_train.pkl", 'rb'))
-        test_data= pickle.load(open(self.save_path + "_test.pkl", 'rb'))
-        
-        print(self.save_path)
-
-        train_df = pd.DataFrame(train_data[0].cpu().detach().numpy())
-        test_df = pd.DataFrame(test_data[0].cpu().detach().numpy())
-        print('MIA Dataset', train_df.shape, test_df.shape, train_df)
+        train_df = pd.DataFrame(train_data['logits'].cpu().detach().numpy())
+        test_df = pd.DataFrame(test_data['logits'].cpu().detach().numpy())        
+        train_labels= train_data['labels']
+        test_labels= test_data['labels']
+        print('MIA Dataset', train_df.shape, test_df.shape, train_labels.shape, test_labels.shape)
 
         # ***********************Create data for probabilities members and non-members **********************
-        X_dnn_train = train_df[:sample_size]
-
-        Y_dnn_train = [1,0]
-        Y_dnn_train = np.pad(Y_dnn_train, (len(X_dnn_train)-1,len(X_dnn_train)-1),'edge')
+        X_dnn_train = train_df
+        Y_dnn_train = train_labels       
+        print(np.unique(Y_dnn_train))
         Y_dnn_train = to_onehot(Y_dnn_train)
 
-        X_dnn_train = X_dnn_train.append(test_df[:sample_size], ignore_index=True)
         X_dnn_train.rename(columns = {0:'value_0', 1:'value_1', 2:'value_2', 3:'value_3', 4:'value_4', 5:'value_5', 6:'value_6', 7:'value_7', 8:'value_8', 9:'value_9'}, inplace = True)
 
         ran_idx = np.random.permutation(X_dnn_train.index)
         X_dnn_train = X_dnn_train.reindex(ran_idx)
         Y_dnn_train = Y_dnn_train.reindex(ran_idx)
 
-        X_dnn_test = train_df[-1-sample_size:-1]
 
-        Y_dnn_test = [1,0]
-        Y_dnn_test = np.pad(Y_dnn_test, (len(X_dnn_test)-1,len(X_dnn_test)-1),'edge')
+        X_dnn_test = test_df
+        Y_dnn_test = test_labels       
         Y_dnn_test = to_onehot(Y_dnn_test)
 
-        X_dnn_test = X_dnn_test.append(test_df[-1-sample_size:-1], ignore_index=True)
         X_dnn_test.rename(columns = {0:'value_0', 1:'value_1', 2:'value_2', 3:'value_3', 4:'value_4', 5:'value_5', 6:'value_6', 7:'value_7', 8:'value_8', 9:'value_9'}, inplace = True)    
 
         ran_idx = np.random.permutation(X_dnn_test.index)
         X_dnn_test = X_dnn_test.reindex(ran_idx)
         Y_dnn_test = Y_dnn_test.reindex(ran_idx)
         
-        print('MIA Final Dataset: ', X_dnn_train.shape, X_dnn_test.shape)
+        print('MIA Final Dataset: ', X_dnn_train.shape, X_dnn_test.shape, Y_dnn_train.shape, Y_dnn_test.shape)
         # Features for the attack dnn model
         attack_features = []
         
         for attack_idx in range(self.args.out_classes):
             attack_features.append( tf.feature_column.numeric_column(key="value_"+str(attack_idx)) )
         #print('Attack Features: ', attack_features)
-
-        output_dnn = mia(X_dnn_train, Y_dnn_train, X_dnn_test, Y_dnn_test, attack_features, self.args.mia_batch_size, self.args.mia_dnn_steps, self.save_path)
-        acc_train.append( 100*output_dnn['tr_attack']['accuracy'] )
-        acc_test.append( 100*output_dnn['te_attack']['accuracy'] )
+        
+        num_classes= Y_dnn_train.shape[1]
+        output_dnn = mia(X_dnn_train, Y_dnn_train, X_dnn_test, Y_dnn_test, attack_features, Y_dnn_train.shape[1], self.args.mia_batch_size, self.args.mia_dnn_steps, self.save_path)
+        acc_train.append( output_dnn['tr_attack']['accuracy'] )
+        acc_test.append( output_dnn['te_attack']['accuracy'] )
 #         precision.append( output_dnn['precision'] )
 #         recall.append( output_dnn['recall'] )
 

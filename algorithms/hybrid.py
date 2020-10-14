@@ -16,7 +16,7 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 from .algo import BaseAlgo
-from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
+from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity, get_dataloader
 from utils.match_function import get_matched_pairs
 
 class Hybrid(BaseAlgo):
@@ -213,10 +213,62 @@ class Hybrid(BaseAlgo):
                 #Test Dataset Accuracy
                 self.final_acc.append( self.get_test_accuracy('test') )                    
                 
+                                
                 #Save the model if current best epoch as per validation loss
                 if self.val_acc[-1] > self.max_val_acc:
                     self.max_val_acc= self.val_acc[-1]
                     self.max_epoch= epoch
                     self.save_model_erm_phase(run_erm)
                     
+                        
+#                     if epoch > 0:
+#                         #GPU
+#                         cuda= torch.device("cuda:" + str(self.args.cuda_device))
+#                         if cuda:
+#                             kwargs = {'num_workers': 1, 'pin_memory': False} 
+#                         else:
+#                             kwargs= {}
+                        
+#                         train_dataset_temp= get_dataloader( self.args, self.run, self.args.train_domains, 'train', 1, kwargs )
+#                         val_dataset_temp= get_dataloader( self.args, self.run, self.args.train_domains, 'val', 1, kwargs )
+#                         test_dataset_temp= get_dataloader( self.args, self.run, self.args.test_domains, 'test', 1, kwargs )
+
+#                         from evaluation.match_eval import MatchEval
+#                         test_method= MatchEval(
+#                                            self.args, train_dataset_temp, val_dataset_temp,
+#                                            test_dataset_temp, self.base_res_dir, 
+#                                            self.run, self.cuda
+#                                           )   
+#                         #Compute test metrics: Mean Rank
+#                         test_method.phi= self.phi
+#                         test_method.get_metric_eval()
+#                         print('Match Function: ', test_method.metric_score)
+
+
+#                     from evaluation.privacy_attack import PrivacyAttack
+#                     test_method= PrivacyAttack(
+#                                        self.args, train_dataset_temp, val_dataset_temp,
+#                                        test_dataset_temp, self.base_res_dir, 
+#                                        self.run, self.cuda
+#                                          )        
+#                     #Compute test metrics: Mean Rank
+#                     test_method.phi= self.phi
+#                     test_method.get_metric_eval()
+#                     print('MIA: ', test_method.metric_score)
+
+#                     from evaluation.privacy_entropy import PrivacyEntropy
+#                     test_method= PrivacyEntropy(
+#                                        self.args, train_dataset_temp, val_dataset_temp,
+#                                        test_dataset_temp, self.base_res_dir, 
+#                                        self.run, self.cuda
+#                                          )                        
+#                     #Compute test metrics: Mean Rank
+#                     test_method.phi= self.phi
+#                     test_method.get_metric_eval()
+#                     print('Entropy: ', test_method.metric_score)
+
+                
                 print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
+
+                
+                
