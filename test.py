@@ -117,6 +117,8 @@ parser.add_argument('--mia_sample_size', default=1000, type=int,
                     help='number of samples from train/test dataset logits')
 parser.add_argument('--mia_logit', default=1, type=int,
                     help='0: Softmax applied to logits; 1: No Softmax applied to logits')
+parser.add_argument('--attribute_domain', default=1, type=int, 
+                   help='0: spur correlations as attribute; 1: domain as attribute')
 parser.add_argument('--adv_eps', default=0.3, type=float,
                     help='Epsilon ball dimension for PGD attacks')
 parser.add_argument('--logit_plot_path', default='', type=str,
@@ -139,6 +141,8 @@ if cuda:
 else:
     kwargs= {}
 
+args.kwargs= kwargs
+    
 #List of Train; Test domains
 train_domains= args.train_domains
 test_domains= args.test_domains

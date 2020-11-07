@@ -181,19 +181,35 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
                 from data.chestxray_loader import ChestXRay
         else:            
             if args.method_name == 'hybrid' and data_case == 'train':            
-                print('Match Function evaluation on self augmentations')
+                print('Hybrid approach with self augmentations')
                 from data.chestxray_loader_aug import ChestXRayAug as ChestXRay
             else:
                 from data.chestxray_loader import ChestXRay
                 
+    elif args.dataset_name == 'chestxray_spur':
+        if eval_case:
+            if args.test_metric in ['match_score'] and args.match_func_aug_case:
+                print('Match Function evaluation on self augmentations')
+                from data.chestxray_loader_match_eval_spur import ChestXRayAugEval as ChestXRay
+            else:
+                from data.chestxray_loader_spur import ChestXRay
+        else:            
+            if args.method_name == 'hybrid' and data_case == 'train':            
+                print('Hybrid approach with self augmentations')
+                from data.chestxray_loader_aug_spur import ChestXRayAug as ChestXRay
+            else:
+                from data.chestxray_loader_spur import ChestXRay
+                
     elif args.dataset_name == 'pacs':
         if eval_case:
             if args.test_metric in ['match_score'] and args.match_func_aug_case:
+                print('Match Function evaluation on self augmentations')
                 from data.pacs_loader_match_eval import PACSAugEval as PACS                
             else:
                 from data.pacs_loader import PACS
         else:
             if args.method_name == 'hybrid' and data_case == 'train':            
+                print('Hybrid approach with self augmentations')
                 from data.pacs_loader_aug import PACSAug as PACS
             else:
                 from data.pacs_loader import PACS
@@ -225,7 +241,10 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     
     elif args.dataset_name in ['chestxray']:
         data_obj= ChestXRay(args, domains, '/chestxray/', data_case=data_case, match_func=match_func)
-    
+
+    elif args.dataset_name in ['chestxray_spur']:
+        data_obj= ChestXRay(args, domains, '/chestxray_spur/', data_case=data_case, match_func=match_func)
+        
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist', 'rot_mnist_spur']:       
         if data_case == 'test' and args.model_name not in ['lenet']:
             mnist_subset=9
@@ -237,6 +256,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         
     dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )
     
+    dataset['data_obj']= data_obj
     dataset['total_domains']= len(domains)
     dataset['domain_list']= domains
     dataset['base_domain_size']= data_obj.base_domain_size       

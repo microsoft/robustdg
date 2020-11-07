@@ -32,13 +32,99 @@ from mia.estimators import ShadowModelBundle, AttackModelBundle, prepare_attack_
 from .base_eval import BaseEval
 from utils.attribute_attack import to_onehot, mia
 
+class SpurCorrDataLoader(data_utils.Dataset):
+    def __init__(self, dataloader):
+        super(SpurCorrDataLoader, self).__init__()
+        
+        self.x= dataloader.train_data
+        self.y= dataloader.train_labels
+        self.d= dataloader.train_domain
+        self.indices= dataloader.train_indices
+        self.spur_corr= dataloader.train_spur
+        
 
+    def __len__(self):
+        return self.y.shape[0]
+
+    def __getitem__(self, index):
+        batch_x = self.x[index]
+        batch_y = self.y[index]
+        batch_d = self.d[index]
+        batch_idx = self.indices[index]
+        batch_spur= self.spur_corr[index]
+            
+        return batch_x, batch_y, batch_d, batch_idx, batch_spur        
 
 class AttributeAttack(BaseEval):
     
     def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
         super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda)
+        
+    
+    def get_spur_logits(self):
+
+        #Train Environment Data
+        train_data={}
+        train_data['logits']=[]
+        train_data['labels']=[]
+        
+        dataset= SpurCorrDataLoader(self.train_dataset['data_obj'])            
+        dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
+        
+        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+            #Random Shuffling along the batch axis
+            rand_indices= torch.randperm(x_e.size()[0])
+            x_e= x_e[rand_indices]
+            spur_e= spur_e[rand_indices]
+            
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)                
+                spur_e= spur_e.to(self.cuda)
+                
+                if self.args.mia_logit:
+                    out= self.forward(x_e)
+                else:
+                    out= F.softmax(self.forward(x_e), dim=1)
+                
+                train_data['logits'].append(out)
+                train_data['labels'].append(spur_e)
+        
+        train_data['logits']= torch.cat(train_data['logits'], dim=0)
+        train_data['labels']= torch.cat(train_data['labels'], dim=0).cpu().numpy()
+
+        #Test Environment Data
+        test_data={}
+        test_data['logits']=[]
+        test_data['labels']=[]
+        
+        dataset= SpurCorrDataLoader(self.test_dataset['data_obj'])            
+        dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
+        
+        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+            #Random Shuffling along the batch axis
+            rand_indices= torch.randperm(x_e.size()[0])
+            x_e= x_e[rand_indices]
+            spur_e= spur_e[rand_indices]
+
+            with torch.no_grad():
+                x_e= x_e.to(self.cuda)                
+                spur_e= spur_e.to(self.cuda)
+                
+                if self.args.mia_logit:
+                    out= self.forward(x_e)
+                else:
+                    out= F.softmax(self.forward(x_e), dim=1)
+                test_data['logits'].append(out)
+                test_data['labels'].append(spur_e)
+        
+        test_data['logits']= torch.cat(test_data['logits'], dim=0)
+        test_data['labels']= torch.cat(test_data['labels'], dim=0).cpu().numpy()
+        
+        print('Train Logits: ', train_data['logits'].shape, 'Train Labels: ', train_data['labels'].shape )
+        print('Test Logits: ', test_data['logits'].shape, 'Test Labels: ', test_data['labels'].shape )
+    
+        return train_data, test_data
         
     
     def get_logits(self):
@@ -114,7 +200,10 @@ class AttributeAttack(BaseEval):
         sample_size= self.args.mia_sample_size
         
         # Save the logits in .pkl file
-        train_data, test_data= self.get_logits()
+        if self.args.attribute_domain:
+            train_data, test_data= self.get_logits()
+        else:
+            train_data, test_data= self.get_spur_logits()
         
         train_df = pd.DataFrame(train_data['logits'].cpu().detach().numpy())
         test_df = pd.DataFrame(test_data['logits'].cpu().detach().numpy())        
