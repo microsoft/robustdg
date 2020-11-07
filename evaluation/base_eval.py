@@ -55,7 +55,6 @@ class BaseEval():
                                     str(self.run) + '_' + 
                                     self.args.ctr_model_name
                                     )
-                        
         self.metric_score={}                
     
     def get_model(self, run_matchdg_erm=0):
