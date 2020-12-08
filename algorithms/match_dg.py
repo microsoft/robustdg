@@ -54,7 +54,10 @@ class MatchDG(BaseAlgo):
                 ctr_phi= LeNet5().to(self.cuda)
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
-                ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
+                ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)                
+            if self.args.ctr_model_name == 'fc':
+                from models.fc import FC
+                ctr_phi= FC(self.args.out_classes).to(self.cuda)              
             if 'resnet' in self.args.ctr_model_name:
                 from models.resnet import get_resnet
                 fc_layer=0                
@@ -132,7 +135,10 @@ class MatchDG(BaseAlgo):
 
         #             data_match= data_match_tensor[idx].to(cuda)
                     data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                    if self.args.dataset_name == 'adult':
+                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2])     
+                    else:
+                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
                     feat_match= self.phi( data_match )
             
         #             label_match= label_match_tensor[idx].to(self.cuda)           
@@ -148,7 +154,10 @@ class MatchDG(BaseAlgo):
                     label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
             #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                    if self.args.dataset_name == 'adult':
+                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1] )    
+                    else:
+                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                     # Contrastive Loss
                     same_neg_counter=1
@@ -246,7 +255,9 @@ class MatchDG(BaseAlgo):
                     self.save_model_ctr_phase(epoch)
 
                 print('Current Best Epoch: ', self.max_epoch, ' with TopK Overlap: ', self.max_val_score)                
-                
+            
+            if self.args.dataset_name == 'adult':
+                    self.save_model_ctr_phase(epoch)                
             
     def train_erm_phase(self):
         
@@ -299,7 +310,10 @@ class MatchDG(BaseAlgo):
 
             #             data_match= data_match_tensor[idx].to(self.cuda)
                         data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                        if self.args.dataset_name == 'adult':
+                            data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2])     
+                        else:
+                            data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
                         feat_match= self.phi( data_match )
 
             #             label_match= label_match_tensor[idx].to(self.cuda)           
@@ -321,7 +335,10 @@ class MatchDG(BaseAlgo):
                         label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
                 #             print(feat_match.shape)
-                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                        if self.args.dataset_name == 'adult':
+                            data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1] )    
+                        else:
+                            data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                         #Positive Match Loss
                         pos_match_counter=0

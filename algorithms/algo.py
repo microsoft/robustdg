@@ -53,6 +53,14 @@ class BaseAlgo():
             from models.lenet import LeNet5
             phi= LeNet5()
             
+        if self.args.model_name == 'fc':
+            from models.fc import FC
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= FC(self.args.out_classes, fc_layer)
+            
         if self.args.model_name == 'domain_bed_mnist':
             from models.domain_bed_mnist import DomainBed
             phi= DomainBed( self.args.img_c )

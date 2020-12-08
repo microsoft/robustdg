@@ -213,7 +213,11 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
                 from data.pacs_loader_aug import PACSAug as PACS
             else:
                 from data.pacs_loader import PACS
-    
+
+    elif args.dataset_name == 'adult':
+        from data.adult_loader import Adult
+                
+                
     if data_case == 'train':
         match_func=True
         batch_size= args.batch_size
@@ -253,6 +257,8 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         print('MNIST Subset: ', mnist_subset)
         data_obj=  MnistRotated(args, domains, mnist_subset, '/rot_mnist/', data_case=data_case, match_func=match_func)
 
+    elif args.dataset_name in ['adult']:
+        data_obj= Adult(args, domains, '/adult/', data_case=data_case, match_func=match_func)
         
     dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )
     
