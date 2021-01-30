@@ -135,6 +135,7 @@ test_domains= args.test_domains
 #Initialize
 final_accuracy_target_val=[]
 final_accuracy_source_val=[]
+train_accuracy_target_val=[]
 if args.os_env:
     res_dir= os.getenv('PT_OUTPUT_DIR') + '/'
 else:
@@ -235,10 +236,16 @@ for run in range(args.n_runs):
         idx= np.argmax(train_method.val_acc)
         final_acc= train_method.final_acc[idx]
         final_accuracy_source_val.append( final_acc  )
-                   
+        
+        #Test Domain Validation for Model Selection
+        idx= np.argmax(train_method.final_acc)
+        final_acc= train_method.train_acc[idx]
+        train_accuracy_target_val.append( final_acc )        
+        
 if args.method_name != 'matchdg_ctr':
     print('\n')
     print('Done for the Model..')
+    print('Final Train Accuracy ', np.mean(train_accuracy_target_val), np.std(train_accuracy_target_val) )    
     print('Final Test Accuracy (Source Validation)', np.mean(final_accuracy_source_val), np.std(final_accuracy_source_val) )
     print('Final Test Accuracy (Target Validation)', np.mean(final_accuracy_target_val), np.std(final_accuracy_target_val) )
     print('\n')

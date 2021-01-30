@@ -264,7 +264,7 @@ class AttributeAttack(BaseEval):
 #         print('\nPrecision: ', precision/args.total_seed )
 #         print('\nRecall: ', recall/args.total_seed )
 
-        self.metric_score['train_acc']= final_res['tr_attack_mean']
-        self.metric_score['test_acc']= final_res['te_attack_mean']
+        self.metric_score['train_acc']= 100*final_res['tr_attack_mean']
+        self.metric_score['test_acc']= 100*final_res['te_attack_mean']
 
         return         

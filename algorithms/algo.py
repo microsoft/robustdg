@@ -45,7 +45,7 @@ class BaseAlgo():
         
         self.final_acc=[]
         self.val_acc=[]
-                
+        self.train_acc=[]
     
     def get_model(self):
         
