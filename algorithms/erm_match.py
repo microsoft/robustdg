@@ -26,7 +26,6 @@ class ErmMatch(BaseAlgo):
         
         self.max_epoch=-1
         self.max_val_acc=0.0
-        self.max_test_acc= 0.0
         for epoch in range(self.args.epochs):   
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
@@ -147,16 +146,11 @@ class ErmMatch(BaseAlgo):
             self.final_acc.append( self.get_test_accuracy('test') )
             
             #Save the model if current best epoch as per validation loss
-#             if self.val_acc[-1] > self.max_val_acc:
-#                 self.max_val_acc=self.val_acc[-1]
-#                 self.max_epoch= epoch
-#                 self.save_model()
-                
-            if self.final_acc[-1] > self.max_test_acc:
-                self.max_test_acc=self.final_acc[-1]
+            if self.val_acc[-1] > self.max_val_acc:
+                self.max_val_acc=self.val_acc[-1]
                 self.max_epoch= epoch
-                self.save_model()                
-                
+                self.save_model()
+                                
             print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
             
             if epoch > 0 and epoch % 5==0 and self.args.model_name == 'domain_bed_mnist':
