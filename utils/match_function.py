@@ -32,15 +32,10 @@ def init_data_match_dict(args, keys, vals, variation):
 #                 data[key]['data']=torch.rand((val_dim, 1, 224, 224))      
 #         elif args.dataset == 'pacs':
 #             data[key]['data']=torch.rand((val_dim, 3, 227, 227))
-    
-        if args.dataset_name == 'adult':
-            data[key]['data']= torch.rand((val_dim, 29))
-            data[key]['label']=torch.rand((val_dim, 1))
-            data[key]['idx']=torch.randint(0, 1, (val_dim, 1))        
-        else:    
-            data[key]['data']= torch.rand((val_dim, args.img_c, args.img_w, args.img_h))
-            data[key]['label']=torch.rand((val_dim, 1))
-            data[key]['idx']=torch.randint(0, 1, (val_dim, 1))
+        
+        data[key]['data']= torch.rand((val_dim, args.img_c, args.img_w, args.img_h))
+        data[key]['label']=torch.rand((val_dim, 1))
+        data[key]['idx']=torch.randint(0, 1, (val_dim, 1))
     return data
 
 def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, training_list_size, phi, match_case, perfect_match, inferred_match):        

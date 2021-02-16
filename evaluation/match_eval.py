@@ -49,10 +49,7 @@ class MatchEval(BaseEval):
         
         # Self Augmentation Match Function evaluation will always follow perfect matches
         if self.args.match_func_aug_case:
-            if self.args.dataset_name == 'adult':
-                perfect_match= 0
-            else:
-                perfect_match= 1
+            perfect_match= 1
         else:
             perfect_match= self.args.perfect_match
             

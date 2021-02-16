@@ -66,10 +66,7 @@ class ErmMatch(BaseAlgo):
 
         #             data_match= data_match_tensor[idx].to(self.cuda)
                     data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                    if self.args.dataset_name == 'adult':
-                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2])     
-                    else:
-                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
                     feat_match= self.phi( data_match )
             
         #             label_match= label_match_tensor[idx].to(cuda)           
@@ -92,10 +89,7 @@ class ErmMatch(BaseAlgo):
 
             #             print(feat_match.shape)
             
-                    if self.args.dataset_name == 'adult':
-                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1] )    
-                    else:
-                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                     #Positive Match Loss
                     pos_match_counter=0

@@ -90,6 +90,9 @@ class DRO(BaseAlgo):
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
             
+            #Train Dataset Accuracy
+            self.train_acc.append( 100*train_acc/train_size )
+            
             #Val Dataset Accuracy
             self.val_acc.append( self.get_test_accuracy('val') )
             

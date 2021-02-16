@@ -65,10 +65,7 @@ class Irm(BaseAlgo):
                 curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
 
                 data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                if self.args.dataset_name == 'adult':
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2])     
-                else:
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
+                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
                 feat_match= self.phi( data_match )
             
                 label_match= label_match_tensor_split[batch_idx].to(self.cuda)
@@ -90,10 +87,8 @@ class Irm(BaseAlgo):
                 label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
         #             print(feat_match.shape)
-                if self.args.dataset_name == 'adult':
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1] )    
-                else:
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )                
+        
+                data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )                
 
                 #IRM Penalty
                 domain_counter=0
