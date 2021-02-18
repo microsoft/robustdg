@@ -7,12 +7,17 @@ import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 class BaseDataLoader(data_utils.Dataset):
-    def __init__(self, args, list_train_domains, root, transform=None, data_case='train'):
+    def __init__(self, args, list_train_domains, root, transform=None, data_case='train', match_func=False):
         self.args= args
         self.list_train_domains = list_train_domains
-        self.root = os.path.expanduser('~' ) + root
+        if self.args.os_env:
+            self.root = os.getenv('PT_DATA_DIR') + root
+        else:
+            self.root = 'data/datasets' + root
         self.transform = transform
         self.data_case = data_case
+        self.match_func= match_func
+        
         self.base_domain_size= 0
         self.training_list_size=[]
         self.train_data= [] 
@@ -36,3 +41,13 @@ class BaseDataLoader(data_utils.Dataset):
     def get_size(self):
         return self.train_labels.shape[0]
     
+    def get_item_spur(self, index):
+        x = self.train_data[index]
+        y = self.train_labels[index]
+        d = self.train_domain[index]
+        idx = self.train_indices[index]
+        spur = self.train_spur[index]
+            
+        if self.transform is not None:
+            x = self.transform(x)
+        return x, y, d, idx, spur

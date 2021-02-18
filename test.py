@@ -45,6 +45,8 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
+parser.add_argument('--fc_layer', type=int, default= 1, 
+                    help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2', 
@@ -81,7 +83,7 @@ parser.add_argument('--match_interrupt', type=int, default=5,
                     help='Number of epochs before inferring the match strategy')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
-parser.add_argument('--n_runs_matchdg_erm', type=int, default=2, 
+parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
                     help='Number of iterations to repeat training process for matchdg_erm')
 parser.add_argument('--ctr_model_name', type=str, default='resnet18', 
                     help='(For matchdg_ctr phase) Architecture of the model to be trained')
@@ -99,8 +101,14 @@ parser.add_argument('--retain', type=float, default=0,
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--test_metric', type=str, default='acc', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--acc_data_case', type=str, default='test', 
+                    help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--match_func_aug_case', type=int, default=0, 
+                    help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
+parser.add_argument('--match_func_data_case', type=str, default='train', 
+                    help='Dataset Train/Val/Test for the match score evaluation metric')
 parser.add_argument('--mia_batch_size', default=64, type=int, 
                     help='batch size')
 parser.add_argument('--mia_dnn_steps', default=5000, type=int,
@@ -109,14 +117,21 @@ parser.add_argument('--mia_sample_size', default=1000, type=int,
                     help='number of samples from train/test dataset logits')
 parser.add_argument('--mia_logit', default=1, type=int,
                     help='0: Softmax applied to logits; 1: No Softmax applied to logits')
+parser.add_argument('--attribute_domain', default=1, type=int, 
+                   help='0: spur correlations as attribute; 1: domain as attribute')
 parser.add_argument('--adv_eps', default=0.3, type=float,
                     help='Epsilon ball dimension for PGD attacks')
+parser.add_argument('--logit_plot_path', default='', type=str,
+                    help='File name to save logit/loss plots')
 parser.add_argument('--ctr_abl', type=int, default=0, 
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--match_abl', type=int, default=0, 
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--cuda_device', type=int, default=0, 
                     help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
 args = parser.parse_args()
 
 #GPU
@@ -126,6 +141,8 @@ if cuda:
 else:
     kwargs= {}
 
+args.kwargs= kwargs
+    
 #List of Train; Test domains
 train_domains= args.train_domains
 test_domains= args.test_domains
@@ -144,7 +161,7 @@ if args.method_name == 'matchdg_ctr' and args.test_metric == 'acc':
     raise ValueError('Match DG during the contrastive learning phase cannot be evaluted for test accuracy metric')
     sys.exit()
 
-if args.perfect_match == 0 and args.test_metric == 'match_score':
+if args.perfect_match == 0 and args.test_metric == 'match_score' and args.match_func_aug_case==0:
     raise ValueError('Cannot evalute match function metrics when perfect match is not known')
     sys.exit()
     
@@ -152,78 +169,136 @@ if args.perfect_match == 0 and args.test_metric == 'match_score':
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
     
     #DataLoader        
-    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
-    print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
+    train_dataset= torch.empty(0)
+    val_dataset= torch.empty(0)
+    test_dataset= torch.empty(0)
+    if args.test_metric == 'match_score':
+        if args.match_func_data_case== 'train':
+            train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        elif args.match_func_data_case== 'val':
+            val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
+        elif args.match_func_data_case== 'test':
+            test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
+    elif args.test_metric == 'acc':
+        if args.acc_data_case== 'train':
+            train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        elif args.acc_data_case== 'test':
+            test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
+    elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
+        train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
+    elif args.test_metric == 'attribute_attack':        
+        train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
+        test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
+    else:
+        test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
+        
+#     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the testing module
     if args.test_metric == 'acc':
         from evaluation.base_eval import BaseEval
         test_method= BaseEval(
-                              args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )
         
     elif args.test_metric == 'match_score':
         from evaluation.match_eval import MatchEval
         test_method= MatchEval(
-                               args, train_dataset, 
-                               test_dataset, train_domains, 
-                               total_domains, domain_size, 
-                               training_list_size, base_res_dir, 
-                               run, args.top_k, cuda
+                               args, train_dataset, val_dataset,
+                               test_dataset, base_res_dir, 
+                               run, cuda
                               )   
 
     elif args.test_metric == 't_sne':
         from evaluation.t_sne import TSNE
         test_method= TSNE(
-                              args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
         
     elif args.test_metric == 'mia':
         from evaluation.privacy_attack import PrivacyAttack
         test_method= PrivacyAttack(
-                              args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )       
+        
+    elif args.test_metric == 'attribute_attack':
+        from evaluation.attribute_attack import AttributeAttack
+        test_method= AttributeAttack(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
 
+    elif args.test_metric == 'privacy_loss_attack':
+        from evaluation.privacy_loss_attack import PrivacyLossAttack
+        test_method= PrivacyLossAttack(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )        
+        
+    elif args.test_metric == 'privacy_entropy':
+        from evaluation.privacy_entropy import PrivacyEntropy
+        test_method= PrivacyEntropy(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )        
+
+    elif args.test_metric == 'logit_hist':
+        from evaluation.logit_hist import LogitHist
+        test_method= LogitHist(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )        
+        
     elif args.test_metric == 'adv_attack':
         from evaluation.adv_attack import AdvAttack
         test_method= AdvAttack(
-                              args, train_dataset,
-                              test_dataset, train_domains,
-                              total_domains, domain_size,
-                              training_list_size, base_res_dir,
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
                               run, cuda
                              )        
         
     #Testing Phase
-    if args.method_name == 'matchdg_erm':
-        for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
-            test_method.get_model(run_matchdg_erm)        
-            test_method.get_metric_eval()
-            final_metric_score.append( test_method.metric_score )
-    else:
-        test_method.get_model()        
-        test_method.get_metric_eval()
-        final_metric_score.append( test_method.metric_score )
-    
+    with torch.no_grad():
+        if args.test_metric == 'mia':
+            for mia_run in range(3):
+                if args.method_name in ['matchdg_erm', 'hybrid']:
+                    for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+                        test_method.get_model(run_matchdg_erm)        
+                        test_method.get_metric_eval()
+                        final_metric_score.append( test_method.metric_score )
+                else:
+                    test_method.get_model()        
+                    test_method.get_metric_eval()
+                    final_metric_score.append( test_method.metric_score )
+        else:
+            if args.method_name in ['matchdg_erm', 'hybrid']:
+                for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
+                    test_method.get_model(run_matchdg_erm)        
+                    test_method.get_metric_eval()
+                    final_metric_score.append( test_method.metric_score )
+            else:
+                test_method.get_model()        
+                test_method.get_metric_eval()
+                final_metric_score.append( test_method.metric_score )    
 
-if args.test_metric not in ['t_sne']:
+if args.test_metric not in ['t_sne', 'logit_hist']:
     print('\n')
     print('Done for Model..')
 
@@ -232,6 +307,7 @@ if args.test_metric not in ['t_sne']:
         curr_metric_score=[]
         for item in final_metric_score:
             curr_metric_score.append( item[key] )
-        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score))
+        curr_metric_score= np.array(curr_metric_score)
+        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score)/np.sqrt(curr_metric_score.shape[0]))
 
     print('\n')

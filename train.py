@@ -6,6 +6,7 @@ import argparse
 import copy
 import random
 import json
+import sklearn
 
 #Pytorch
 import torch
@@ -46,7 +47,7 @@ parser.add_argument('--fc_layer', type=int, default= 1,
 parser.add_argument('--match_layer', type=str, default='logit_match', 
                     help='rep_match: Matching at an intermediate representation level; logit_match: Matching at the logit level')
 parser.add_argument('--pos_metric', type=str, default='l2', 
-                    help='Cost function to evaluate distance between two representations; Options: l1; l2; cos')
+                    help='Cost to function to evaluate distance between two representations; Options: l1; l2; cos')
 parser.add_argument('--rep_dim', type=int, default=250, 
                     help='Representation dimension for contrsative learning')
 parser.add_argument('--pre_trained',type=int, default=0, 
@@ -55,6 +56,8 @@ parser.add_argument('--perfect_match', type=int, default=1,
                     help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', 
                     help='Optimizer Choice: sgd; adam') 
+parser.add_argument('--weight_decay', type=float, default=5e-4,
+                   help='Weight Decay in SGD')
 parser.add_argument('--lr', type=float, default=0.01, 
                     help='Learning rate for training the model')
 parser.add_argument('--batch_size', type=int, default=16, 
@@ -65,6 +68,8 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_irm', type=float, default=0.0, 
                     help='Penalty weight for IRM invariant classifier loss')
+parser.add_argument('--penalty_aug', type=float, default=1.0, 
+                    help='Penalty weight for Augmentation in Hybrid approach loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -83,7 +88,7 @@ parser.add_argument('--match_abl', type=int, default=0,
                     help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
-parser.add_argument('--n_runs_matchdg_erm', type=int, default=2, 
+parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
                     help='Number of iterations to repeat training process for matchdg_erm')
 parser.add_argument('--ctr_model_name', type=str, default='resnet18', 
                     help='(For matchdg_ctr phase) Architecture of the model to be trained')
@@ -101,12 +106,25 @@ parser.add_argument('--retain', type=float, default=0,
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
 parser.add_argument('--cuda_device', type=int, default=0, 
                     help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+#Test Based Args
+parser.add_argument('--test_metric', type=str, default='match_score', 
+                    help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--top_k', type=int, default=10, 
+                    help='Top K matches to consider for the match score evaluation metric')
+parser.add_argument('--match_func_aug_case', type=int, default=1, 
+                    help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
+parser.add_argument('--match_func_data_case', type=str, default='val', 
+                    help='Dataset Train/Val/Test for the match score evaluation metric')
+
 args = parser.parse_args()
 
 #GPU
 cuda= torch.device("cuda:" + str(args.cuda_device))
 if cuda:
-    kwargs = {'num_workers': 1, 'pin_memory': False} 
+    kwargs = {'num_workers': 0, 'pin_memory': False} 
 else:
     kwargs= {}
 
@@ -115,9 +133,14 @@ train_domains= args.train_domains
 test_domains= args.test_domains
 
 #Initialize
-final_report_accuracy=[]
+final_accuracy_target_val=[]
+final_accuracy_source_val=[]
+if args.os_env:
+    res_dir= os.getenv('PT_OUTPUT_DIR') + '/'
+else:
+    res_dir= 'results/'
 base_res_dir=(
-                "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
+                res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )
 if not os.path.exists(base_res_dir):
@@ -127,22 +150,26 @@ if not os.path.exists(base_res_dir):
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(run*10)    
             
     #DataLoader        
-    train_dataset, val_dataset, test_dataset, total_domains, domain_size, training_list_size= get_dataloader( args, run, train_domains, test_domains, kwargs )
-    print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
+    train_dataset= get_dataloader( args, run, train_domains, 'train', 0, kwargs )    
+    if args.method_name == 'matchdg_ctr':
+        val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )            
+    else:
+        val_dataset= get_dataloader( args, run, train_domains, 'val', 0, kwargs )    
+    test_dataset= get_dataloader( args, run, test_domains, 'test', 0, kwargs )    
+#     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
     if args.method_name == 'erm_match':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
     elif args.method_name == 'matchdg_ctr':
@@ -150,9 +177,7 @@ for run in range(args.n_runs):
         ctr_phase=1
         train_method= MatchDG(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size,  base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda, ctr_phase
                              )     
     elif args.method_name == 'matchdg_erm':
@@ -160,59 +185,61 @@ for run in range(args.n_runs):
         ctr_phase=0
         train_method= MatchDG(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains,
-                                total_domains, domain_size,
-                                training_list_size,  base_res_dir,
+                                test_dataset, base_res_dir,
                                 run, cuda, ctr_phase
                              )
+    elif args.method_name == 'hybrid':
+        from algorithms.hybrid import Hybrid
+        train_method= Hybrid(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir,
+                                run, cuda
+                             )        
     elif args.method_name == 'erm':
         from algorithms.erm import Erm    
         train_method= Erm(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda
-                              )        
+                              )           
     elif args.method_name == 'irm':
         from algorithms.irm import Irm    
         train_method= Irm(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
     elif args.method_name == 'dro':
         from algorithms.dro import DRO    
         train_method= DRO(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
     elif args.method_name == 'csd':
         from algorithms.csd import CSD   
         train_method= CSD(
                                 args, train_dataset, val_dataset,
-                                test_dataset, train_domains, 
-                                total_domains, domain_size, 
-                                training_list_size, base_res_dir, 
+                                test_dataset, base_res_dir, 
                                 run, cuda
                               )
-
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()
             
     # Final Report Accuacy
     if args.method_name != 'matchdg_ctr':
-        final_acc= train_method.final_acc[-1]
-        final_report_accuracy.append( final_acc )
-                   
+        final_acc= np.max(train_method.final_acc)
+        final_accuracy_target_val.append( final_acc )
+        
+        idx= np.argmax(train_method.val_acc)
+        final_acc= train_method.final_acc[idx]
+        final_accuracy_source_val.append( final_acc  )
+        
+        
 if args.method_name != 'matchdg_ctr':
     print('\n')
     print('Done for the Model..')
-    print('Final Test Accuracy', np.mean(final_report_accuracy), np.std(final_report_accuracy) )
+    print('Final Test Accuracy (Source Validation)', np.mean(final_accuracy_source_val), np.std(final_accuracy_source_val) )
+    print('Final Test Accuracy (Target Validation)', np.mean(final_accuracy_target_val), np.std(final_accuracy_target_val) )
     print('\n')

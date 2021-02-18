@@ -18,12 +18,14 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
 class ErmMatch(BaseAlgo):
-    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda):
         
-        super().__init__(args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda) 
               
     def train(self):
         
+        self.max_epoch=-1
+        self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
@@ -72,7 +74,10 @@ class ErmMatch(BaseAlgo):
                     label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
                 
                     erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
-                    penalty_erm+= float(erm_loss)                
+                    penalty_erm+= float(erm_loss)           
+                    
+                    train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
+                    train_size+= label_match.shape[0]
                         
                     # Creating tensor of shape ( domain size, total domains, feat size )
                     if len(feat_match.shape) == 4:
@@ -83,6 +88,7 @@ class ErmMatch(BaseAlgo):
                     label_match= label_match.view( curr_batch_size, len(self.train_domains) )
 
             #             print(feat_match.shape)
+            
                     data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
 
                     #Positive Match Loss
@@ -118,20 +124,33 @@ class ErmMatch(BaseAlgo):
                 del wasserstein_loss 
                 del loss_e
                 torch.cuda.empty_cache()
-        
-                train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                train_size+= y_e.shape[0]
-                
+                        
    
             print('Train Loss Basic : ',  penalty_erm, penalty_ws )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
+            
+            #Train Dataset Accuracy
+            self.train_acc.append( 100*train_acc/train_size )
             
             #Val Dataset Accuracy
             self.val_acc.append( self.get_test_accuracy('val') )
             
             #Test Dataset Accuracy
             self.final_acc.append( self.get_test_accuracy('test') )
-
-        # Save the model's weights post training
-        self.save_model()
+            
+            #Save the model if current best epoch as per validation loss
+            if self.val_acc[-1] > self.max_val_acc:
+                self.max_val_acc=self.val_acc[-1]
+                self.max_epoch= epoch
+                self.save_model()
+                                
+            print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
+            
+            if epoch > 0 and epoch % 5==0 and self.args.model_name == 'domain_bed_mnist':
+                lr=self.args.lr/(2**(int(epoch/5)))
+                print('Learning Rate Scheduling; New LR: ', lr)                
+                self.opt= optim.SGD([
+                         {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) }, 
+                ], lr= lr, weight_decay= self.args.weight_decay, momentum= 0.9,  nesterov=True )     
+                

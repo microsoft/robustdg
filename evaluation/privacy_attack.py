@@ -36,9 +36,9 @@ from utils.privacy_attack import to_onehot, mia
 
 class PrivacyAttack(BaseEval):
     
-    def __init__(self, args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
-        super().__init__(args, train_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, run, cuda)
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda)
         
     
     def get_metric_eval(self):
@@ -99,13 +99,14 @@ class PrivacyAttack(BaseEval):
         print('MIA Final Dataset: ', X_dnn_train.shape, X_dnn_test.shape)
         # Features for the attack dnn model
         attack_features = []
-        for attack_idx in range(10):
+        
+        for attack_idx in range(self.args.out_classes):
             attack_features.append( tf.feature_column.numeric_column(key="value_"+str(attack_idx)) )
         #print('Attack Features: ', attack_features)
 
         output_dnn = mia(X_dnn_train, Y_dnn_train, X_dnn_test, Y_dnn_test, attack_features, self.args.mia_batch_size, self.args.mia_dnn_steps, self.save_path)
-        acc_train.append( output_dnn['tr_attack']['accuracy'] )
-        acc_test.append( output_dnn['te_attack']['accuracy'] )
+        acc_train.append( 100*output_dnn['tr_attack']['accuracy'] )
+        acc_test.append( 100*output_dnn['te_attack']['accuracy'] )
 #         precision.append( output_dnn['precision'] )
 #         recall.append( output_dnn['recall'] )
 

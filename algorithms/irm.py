@@ -18,12 +18,14 @@ from .algo import BaseAlgo
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity, compute_irm_penalty
 
 class Irm(BaseAlgo):
-    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda):
         
-        super().__init__(args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda) 
               
     def train(self):
         
+        self.max_epoch=-1
+        self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
@@ -63,7 +65,7 @@ class Irm(BaseAlgo):
                 curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
 
                 data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
                 feat_match= self.phi( data_match )
             
                 label_match= label_match_tensor_split[batch_idx].to(self.cuda)
@@ -72,27 +74,33 @@ class Irm(BaseAlgo):
                 erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                 penalty_erm+= float(erm_loss)                
                 loss_e += erm_loss                
+                
+                train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
+                train_size+= label_match.shape[0]                
                         
+                # Creating tensor of shape ( domain size, total domains, feat size )
+                if len(feat_match.shape) == 4:
+                    feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
+                else:
+                     feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
+
+                label_match= label_match.view( curr_batch_size, len(self.train_domains) )
+
+        #             print(feat_match.shape)
+        
+                data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )                
+
+                #IRM Penalty
+                domain_counter=0
+                for d_i in range(feat_match.shape[1]):
+                    irm_loss+= compute_irm_penalty( feat_match[:, d_i, :], label_match[:, d_i], self.cuda )
+                    domain_counter+=1
+
+                irm_loss = irm_loss/domain_counter
+                penalty_irm+= float(irm_loss)                                            
+                
+                #IRM Penalty to be minimized only after threshold epoch
                 if epoch > self.args.penalty_s:
-                    # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-            #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
-                    
-                    #IRM Penalty
-                    domain_counter=0
-                    for d_i in range(feat_match.shape[1]):
-                        irm_loss+= compute_irm_penalty( feat_match[:, d_i, :], label_match[:, d_i], self.cuda )
-                        domain_counter+=1
-
-                    irm_loss = irm_loss/domain_counter
-                    penalty_irm+= float(irm_loss)                                            
                     loss_e += self.args.penalty_irm*irm_loss
                     if self.args.penalty_irm > 1.0:
                       # Rescale the entire loss to keep gradients in a reasonable range
@@ -105,20 +113,25 @@ class Irm(BaseAlgo):
                 del irm_loss 
                 del loss_e
                 torch.cuda.empty_cache()
-        
-                train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                train_size+= y_e.shape[0]
-                
-   
+           
             print('Train Loss Basic : ',  penalty_erm, penalty_irm )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
+            
+            #Train Dataset Accuracy
+            self.train_acc.append( 100*train_acc/train_size )
             
             #Val Dataset Accuracy
             self.val_acc.append( self.get_test_accuracy('val') )
             
             #Test Dataset Accuracy
             self.final_acc.append( self.get_test_accuracy('test') )
+            
+            #Save the model if current best epoch as per validation loss
+            if self.val_acc[-1] > self.max_val_acc:
+                self.max_val_acc=self.val_acc[-1]
+                self.max_epoch= epoch
+                self.save_model()
+                
+            print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
 
-        # Save the model's weights post training
-        self.save_model()

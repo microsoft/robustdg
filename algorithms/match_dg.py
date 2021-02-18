@@ -20,9 +20,9 @@ from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 from utils.match_function import get_matched_pairs
 
 class MatchDG(BaseAlgo):
-    def __init__(self, args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda, ctr_phase=1):
+    def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda, ctr_phase=1):
         
-        super().__init__(args, train_dataset, val_dataset, test_dataset, train_domains, total_domains, domain_size, training_list_size, base_res_dir, post_string, cuda) 
+        super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, post_string, cuda) 
         
         self.ctr_phase= ctr_phase
         self.ctr_save_post_string= str(self.args.match_case) + '_' + str(self.args.match_interrupt) + '_' + str(self.args.match_flag) + '_' + str(self.run) + '_' + self.args.model_name
@@ -35,7 +35,7 @@ class MatchDG(BaseAlgo):
         else:
             self.train_erm_phase()
             
-    def save_model_ctr_phase(self):
+    def save_model_ctr_phase(self, epoch):
         # Store the weights of the model
         torch.save(self.phi.state_dict(), self.base_res_dir + '/Model_' + self.ctr_save_post_string + '.pth')
 
@@ -54,13 +54,27 @@ class MatchDG(BaseAlgo):
                 ctr_phi= LeNet5().to(self.cuda)
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
-                ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)
-            if self.args.ctr_model_name == 'resnet18':
+                ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)                
+            if self.args.ctr_model_name == 'fc':
+                from models.fc import FC
+                fc_layer=0
+                ctr_phi= FC(self.args.out_classes, fc_layer).to(self.cuda)              
+            if 'resnet' in self.args.ctr_model_name:
                 from models.resnet import get_resnet
-                ctr_phi= get_resnet('resnet18', self.args.out_classes, 'matchdg_ctr', self.args.img_c, self.args.pre_trained).to(self.cuda)
+                fc_layer=0                
+                ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
+            if 'densenet' in self.args.ctr_model_name:
+                from models.densenet import get_densenet
+                fc_layer=0
+                ctr_phi= get_densenet(self.args.ctr_model_name, self.args.out_classes, fc_layer, 
+                                self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
 
+                
             # Load MatchDG CTR phase model from the saved weights
-            base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains) + '_test_' + str(self.args.test_domains)             
+            if self.args.os_env:
+                base_res_dir=os.getenv('PT_DATA_DIR') + '/' + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
+            else:
+                base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
             save_path= base_res_dir + '/Model_' + self.ctr_load_post_string + '.pth'
             ctr_phi.load_state_dict( torch.load(save_path) )
             ctr_phi.eval()
@@ -68,16 +82,18 @@ class MatchDG(BaseAlgo):
             #Inferred Match Case
             if self.args.match_case == -1:
                 inferred_match=1
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
-            # x% percentage match initial strategy
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
+            # x% percentage match initial strategy 
             else:
                 inferred_match=0
-                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, inferred_match )
+                data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
                 
             return data_match_tensor, label_match_tensor
             
     def train_ctr_phase(self):
         
+        self.max_epoch= -1
+        self.max_val_score= 0.0
         for epoch in range(self.args.epochs):    
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
@@ -148,8 +164,8 @@ class MatchDG(BaseAlgo):
                         pos_feat_match= feat_match[pos_indices]
                         neg_feat_match= feat_match[neg_indices]
 
-                        if pos_feat_match.shape[0] > neg_feat_match.shape[0]:
-                            print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
+#                         if pos_feat_match.shape[0] > neg_feat_match.shape[0]:
+#                             print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
 
                         # If no instances of label y_c in the current batch then continue
                         if pos_feat_match.shape[0] ==0 or neg_feat_match.shape[0] == 0:
@@ -214,13 +230,34 @@ class MatchDG(BaseAlgo):
    
             print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
             print('Done Training for epoch: ', epoch)
-        
-        # Save the model's weights post training
-        self.save_model_ctr_phase()
+                        
+            if (epoch+1)%10 == 0:
+                                
+                from evaluation.match_eval import MatchEval
+                test_method= MatchEval(
+                                   self.args, self.train_dataset, self.val_dataset,
+                                   self.test_dataset, self.base_res_dir, 
+                                   self.run, self.cuda
+                                  )   
+                #Compute test metrics: Mean Rank
+                test_method.phi= self.phi
+                test_method.get_metric_eval()
+                                
+                # Save the model's weights post training
+                if test_method.metric_score['TopK Perfect Match Score'] > self.max_val_score:
+                    self.max_val_score= test_method.metric_score['TopK Perfect Match Score']
+                    self.max_epoch= epoch
+                    self.save_model_ctr_phase(epoch)
+
+                print('Current Best Epoch: ', self.max_epoch, ' with TopK Overlap: ', self.max_val_score)                
+            
             
     def train_erm_phase(self):
         
-        for run_erm in range(self.args.n_runs_matchdg_erm):            
+        for run_erm in range(self.args.n_runs_matchdg_erm):   
+            
+            self.max_epoch= -1
+            self.max_val_acc= 0.0
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
@@ -274,7 +311,10 @@ class MatchDG(BaseAlgo):
                         label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
 
                         erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
-                        penalty_erm+= float(erm_loss)                
+                        penalty_erm+= float(erm_loss) 
+                        
+                        train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
+                        train_size+= label_match.shape[0]                        
 
                         # Creating tensor of shape ( domain size, total domains, feat size )
                         if len(feat_match.shape) == 4:
@@ -320,18 +360,23 @@ class MatchDG(BaseAlgo):
                     del loss_e
                     torch.cuda.empty_cache()
 
-                    train_acc+= torch.sum(torch.argmax(out, dim=1) == y_e ).item()
-                    train_size+= y_e.shape[0]
-
                 print('Train Loss Basic : ', penalty_erm_extra,  penalty_erm, penalty_ws )
                 print('Train Acc Env : ', 100*train_acc/train_size )
                 print('Done Training for epoch: ', epoch)    
                 
+                #Train Dataset Accuracy
+                self.train_acc.append( 100*train_acc/train_size )
+            
                 #Val Dataset Accuracy
                 self.val_acc.append( self.get_test_accuracy('val') )
 
                 #Test Dataset Accuracy
-                self.final_acc.append( self.get_test_accuracy('test') )
-                    
-            # Save the model's weights post training
-            self.save_model_erm_phase(run_erm)
+                self.final_acc.append( self.get_test_accuracy('test') ) 
+                
+                #Save the model if current best epoch as per validation loss
+                if self.val_acc[-1] > self.max_val_acc:
+                    self.max_val_acc= self.val_acc[-1]
+                    self.max_epoch= epoch
+                    self.save_model_erm_phase(run_erm)
+                
+                print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
