@@ -148,7 +148,7 @@ class MnistRotated(BaseDataLoader):
         train_imgs = torch.cat(training_list_img)
         train_labels = torch.cat(training_list_labels)
         train_indices = np.array(training_list_idx)
-        train_indices = np.reshape( train_indices, ( train_indices.shape[0]*train_indices.shape[1] ) )    
+        train_indices= np.hstack(train_indices)
         self.training_list_size= training_list_size
         
         # Create domain labels

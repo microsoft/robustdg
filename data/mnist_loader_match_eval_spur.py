@@ -228,5 +228,5 @@ class MnistRotatedAugEval(BaseDataLoader):
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)        
         
-        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape, ' Spur Corr ', train_spur.shape)
         return train_imgs, train_labels, train_domains, train_indices, train_spur

@@ -175,7 +175,7 @@ class MnistRotated(BaseDataLoader):
         train_imgs = torch.cat(training_list_img)
         train_labels = torch.cat(training_list_labels)
         train_indices = np.array(training_list_idx)
-        train_indices = np.reshape( train_indices, ( train_indices.shape[0]*train_indices.shape[1] ) )    
+        train_indices= np.hstack(train_indices)
         
         train_spur = np.array(training_list_spur)
         train_spur= np.hstack(train_spur)        
@@ -208,5 +208,5 @@ class MnistRotated(BaseDataLoader):
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)        
             
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)            
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape, ' Spur Corr ', train_spur.shape)            
         return train_imgs, train_labels, train_domains, train_indices, train_spur
