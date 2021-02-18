@@ -38,12 +38,18 @@ class ChestXRay(BaseDataLoader):
         for domain in self.list_train_domains:
             
             domain_imgs = torch.load(data_dir + domain + '_' + self.data_case + '_image.pt')
+            domain_imgs_org = torch.load(data_dir + domain + '_' + self.data_case + '_image_org.pt')
             domain_labels = torch.load(data_dir + domain + '_' + self.data_case + '_label.pt')
             domain_spur = torch.load((data_dir) + domain + '_' + self.data_case + '_spur.pt').numpy().tolist()
             domain_idx= list(range(len(domain_imgs)))
             print('Image: ', domain_imgs.shape, ' Labels: ', domain_labels.shape)
             print('Source Domain ', domain)
-            training_list_img.append(domain_imgs)
+            
+            #Apply augmentation to only training dataset
+            if self.data_case == 'train':
+                training_list_img.append(domain_imgs)
+            else:
+                training_list_img.append(domain_imgs_org)
             training_list_labels.append(domain_labels)
             training_list_idx.append(domain_idx)
             training_list_spur.append(domain_spur)
@@ -63,8 +69,7 @@ class ChestXRay(BaseDataLoader):
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
-        
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )                
                 
         # Stack
         train_imgs = torch.cat(training_list_img)
@@ -77,9 +82,6 @@ class ChestXRay(BaseDataLoader):
         
         self.training_list_size = training_list_size            
     
-        print(train_imgs.shape, train_labels.shape, train_indices.shape)
-        print(self.training_list_size)
-        
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
         domain_start=0
@@ -106,8 +108,9 @@ class ChestXRay(BaseDataLoader):
         d = torch.eye(len(self.list_train_domains))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)
+            
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)            
         return train_imgs, train_labels, train_domains, train_indices, train_spur

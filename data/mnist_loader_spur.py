@@ -71,7 +71,6 @@ class MnistRotated(BaseDataLoader):
         mnist_labels = mnist_labels[sup_inds]
         mnist_imgs = mnist_imgs[sup_inds]
         mnist_size = mnist_labels.shape[0] 
-        print(type(mnist_imgs), mnist_labels.shape, mnist_imgs.shape)
 
         to_pil=  transforms.Compose([
                 transforms.ToPILImage(),
@@ -123,9 +122,8 @@ class MnistRotated(BaseDataLoader):
             for key in curr_indices_dict.keys():
                 random.shuffle( curr_indices_dict[key] )
             
-            for i in range(len(mnist_imgs)):
-                
-                curr_image= to_pil(mnist_imgs[i])
+            for i in range(len(mnist_imgs)):               
+                curr_image= to_pil(mnist_imgs[i])                
                 #Color the image 
                 if rand_var[i]:
                     # Change colors per label for test domains relative to the train domains
@@ -136,16 +134,19 @@ class MnistRotated(BaseDataLoader):
                     else:
                         curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
                 else:
-                    curr_image = ImageOps.colorize(curr_image, black ="black", white ="white")                 
-                    
+                    curr_image = ImageOps.colorize(curr_image, black ="black", white ="white")                                     
+                #Rotation
                 if domain == '0':
-                    mnist_img_rot[i]= to_tensor(curr_image)
+                    img_rotated= curr_image
                 else:
-                    if self.data_case =='train' and self.args.dataset_name =="fashion_mnist":
-                        mnist_img_rot[i]= to_tensor( to_augment( transforms.functional.rotate( curr_image, int(domain) ) ) )        
-                    else:
-                        mnist_img_rot[i]= to_tensor( transforms.functional.rotate( curr_image, int(domain) ) )        
-                    
+                    img_rotated= transforms.functional.rotate(curr_image, int(domain))
+
+                #Augmentation
+                if self.data_case =='train' and self.args.dataset_name =="fashion_mnist":
+                    mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
+                else:
+                    mnist_img_rot[i]= to_tensor(img_rotated)                    
+                        
                 mnist_idx.append( i )
             
             print('Source Domain ', domain)
@@ -168,7 +169,7 @@ class MnistRotated(BaseDataLoader):
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )
                    
         # Stack
         train_imgs = torch.cat(training_list_img)
@@ -180,8 +181,6 @@ class MnistRotated(BaseDataLoader):
         train_spur= np.hstack(train_spur)        
         
         self.training_list_size= training_list_size
-        print(train_imgs.shape, train_labels.shape, train_indices.shape)
-        print(self.training_list_size)
         
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
@@ -205,8 +204,9 @@ class MnistRotated(BaseDataLoader):
         d = torch.eye(len(self.list_train_domains))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)        
+            
+        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)            
         return train_imgs, train_labels, train_domains, train_indices, train_spur

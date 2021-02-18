@@ -89,8 +89,7 @@ class ChestXRayAugEval(BaseDataLoader):
                             base_class_idx= 1                            
                     
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
-        
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )                
                 
         # Stack
         train_imgs = torch.cat(training_list_img['aug'] + training_list_img['org'] )
@@ -105,10 +104,6 @@ class ChestXRayAugEval(BaseDataLoader):
         
         training_out_classes= training_out_classes['aug'] + training_out_classes['org']
         self.training_list_size = [ training_list_size['aug'],  training_list_size['org'] ]           
-        
-        print(train_imgs.shape, train_labels.shape, train_indices.shape)
-        print(self.training_list_size, self.base_domain_size)        
-        print(training_out_classes)
         
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
@@ -136,8 +131,9 @@ class ChestXRayAugEval(BaseDataLoader):
         d = torch.eye(len(self.training_list_size))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)
+            
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
         return train_imgs, train_labels, train_domains, train_indices, train_spur

@@ -93,8 +93,7 @@ class PACS(BaseDataLoader):
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
-        
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )        
                 
         # Stack
         train_imgs = torch.cat(training_list_img)
@@ -103,9 +102,6 @@ class PACS(BaseDataLoader):
         train_indices= np.hstack(train_indices)
         self.training_list_size = training_list_size            
     
-        print(train_imgs.shape, train_labels.shape, train_indices.shape)
-        print(self.training_list_size)
-        
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
         domain_start=0
@@ -131,8 +127,9 @@ class PACS(BaseDataLoader):
         d = torch.eye(len(self.list_train_domains))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape)
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)
+            
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
         return train_imgs, train_labels, train_domains, train_indices

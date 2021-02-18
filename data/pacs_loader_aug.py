@@ -113,8 +113,7 @@ class PACSAug(BaseDataLoader):
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
-        
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )                
                 
         # Stack
         train_imgs = torch.cat(training_list_img)
@@ -153,10 +152,10 @@ class PACSAug(BaseDataLoader):
         d = torch.eye(len(self.list_train_domains))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_imgs_org.shape, train_labels.shape, train_domains.shape, train_indices.shape)
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
         if len(train_imgs.shape)==3:
             train_imgs= train_imgs.unsqueeze(1)
-        if len(train_imgs_org.shape)==3:
             train_imgs_org= train_imgs_org.unsqueeze(1)
+            
+        print('Shape: Data ', train_imgs.shape, ' Data w/o augmentation ', train_imgs_org.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
         return train_imgs, train_imgs_org, train_labels, train_domains, train_indices

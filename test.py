@@ -193,14 +193,9 @@ for run in range(args.n_runs):
     elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
         train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'attribute_attack':
-        
-        if args.dataset_name == 'adult':
-            train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
-            test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )        
-        else:
-            train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
-            test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
+    elif args.test_metric == 'attribute_attack':        
+        train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
+        test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
     else:
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
         

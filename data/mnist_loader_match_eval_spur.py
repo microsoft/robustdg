@@ -71,7 +71,6 @@ class MnistRotatedAugEval(BaseDataLoader):
         mnist_labels = mnist_labels[sup_inds]
         mnist_imgs = mnist_imgs[sup_inds]
         mnist_size = mnist_labels.shape[0] 
-        print(type(mnist_imgs), mnist_labels.shape, mnist_imgs.shape)
 
         to_pil=  transforms.Compose([
                 transforms.ToPILImage(),
@@ -185,7 +184,7 @@ class MnistRotatedAugEval(BaseDataLoader):
                             base_class_idx= 1                            
                         
                 self.base_domain_size += base_class_size
-                print('Max Class Size: ', base_class_size, base_class_idx, y_c )
+                print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )
                    
         # Stack
         train_imgs = torch.cat(training_list_img['aug'] + training_list_img['org'] )
@@ -199,11 +198,7 @@ class MnistRotatedAugEval(BaseDataLoader):
                 
         training_out_classes= training_out_classes['aug'] + training_out_classes['org']
         self.training_list_size = [ training_list_size['aug'],  training_list_size['org'] ]           
-   
-        print(train_imgs.shape, train_labels.shape, train_indices.shape)
-        print(self.training_list_size, self.base_domain_size)        
-        print(training_out_classes)
-        
+           
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
         domain_start=0
@@ -229,5 +224,9 @@ class MnistRotatedAugEval(BaseDataLoader):
         d = torch.eye(len(self.training_list_size))
         train_domains = d[train_domains]
         
-        print(train_imgs.shape, train_labels.shape, train_domains.shape, train_indices.shape, train_spur.shape)
-        return train_imgs.unsqueeze(1), train_labels, train_domains, train_indices, train_spur
+        # If shape (B,H,W) change it to (B,C,H,W) with C=1
+        if len(train_imgs.shape)==3:
+            train_imgs= train_imgs.unsqueeze(1)        
+        
+        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
+        return train_imgs, train_labels, train_domains, train_indices, train_spur
