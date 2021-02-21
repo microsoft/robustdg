@@ -28,7 +28,7 @@ Let's first load the rotatedMNIST dataset in a suitable format for the resnet18 
 
 .. code:: shell
 
-    cd data/rot_mnist/
+    cd data/
     python data_gen.py resnet18
 
 **Train and evaluate ML model**
@@ -37,9 +37,13 @@ The following commands would train and evalute the MatchDG method on the Rotated
 
 .. code:: shell
 
-    python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 30 --batch_size 64 --pos_metric cos 
-    python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1  
-    python eval.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --test_metric acc
+    python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 100 --batch_size 256 --pos_metric cos 
+    
+    python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --penalty_ws 0.1 --epochs 25 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18
+      
+    python test.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --penalty_ws 0.1 --epochs 25 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --test_metric acc
+    
+    python test.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --pos_metric cos --test_metric match_score
 
 
 Demo
