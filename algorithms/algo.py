@@ -52,6 +52,10 @@ class BaseAlgo():
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
             phi= LeNet5()
+
+        if self.args.model_name == 'slab':
+            from models.slab import SlabClf
+            phi= SlabClf(self.args.slab_data_dim, self.args.out_classes)
             
         if self.args.model_name == 'fc':
             from models.fc import FC
@@ -148,7 +152,6 @@ class BaseAlgo():
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                d_e = torch.argmax(d_e, dim=1).numpy()       
 
                 #Forward Pass
                 out= self.phi(x_e)                

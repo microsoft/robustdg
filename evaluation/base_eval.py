@@ -62,7 +62,11 @@ class BaseEval():
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
             phi= LeNet5()
-                        
+            
+        if self.args.model_name == 'slab':
+            from models.slab import SlabClf
+            phi= SlabClf(self.args.slab_data_dim, self.args.out_classes)
+            
         if self.args.model_name == 'fc':
             from models.fc import FC
             if self.args.method_name in ['csd', 'matchdg_ctr']:
@@ -111,7 +115,7 @@ class BaseEval():
     
     def load_model(self, run_matchdg_erm):
         
-        if self.args.method_name in ['erm_match', 'csd', 'irm']:
+        if self.args.method_name in ['erm_match', 'csd', 'irm', 'perf_match']:
             self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         elif self.args.method_name == 'matchdg_ctr':

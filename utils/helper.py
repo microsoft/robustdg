@@ -14,6 +14,23 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
 
+# Slab Dataset: Flatten the tensor along batch and domain axis
+# Input of the shape (Batch, Domain, Feat)
+def slab_batch_process(x, y, d, o):
+    if len(x.shape) > 2:
+        x= x.flatten(start_dim=0, end_dim=1)
+
+    if len(y.shape) > 1:
+        y= y.flatten(start_dim=0, end_dim=1)
+
+    if len(d.shape) > 1:
+        d= d.flatten(start_dim=0, end_dim=1)
+
+    if len(o.shape) > 1:
+        o= o.flatten(start_dim=0, end_dim=1)
+    
+    return x, y, d, o
+
 def t_sne_plot(X):
     X= X.detach().cpu().numpy()
     X= TSNE(n_components=2).fit_transform(X)
@@ -213,7 +230,9 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
                 from data.pacs_loader_aug import PACSAug as PACS
             else:
                 from data.pacs_loader import PACS
-                
+    
+    elif args.dataset_name == 'slab':
+        from data.slab_loader import SlabData
                 
     if data_case == 'train':
         match_func=True
@@ -237,7 +256,10 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     except AttributeError:
         batch_size= batch_size
     
-    if args.dataset_name in ['pacs', 'vlcs']:
+    if args.dataset_name == 'slab':        
+        data_obj= SlabData(args, domains, '/slab/', data_case=data_case, match_func=match_func, base_size=args.slab_num_samples, freq_ratio=50, data_dim=args.slab_data_dim, total_slabs=args.slab_total_slabs)
+        
+    elif args.dataset_name in ['pacs', 'vlcs']:
         data_obj= PACS(args, domains, '/pacs/train_val_splits/', data_case=data_case, match_func=match_func)
     
     elif args.dataset_name in ['chestxray']:
