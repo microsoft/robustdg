@@ -19,13 +19,13 @@ from PIL import Image, ImageColor, ImageOps
 from .data_loader import BaseDataLoader
 
 class MnistRotated(BaseDataLoader):
-    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
+    def __init__(self, args, list_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
         self.mnist_subset = mnist_subset
         self.download = download
         
-        self.train_data, self.train_labels, self.train_domain, self.train_indices, self.train_spur = self._get_data()
+        self.data, self.labels, self.domains, self.indices, self.train_spur = self._get_data()
 
     def load_inds(self):
         data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '_indices'
@@ -105,7 +105,7 @@ class MnistRotated(BaseDataLoader):
             indices_dict[key].append( i )
         
 
-        for domain in self.list_train_domains:
+        for domain in self.list_domains:
             
             if self.data_case == 'test':            
                 rand_var= bernoulli.rvs(0.0, size=mnist_size)
@@ -162,7 +162,7 @@ class MnistRotated(BaseDataLoader):
             for y_c in range(num_classes):
                 base_class_size=0
                 base_class_idx=-1
-                for d_idx, domain in enumerate( self.list_train_domains ):
+                for d_idx, domain in enumerate( self.list_domains ):
                     class_idx= training_list_labels[d_idx] == y_c
                     curr_class_size= training_list_labels[d_idx][class_idx].shape[0]
                     if base_class_size < curr_class_size:
@@ -184,7 +184,7 @@ class MnistRotated(BaseDataLoader):
         
         # Create domain labels
         train_domains = torch.zeros(train_labels.size())
-        for idx in range(len(self.list_train_domains)):
+        for idx in range(len(self.list_domains)):
             train_domains[idx * mnist_size: (idx+1) * mnist_size] += idx
 
         # Shuffle everything one more time
@@ -201,7 +201,7 @@ class MnistRotated(BaseDataLoader):
         train_labels = y[train_labels]
 
         # Convert to onehot
-        d = torch.eye(len(self.list_train_domains))
+        d = torch.eye(len(self.list_domains))
         train_domains = d[train_domains]
         
         # If shape (B,H,W) change it to (B,C,H,W) with C=1

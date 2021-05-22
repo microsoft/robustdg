@@ -13,13 +13,13 @@ from torchvision import datasets, transforms
 from .data_loader import BaseDataLoader
 
 class MnistRotated(BaseDataLoader):
-    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
+    def __init__(self, args, list_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
         self.mnist_subset = mnist_subset
         self.download = download
         
-        self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
+        self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
 
     def load_inds(self):
         data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '_indices'
@@ -82,32 +82,19 @@ class MnistRotated(BaseDataLoader):
             ])
 
         # Choose subsets that should be included into the training
-        training_list_img = []
-        training_list_labels = []
-        training_list_idx= []
-        training_list_size= []
+        list_img = []
+        list_labels = []
+        list_idx= []
+        list_size= []
 
-        # key: class labels, val: data indices
-        indices_dict={}
-        for i in range(len(mnist_imgs)):
-            key= int( mnist_labels[i].numpy() )
-            if key not in indices_dict.keys():
-                indices_dict[key]=[]
-            indices_dict[key].append( i )
-        
 #         if self.data_case == 'test':
 #             self.list_train_domains= ['30', '45']
             
-        for domain in self.list_train_domains:
+        for domain in self.list_domains:
             # Run transforms
             mnist_img_rot= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))
             mnist_idx=[]
-            
-            # Shuffling the images to create random across domains
-            curr_indices_dict= copy.deepcopy( indices_dict )
-            for key in curr_indices_dict.keys():
-                random.shuffle( curr_indices_dict[key] )
-            
+                        
             for i in range(len(mnist_imgs)):
                 #Rotation
                 if domain == '0':
@@ -124,10 +111,10 @@ class MnistRotated(BaseDataLoader):
                 mnist_idx.append( i )
             
             print('Source Domain ', domain)
-            training_list_img.append(mnist_img_rot)
-            training_list_labels.append(mnist_labels)
-            training_list_idx.append(mnist_idx)
-            training_list_size.append(mnist_img_rot.shape[0])
+            list_img.append(mnist_img_rot)
+            list_labels.append(mnist_labels)
+            list_idx.append(mnist_idx)
+            list_size.append(mnist_img_rot.shape[0])
              
         if self.match_func:
             print('Match Function Updates')
@@ -135,9 +122,9 @@ class MnistRotated(BaseDataLoader):
             for y_c in range(num_classes):
                 base_class_size=0
                 base_class_idx=-1
-                for d_idx, domain in enumerate( self.list_train_domains ):
-                    class_idx= training_list_labels[d_idx] == y_c
-                    curr_class_size= training_list_labels[d_idx][class_idx].shape[0]
+                for d_idx, domain in enumerate( self.list_domains ):
+                    class_idx= list_labels[d_idx] == y_c
+                    curr_class_size= list_labels[d_idx][class_idx].shape[0]
                     if base_class_size < curr_class_size:
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
@@ -145,36 +132,40 @@ class MnistRotated(BaseDataLoader):
                 print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )
                    
         # Stack
-        train_imgs = torch.cat(training_list_img)
-        train_labels = torch.cat(training_list_labels)
-        train_indices = np.array(training_list_idx)
-        train_indices= np.hstack(train_indices)
-        self.training_list_size= training_list_size
+        data_imgs = torch.cat(list_img)
+        data_labels = torch.cat(list_labels)
+        data_indices = np.array(list_idx)
+        data_indices= np.hstack(data_indices)
+        self.training_list_size= list_size
+        
+        #Rotated MNIST the objects are same the data indices
+        data_objects= copy.deepcopy(data_indices)
         
         # Create domain labels
-        train_domains = torch.zeros(train_labels.size())
-        for idx in range(len(self.list_train_domains)):
-            train_domains[idx * mnist_size: (idx+1) * mnist_size] += idx
+        data_domains = torch.zeros(data_labels.size())
+        for idx in range(len(self.list_domains)):
+            data_domains[idx * mnist_size: (idx+1) * mnist_size] += idx
 
         # Shuffle everything one more time
-        inds = np.arange(train_labels.size()[0])
+        inds = np.arange(data_labels.size()[0])
         np.random.shuffle(inds)
-        train_imgs = train_imgs[inds]
-        train_labels = train_labels[inds]
-        train_domains = train_domains[inds].long()
-        train_indices = train_indices[inds]
+        data_imgs = data_imgs[inds]
+        data_labels = data_labels[inds]
+        data_domains = data_domains[inds].long()
+        data_indices = data_indices[inds]
+        data_objects = data_objects[inds]
 
         # Convert to onehot
         y = torch.eye(10)
-        train_labels = y[train_labels]
+        data_labels = y[data_labels]
 
         # Convert to onehot
-        d = torch.eye(len(self.list_train_domains))
-        train_domains = d[train_domains]
+        d = torch.eye(len(self.list_domains))
+        data_domains = d[data_domains]
         
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
-        if len(train_imgs.shape)==3:
-            train_imgs= train_imgs.unsqueeze(1)        
+        if len(data_imgs.shape)==3:
+            data_imgs= data_imgs.unsqueeze(1)        
         
-        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
-        return train_imgs, train_labels, train_domains, train_indices
+        print('Shape: Data ', data_imgs.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape)
+        return data_imgs, data_labels, data_domains, data_indices, data_objects

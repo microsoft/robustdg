@@ -19,9 +19,9 @@ from PIL import Image, ImageColor, ImageOps
 from .data_loader import BaseDataLoader
 
 class MnistRotatedAugEval(BaseDataLoader):
-    def __init__(self, args, list_train_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
+    def __init__(self, args, list_domains, mnist_subset, root, transform=None, data_case='train', match_func=False, download=True):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
         self.mnist_subset = mnist_subset
         self.download = download
         
@@ -107,7 +107,7 @@ class MnistRotatedAugEval(BaseDataLoader):
 
             
         image_counter=0
-        for domain in self.list_train_domains:
+        for domain in self.list_domains:
             
             # Adding color with 70 percent probability
             rand_var= bernoulli.rvs(0.7, size=mnist_size)
@@ -172,7 +172,7 @@ class MnistRotatedAugEval(BaseDataLoader):
                     base_class_idx=-1
                     
                     curr_class_size=0                    
-                    for d_idx, domain in enumerate( self.list_train_domains ):
+                    for d_idx, domain in enumerate( self.list_domains ):
                         class_idx= training_list_labels[key][d_idx] == y_c
                         curr_class_size+= training_list_labels[key][d_idx][class_idx].shape[0]
                         

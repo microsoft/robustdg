@@ -200,7 +200,7 @@ class PrivacyEntropy(BaseEval):
         max_train_acc=0.0
         max_scale= -1
         lim_scale= max(threshold_data.values())
-        if lim_scale <= 1:
+        if lim_scale <= 10:
             lim_scale = 10
         else:
             lim_scale =int(lim_scale)

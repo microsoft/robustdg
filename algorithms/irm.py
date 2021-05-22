@@ -29,20 +29,16 @@ class Irm(BaseAlgo):
         for epoch in range(self.args.epochs):   
             
             if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                data_match_tensor, label_match_tensor= self.get_match_function(epoch)
+                data_matched, domain_data= self.get_match_function(epoch)                            
+#                 data_match_tensor, label_match_tensor= self.get_match_function(epoch)
             
             penalty_erm=0
             penalty_irm=0
             train_acc= 0.0
             train_size=0
-    
-            perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
-    
+        
             #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+            for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
         #         print('Batch Idx: ', batch_idx)
 
                 self.opt.zero_grad()
@@ -58,17 +54,34 @@ class Irm(BaseAlgo):
                 irm_loss=torch.tensor(0.0).to(self.cuda)
                 erm_loss= torch.tensor(0.0).to(self.cuda) 
                 
-                # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
-                total_batch_size= len(data_match_tensor_split)
+                # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split         
+                total_batch_size= len(data_matched)
                 if batch_idx >= total_batch_size:
                     break
-                curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
+                curr_data_matched= data_matched[batch_idx]
+                curr_batch_size= len(curr_data_matched)
 
-                data_match= data_match_tensor_split[batch_idx].to(self.cuda)
+                data_match_tensor=[]
+                label_match_tensor=[]
+                for idx in range(len(curr_data_matched)):
+                    data_temp=[]
+                    label_temp= []
+                    for d_i in range(len(curr_data_matched[idx])):
+                        key= random.choice( curr_data_matched[idx][d_i] )
+                        data_temp.append(domain_data[d_i]['data'][key])
+                        label_temp.append(domain_data[d_i]['label'][key])
+
+                    data_match_tensor.append( torch.stack(data_temp) )
+                    label_match_tensor.append( torch.stack(label_temp) )                    
+
+                data_match_tensor= torch.stack( data_match_tensor ) 
+                label_match_tensor= torch.stack( label_match_tensor )
+                
+                data_match= data_match_tensor.to(self.cuda)
                 data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
                 feat_match= self.phi( data_match )
             
-                label_match= label_match_tensor_split[batch_idx].to(self.cuda)
+                label_match= label_match_tensor.to(self.cuda)
                 label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
                 
                 erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)

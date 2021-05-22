@@ -8,11 +8,12 @@ from torch.autograd import Variable
 
 
 class SlabClf(nn.Module):
-    def __init__(self, inp_shape, out_shape):
+    def __init__(self, inp_shape, out_shape, fc_layer):
 		    
         super(SlabClf, self).__init__()
         self.inp_shape = inp_shape
         self.out_shape = out_shape
+        self.fc_layer= fc_layer
         self.hidden_dim = 100
         self.feat_net= nn.Sequential(
                      nn.Linear( self.inp_shape, self.hidden_dim),
@@ -32,4 +33,7 @@ class SlabClf(nn.Module):
         self.embedding = nn.Embedding(2, self.hidden_dim)
             
     def forward(self, x):
-        return self.fc(self.feat_net(x))
+        if self.fc_layer:
+            return self.fc(self.feat_net(x))
+        else:
+            return self.feat_net(x) 

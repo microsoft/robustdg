@@ -96,7 +96,7 @@ class CSD(BaseAlgo):
             print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
     
             #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+            for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
         #         print('Batch Idx: ', batch_idx)
 
                 self.opt.zero_grad()
@@ -155,7 +155,7 @@ class CSD(BaseAlgo):
         elif case == 'test':
             dataset= self.test_dataset
 
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(dataset):
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)

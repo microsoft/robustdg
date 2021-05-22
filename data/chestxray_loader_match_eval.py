@@ -16,10 +16,10 @@ from torchvision import datasets, transforms
 from .data_loader import BaseDataLoader
 
 class ChestXRayAugEval(BaseDataLoader):
-    def __init__(self, args, list_train_domains, root, transform=None, data_case='train', match_func=False):
+    def __init__(self, args, list_domains, root, transform=None, data_case='train', match_func=False):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
-        self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
+        self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
 
     def _get_data(self):
         
@@ -28,14 +28,14 @@ class ChestXRayAugEval(BaseDataLoader):
         to_tensor = transforms.ToTensor()
         
         # Choose subsets that should be included into the training
-        training_list_img = {'aug':[], 'org':[] }
-        training_list_labels = {'aug':[], 'org':[] }
-        training_list_idx= {'aug':[], 'org':[] }
-        training_list_size= {'aug':0, 'org':0 }
-        training_out_classes={'aug':[], 'org':[] }
+        list_img = {'aug':[], 'org':[] }
+        list_labels = {'aug':[], 'org':[] }
+        list_idx= {'aug':[], 'org':[] }
+        list_size= {'aug':0, 'org':0 }
+        list_classes={'aug':[], 'org':[] }
        
         image_counter=0
-        for domain in self.list_train_domains:
+        for domain in self.list_domains:
             
             domain_imgs = torch.load(data_dir + domain + '_' + self.data_case + '_image.pt')
             domain_imgs_org = torch.load(data_dir + domain + '_' + self.data_case + '_image_org.pt')
@@ -48,20 +48,20 @@ class ChestXRayAugEval(BaseDataLoader):
             print('Image: ', domain_imgs.shape, ' Labels: ', domain_labels.shape)
             print('Source Domain ', domain)
             
-            training_list_img['aug'].append(domain_imgs)
-            training_list_img['org'].append(domain_imgs_org)
+            list_img['aug'].append(domain_imgs)
+            list_img['org'].append(domain_imgs_org)
             
-            training_list_labels['aug'].append(domain_labels)
-            training_list_labels['org'].append(domain_labels)
+            list_labels['aug'].append(domain_labels)
+            list_labels['org'].append(domain_labels)
             
-            training_list_idx['aug'].append( domain_idx )            
-            training_list_idx['org'].append( domain_idx )            
+            list_idx['aug'].append( domain_idx )            
+            list_idx['org'].append( domain_idx )            
             
-            training_list_size['aug']+= len(domain_imgs)
-            training_list_size['org']+= len(domain_imgs)            
+            list_size['aug']+= len(domain_imgs)
+            list_size['org']+= len(domain_imgs)            
             
-            training_out_classes['aug'].append( len(torch.unique(domain_labels))  )
-            training_out_classes['org'].append( len(torch.unique(domain_labels))  )
+            list_classes['aug'].append( len(torch.unique(domain_labels))  )
+            list_classes['org'].append( len(torch.unique(domain_labels))  )
 
                 
         if self.match_func:
@@ -72,9 +72,9 @@ class ChestXRayAugEval(BaseDataLoader):
                     base_class_size=0
                     base_class_idx=-1                    
                     curr_class_size=0
-                    for d_idx, domain in enumerate( self.list_train_domains ):
-                        class_idx= training_list_labels[key][d_idx] == y_c
-                        curr_class_size+= training_list_labels[key][d_idx][class_idx].shape[0]
+                    for d_idx, domain in enumerate( self.list_domains ):
+                        class_idx= list_labels[key][d_idx] == y_c
+                        curr_class_size+= list_labels[key][d_idx][class_idx].shape[0]
                         
                     if base_class_size < curr_class_size:
                         base_class_size= curr_class_size
@@ -87,42 +87,45 @@ class ChestXRayAugEval(BaseDataLoader):
                 print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )                
                 
         # Stack
-        train_imgs = torch.cat(training_list_img['aug'] + training_list_img['org'] )
-        train_labels = torch.cat(training_list_labels['aug'] + training_list_labels['org'] )
-        train_indices = np.array(training_list_idx['aug']+training_list_idx['org']) 
-        train_indices= np.hstack(train_indices)
-        print('Train indices', len(np.unique(train_indices)) )
-        training_out_classes= training_out_classes['aug'] + training_out_classes['org']
-        self.training_list_size = [ training_list_size['aug'],  training_list_size['org'] ]           
+        data_imgs = torch.cat(list_img['aug'] + list_img['org'] )
+        data_labels = torch.cat(list_labels['aug'] + list_labels['org'] )
+        data_indices = np.array(list_idx['aug']+list_idx['org']) 
+        data_indices= np.hstack(data_indices)
+        list_classes= list_classes['aug'] + list_classes['org']
+        self.training_list_size = [ list_size['aug'], list_size['org'] ]           print('Train indices', len(np.unique(train_indices)) )        
+
+        #No ground truth objects in PACS, for reference we set them same as data indices
+        data_objects= copy.deepcopy(data_indices)                        
         
         # Create domain labels
-        train_domains = torch.zeros(train_labels.size())
+        data_domains = torch.zeros(data_labels.size())
         domain_start=0
         for idx in range(len(self.training_list_size)):
             curr_domain_size= self.training_list_size[idx]
-            train_domains[ domain_start: domain_start+ curr_domain_size ] += idx
+            data_domains[ domain_start: domain_start+ curr_domain_size ] += idx
             domain_start+= curr_domain_size
             
         # Shuffle everything one more time
-        inds = np.arange(train_labels.size()[0])
+        inds = np.arange(data_labels.size()[0])
         np.random.shuffle(inds)
-        train_imgs = train_imgs[inds]
-        train_labels = train_labels[inds]
-        train_domains = train_domains[inds].long()
-        train_indices = train_indices[inds]
+        data_imgs = data_imgs[inds]
+        data_labels = data_labels[inds]
+        data_domains = data_domains[inds].long()
+        data_indices = data_indices[inds]
+        data_objects = data_objects[inds]
 
         # Convert to onehot
-        out_classes= training_out_classes[0]
+        out_classes= list_classes[0]
         y = torch.eye(out_classes)
-        train_labels = y[train_labels]
+        data_labels = y[data_labels]
 
         # Convert to onehot
         d = torch.eye(len(self.training_list_size))
-        train_domains = d[train_domains]
+        data_domains = d[data_domains]
         
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
-        if len(train_imgs.shape)==3:
-            train_imgs= train_imgs.unsqueeze(1)
+        if len(data_imgs.shape)==3:
+            data_imgs= data_imgs.unsqueeze(1)
             
-        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)            
-        return train_imgs, train_labels, train_domains, train_indices
+        print('Shape: Data ', data_imgs.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape)
+        return data_imgs, data_labels, data_domains, data_indices, data_objects

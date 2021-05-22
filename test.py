@@ -49,6 +49,7 @@ parser.add_argument('--slab_data_dim', type=int, default= 2,
                     help='Number of features in the slab dataset')
 parser.add_argument('--slab_total_slabs', type=int, default=7)
 parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.0)
 parser.add_argument('--fc_layer', type=int, default= 1, 
                     help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
@@ -73,6 +74,8 @@ parser.add_argument('--penalty_w', type=float, default=0.0,
                     help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_s', type=int, default=-1, 
                     help='Epoch threshold over which Matching Loss to be optimised')
+parser.add_argument('--penalty_irm', type=float, default=0.0, 
+                    help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -157,6 +160,11 @@ base_res_dir=(
                 "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)  
             )
+
+#TODO: Handle slab noise case in helper functions
+if args.dataset_name == 'slab':
+    base_res_dir= base_res_dir + '/slab_noise_'  + str(args.slab_noise)
+
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
@@ -182,7 +190,7 @@ for run in range(args.n_runs):
     train_dataset= torch.empty(0)
     val_dataset= torch.empty(0)
     test_dataset= torch.empty(0)
-    if args.test_metric == 'match_score':
+    if args.test_metric in ['match_score', 'slab_feat_eval']:
         if args.match_func_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.match_func_data_case== 'val':
@@ -197,7 +205,8 @@ for run in range(args.n_runs):
     elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
         train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'attribute_attack':        
+    elif args.test_metric == 'attribute_attack':
+        print( train_domains + test_domains)
         train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
     else:
@@ -221,6 +230,14 @@ for run in range(args.n_runs):
                                test_dataset, base_res_dir, 
                                run, cuda
                               )   
+        
+    elif args.test_metric == 'slab_feat_eval':
+        from evaluation.slab_feat_eval import SlabFeatEval
+        test_method= SlabFeatEval(
+                               args, train_dataset, val_dataset,
+                               test_dataset, base_res_dir, 
+                               run, cuda
+                              )         
 
     elif args.test_metric == 't_sne':
         from evaluation.t_sne import TSNE

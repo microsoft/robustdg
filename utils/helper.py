@@ -232,8 +232,14 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
                 from data.pacs_loader import PACS
     
     elif args.dataset_name == 'slab':
-        from data.slab_loader import SlabData
-                
+        if eval_case and args.test_metric in ['attribute_attack']:   
+            from data.slab_loader_spur import SlabData
+        else:
+            from data.slab_loader import SlabData        
+
+    elif args.dataset_name == 'slab_spur':
+        from data.slab_loader_spur import SlabData
+        
     if data_case == 'train':
         match_func=True
         batch_size= args.batch_size
@@ -256,8 +262,14 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     except AttributeError:
         batch_size= batch_size
     
-    if args.dataset_name == 'slab':        
-        data_obj= SlabData(args, domains, '/slab/', data_case=data_case, match_func=match_func, base_size=args.slab_num_samples, freq_ratio=50, data_dim=args.slab_data_dim, total_slabs=args.slab_total_slabs)
+    if args.dataset_name in ['slab', 'slab_spur']:        
+        mask_linear=0 
+        if args.method_name == 'mask_linear':
+            mask_linear= 1            
+            if eval_case and args.test_metric in ['attribute_attack']:
+                mask_linear= 0
+        
+        data_obj= SlabData(args, domains, '/slab/', data_case=data_case, match_func=match_func, base_size=args.slab_num_samples, freq_ratio=50, data_dim=args.slab_data_dim, total_slabs=args.slab_total_slabs, seed=run, mask_linear=mask_linear)
         
     elif args.dataset_name in ['pacs', 'vlcs']:
         data_obj= PACS(args, domains, '/pacs/train_val_splits/', data_case=data_case, match_func=match_func)

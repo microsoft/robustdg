@@ -46,6 +46,7 @@ parser.add_argument('--slab_data_dim', type=int, default= 2,
                     help='Number of features in the slab dataset')
 parser.add_argument('--slab_total_slabs', type=int, default=7)
 parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.0)
 parser.add_argument('--fc_layer', type=int, default= 1, 
                     help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
@@ -112,6 +113,8 @@ parser.add_argument('--cuda_device', type=int, default=0,
                     help='Select the cuda device by id among the avaliable devices' )
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+parser.add_argument('--dp_noise', type=int, default=0, 
+                    help='0: No DP noise; 1: Add DP noise')
 
 #Test Based Args
 parser.add_argument('--test_metric', type=str, default='match_score', 
@@ -147,6 +150,11 @@ base_res_dir=(
                 res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )
+
+#TODO: Handle slab noise case in helper functions
+if args.dataset_name == 'slab':
+    base_res_dir= base_res_dir + '/slab_noise_'  + str(args.slab_noise)
+    
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
@@ -176,13 +184,20 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-    if args.method_name == 'perf_match':
+    elif args.method_name == 'perf_match' or args.method_name == 'mask_linear':
         from algorithms.perf_match import PerfMatch    
         train_method= PerfMatch(
                                 args, train_dataset, val_dataset,
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )        
+    elif args.method_name == 'rand_match':
+        from algorithms.rand_match import RandMatch    
+        train_method= RandMatch(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
     elif args.method_name == 'matchdg_ctr':
         from algorithms.match_dg import MatchDG
         ctr_phase=1
@@ -220,6 +235,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
+    elif args.method_name == 'irm_slab':
+        from algorithms.irm_slab import IRMSlab    
+        train_method= IRMSlab(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
     elif args.method_name == 'dro':
         from algorithms.dro import DRO    
         train_method= DRO(
@@ -230,6 +252,13 @@ for run in range(args.n_runs):
     elif args.method_name == 'csd':
         from algorithms.csd import CSD   
         train_method= CSD(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
+    elif args.method_name == 'csd_slab':
+        from algorithms.csd_slab import CSDSlab   
+        train_method= CSDSlab(
                                 args, train_dataset, val_dataset,
                                 test_dataset, base_res_dir, 
                                 run, cuda
