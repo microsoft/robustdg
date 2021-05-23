@@ -164,13 +164,13 @@ class BaseAlgo():
                 key= random.choice( curr_data_matched[idx][d_i] )
                 data_temp.append(self.domain_data[d_i]['data'][key])
                 label_temp.append(self.domain_data[d_i]['label'][key])
-
+            
             data_match_tensor.append( torch.stack(data_temp) )
             label_match_tensor.append( torch.stack(label_temp) )                    
 
         data_match_tensor= torch.stack( data_match_tensor ) 
         label_match_tensor= torch.stack( label_match_tensor )
-#                     print('Shape: ', data_match_tensor.shape, label_match_tensor.shape)
+#         print('Shape: ', data_match_tensor.shape, label_match_tensor.shape)
         return data_match_tensor, label_match_tensor, curr_batch_size
     
     def get_test_accuracy(self, case):

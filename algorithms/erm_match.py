@@ -65,11 +65,11 @@ class ErmMatch(BaseAlgo):
                     data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)
                         
                     data_match= data_match_tensor.to(self.cuda)
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                    data_match= data_match.flatten(start_dim=0, end_dim=1)
                     feat_match= self.phi( data_match )
             
                     label_match= label_match_tensor.to(self.cuda)
-                    label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+                    label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
                 
                     erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                     penalty_erm+= float(erm_loss)           
@@ -78,17 +78,8 @@ class ErmMatch(BaseAlgo):
                     train_size+= label_match.shape[0]
                         
                     # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-            #             print(feat_match.shape)
+                    feat_match= torch.stack(torch.split(feat_match, len(self.train_domains)))                    
             
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
-
                     #Positive Match Loss
                     pos_match_counter=0
                     for d_i in range(feat_match.shape[1]):

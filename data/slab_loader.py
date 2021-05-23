@@ -53,7 +53,6 @@ class SlabData(BaseDataLoader):
         print('\n')
         print('Data Case: ', self.data_case)
         
-        self.base_domain_size= self.base_size
         self.data, self.labels, self.domains, self.indices, self.objects = self._get_data(self.domain_size, self.data_dim, self.total_slabs, self.spur_probs, self.slab_noise, self.data_case, self.seed, self.mask_linear)        
 
     def _get_data(self, domain_size, data_dim, total_slabs, spur_probs, slab_noise, data_case, seed, mask_linear):
