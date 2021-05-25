@@ -48,7 +48,7 @@ class PrivacyLossAttack(BaseEval):
         train_data={}
         train_data['loss']=[]
         train_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -70,7 +70,7 @@ class PrivacyLossAttack(BaseEval):
         test_data={}
         test_data['loss']=[]
         test_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]

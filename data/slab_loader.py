@@ -133,8 +133,6 @@ class SlabData(BaseDataLoader):
         #Type Casting
         data_feat= data_feat.type(torch.FloatTensor)
         data_labels = data_labels.long()
-        data_domains = data_domains.long()
-
         
         print('Shape: Data ', data_feat.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape)
         return data_feat, data_labels, data_domains, data_indices, data_objects

@@ -28,9 +28,12 @@ class Irm(BaseAlgo):
         self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                data_matched, domain_data= self.get_match_function(epoch)                            
-#                 data_match_tensor, label_match_tensor= self.get_match_function(epoch)
+            if epoch ==0:
+                inferred_match= 0                
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
+            elif (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
+                inferred_match= 1
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
             
             penalty_erm=0
             penalty_irm=0
@@ -55,34 +58,19 @@ class Irm(BaseAlgo):
                 erm_loss= torch.tensor(0.0).to(self.cuda) 
                 
                 # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split         
-                total_batch_size= len(data_matched)
+                total_batch_size= len(self.data_matched)
                 if batch_idx >= total_batch_size:
-                    break
-                curr_data_matched= data_matched[batch_idx]
-                curr_batch_size= len(curr_data_matched)
-
-                data_match_tensor=[]
-                label_match_tensor=[]
-                for idx in range(len(curr_data_matched)):
-                    data_temp=[]
-                    label_temp= []
-                    for d_i in range(len(curr_data_matched[idx])):
-                        key= random.choice( curr_data_matched[idx][d_i] )
-                        data_temp.append(domain_data[d_i]['data'][key])
-                        label_temp.append(domain_data[d_i]['label'][key])
-
-                    data_match_tensor.append( torch.stack(data_temp) )
-                    label_match_tensor.append( torch.stack(label_temp) )                    
-
-                data_match_tensor= torch.stack( data_match_tensor ) 
-                label_match_tensor= torch.stack( label_match_tensor )
+                    break                    
                 
+                # Sample batch from matched data points
+                data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)
+                    
                 data_match= data_match_tensor.to(self.cuda)
-                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
+                data_match= data_match.flatten(start_dim=0, end_dim=1)
                 feat_match= self.phi( data_match )
             
                 label_match= label_match_tensor.to(self.cuda)
-                label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+                label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
                 
                 erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                 penalty_erm+= float(erm_loss)                
@@ -92,16 +80,8 @@ class Irm(BaseAlgo):
                 train_size+= label_match.shape[0]                
                         
                 # Creating tensor of shape ( domain size, total domains, feat size )
-                if len(feat_match.shape) == 4:
-                    feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                else:
-                     feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-        #             print(feat_match.shape)
-        
-                data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )                
+                feat_match= torch.stack(torch.split(feat_match, len(self.train_domains)))                    
+                label_match= torch.stack(torch.split(label_match, len(self.train_domains)))
 
                 #IRM Penalty
                 domain_counter=0

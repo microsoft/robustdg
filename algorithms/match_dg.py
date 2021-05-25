@@ -82,13 +82,13 @@ class MatchDG(BaseAlgo):
             #Inferred Match Case
             if self.args.match_case == -1:
                 inferred_match=1
-                data_matched, domain_data, _, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
             # x% percentage match initial strategy 
             else:
-                inferred_match=0
-                data_matched, domain_data, _, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, ctr_phi, self.args.match_case, self.args.perfect_match, inferred_match )
+                inferred_match=0                
                 
-            return data_match_tensor, label_match_tensor
+            data_matched, domain_data= self.get_match_function(inferred_match, ctr_phi)
+
+            return data_matched, domain_data
             
     def train_ctr_phase(self):
         
@@ -96,9 +96,12 @@ class MatchDG(BaseAlgo):
         self.max_val_score= 0.0
         for epoch in range(self.args.epochs):    
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                self.data_matched, self.domain_data= self.get_match_function(epoch)                            
-#                 data_match_tensor, label_match_tensor= self.get_match_function(epoch)                                
+            if epoch ==0:
+                inferred_match= 0                
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
+            elif (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
+                inferred_match= 1
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
             
             penalty_same_ctr=0
             penalty_diff_ctr=0
@@ -131,24 +134,17 @@ class MatchDG(BaseAlgo):
                     
                     # Sample batch from matched data points
                     data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)
-                    
+                        
                     data_match= data_match_tensor.to(self.cuda)
-                    data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                    data_match= data_match.flatten(start_dim=0, end_dim=1)
                     feat_match= self.phi( data_match )
             
                     label_match= label_match_tensor.to(self.cuda)
-                    label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
-                                
+                    label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )                    
+                    
                     # Creating tensor of shape ( domain size, total domains, feat size )
-                    if len(feat_match.shape) == 4:
-                        feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                    else:
-                         feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                    label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-            #             print(feat_match.shape)
-                    data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                    feat_match= torch.stack(torch.split(feat_match, len(self.train_domains)))                    
+                    label_match= torch.stack(torch.split(label_match, len(self.train_domains)))
 
                     # Contrastive Loss
                     same_neg_counter=1
@@ -227,7 +223,7 @@ class MatchDG(BaseAlgo):
             print('Train Loss Ctr : ', penalty_same_ctr, penalty_diff_ctr, penalty_same_hinge, penalty_diff_hinge)
             print('Done Training for epoch: ', epoch)
                         
-            if (epoch+1)%10 == 0:
+            if (epoch+1)%5 == 0:
                                 
                 from evaluation.match_eval import MatchEval
                 test_method= MatchEval(
@@ -257,10 +253,11 @@ class MatchDG(BaseAlgo):
             for epoch in range(self.args.epochs):    
                 
                 if epoch ==0:
-                    self.data_match_tensor, self.label_match_tensor= self.init_erm_phase()            
+                    self.data_matched, self.domain_data= self.init_erm_phase()
                 elif epoch % self.args.match_interrupt == 0 and self.args.match_flag:
-                    self.data_match_tensor, self.label_match_tensor= self.get_match_function(epoch)
-
+                    inferred_match= 1
+                    self.data_match_tensor, self.label_match_tensor= self.get_match_function(inferred_match, self.phi)
+                    
                 penalty_erm=0
                 penalty_erm_extra=0
                 penalty_ws=0
@@ -268,7 +265,7 @@ class MatchDG(BaseAlgo):
                 train_size=0
 
                 #Batch iteration over single epoch
-                for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+                for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
             #         print('Batch Idx: ', batch_idx)
 
                     self.opt.zero_grad()
@@ -287,19 +284,18 @@ class MatchDG(BaseAlgo):
                     erm_loss= torch.tensor(0.0).to(self.cuda) 
                     if epoch > self.args.penalty_s:
                         # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
-                        total_batch_size= len(data_match_tensor_split)
+                        total_batch_size= len(self.data_matched)
                         if batch_idx >= total_batch_size:
                             break
                             
                         # Sample batch from matched data points
                         data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)                        
-
                         data_match= data_match_tensor.to(self.cuda)
-                        data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                        data_match= data_match.flatten(start_dim=0, end_dim=1)
                         feat_match= self.phi( data_match )
 
                         label_match= label_match_tensor.to(self.cuda)
-                        label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+                        label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
 
                         erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                         penalty_erm+= float(erm_loss) 
@@ -308,15 +304,8 @@ class MatchDG(BaseAlgo):
                         train_size+= label_match.shape[0]                        
 
                         # Creating tensor of shape ( domain size, total domains, feat size )
-                        if len(feat_match.shape) == 4:
-                            feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                        else:
-                             feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                        label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-                #             print(feat_match.shape)
-                        data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
+                        feat_match= torch.stack(torch.split(feat_match, len(self.train_domains)))                    
+                        label_match= torch.stack(torch.split(label_match, len(self.train_domains)))
 
                         #Positive Match Loss
                         pos_match_counter=0

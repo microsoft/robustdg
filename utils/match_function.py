@@ -5,19 +5,19 @@ import time
 #Sklearn
 from scipy.stats import bernoulli
 
-##TODO: Update required for this function
-def perfect_match_score(indices_matched):
-    counter=0
-    score=0
-    for key in indices_matched:
-        for match in indices_matched[key]:
-            if key == match:
-                score+=1
-            counter+=1
-    if counter:
-        return 100*score/counter
-    else:
-        return 0
+# ##TODO: Update required for this function
+# def perfect_match_score(indices_matched):
+#     counter=0
+#     score=0
+#     for key in indices_matched:
+#         for match in indices_matched[key]:
+#             if key == match:
+#                 score+=1
+#             counter+=1
+#     if counter:
+#         return 100*score/counter
+#     else:
+#         return 0
 
 def init_data_match_dict(args, keys, vals, variation):
     data={}
@@ -112,7 +112,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
     # Creating the random permutation tensor for each domain
     perm_prob= 1.0-match_case
     print('Perm prob: ', perm_prob)
-    total_matches_per_point=1
+    total_matches_per_point=5
     
     #Determine the base_domain_idx as the domain with the max samples of the current class
     base_domain_dict={}
@@ -131,14 +131,14 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
     
     
     #Finding the match
-    total_data_idx=0         
     for domain_idx in range(total_domains):
         
-        total_rand_counter=0
-        perm_size= int(domain_size*(1-match_case))
+        total_data_idx=0         
         
         for y_c in range(args.out_classes):
-
+            
+#             print(domain_idx, y_c)
+            
             base_domain_idx= base_domain_dict[y_c]        
             indices_base= domain_data[base_domain_idx]['label'] == y_c
             indices_base= indices_base[:,0]
@@ -146,11 +146,12 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
             obj_base= domain_data[base_domain_idx]['obj'][indices_base]
 
             if domain_idx == base_domain_idx:
+#                 print('base domain idx')
                 #Then its simple, the index if same as ordered-base-indice
                 for idx in range(ordered_base_indices.shape[0]):
                     perfect_indice= ordered_base_indices[idx].item()
-                    data_matched[perfect_indice][domain_idx].append(perfect_indice)
-                    total_data_idx+=1 
+                    data_matched[total_data_idx][domain_idx].append(perfect_indice)
+                    total_data_idx+=1                    
                 continue
             
             indices_curr= domain_data[domain_idx]['label'] == y_c
@@ -209,14 +210,15 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
 #                 start_time= time.time()
                 for idx in range(ordered_base_indices.shape[0]):
                     ws_dist= torch.sum((feat_x- base_feat[idx])**2, dim=1)
-#                     match_idx= torch.argmin(ws_dist, dim=0)
                     sort_val, sort_idx= torch.sort(ws_dist, dim=0)
                     del ws_dist
                     
                     perfect_indice= ordered_base_indices[idx].item()
                     curr_indices= ordered_curr_indices[sort_idx[:total_matches_per_point]]
                     for _, curr_indice in enumerate(curr_indices):
-                        data_matched[perfect_indice][domain_idx].append(curr_indice.item())
+                        data_matched[total_data_idx][domain_idx].append(curr_indice.item())
+                    
+                    total_data_idx+=1
                     
                     if perfect_match == 1:
                         ## Find all instances among the curr_domain with same object as obj_base[idx]
@@ -226,18 +228,19 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
 
             elif inferred_match == 0 and perfect_match == 1:
                 
-                rand_vars= bernoulli.rvs(perm_prob, size=ordered_base_indices.shape[0])                  
+                rand_vars= bernoulli.rvs(perm_prob, size=ordered_base_indices.shape[0])
+#                 print('Rand Vars: ', ' Domain: ', domain_idx, ' Label ', y_c, rand_vars.shape, np.sum(rand_vars))
+#                 print('Data Idx', total_data_idx)
                 for idx in range(ordered_base_indices.shape[0]):
                     perfect_indice= ordered_base_indices[idx].item()
                     
                     # Select random matches with perm_prob probability
-                    if rand_vars[idx]:                        
-                        total_rand_counter+=1
+                    if rand_vars[idx]:
                         rand_indices = np.arange(ordered_curr_indices.size()[0])
                         np.random.shuffle(rand_indices)           
                         curr_indices= ordered_curr_indices[rand_indices][:total_matches_per_point]
                         for _, curr_indice in enumerate(curr_indices):                            
-                            data_matched[perfect_indice][domain_idx].append(curr_indice.item())
+                            data_matched[total_data_idx][domain_idx].append(curr_indice.item())
                             
                     # Sample perfect matches
                     else:
@@ -245,7 +248,10 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                         match_obj_indices= obj_curr == base_object
                         curr_indices= ordered_curr_indices[match_obj_indices]
                         for _, curr_indice in enumerate(curr_indices):
-                            data_matched[perfect_indice][domain_idx].append(curr_indice.item())
+                            data_matched[total_data_idx][domain_idx].append(curr_indice.item())
+#                             print(domain_idx, y_c, 'Label ', total_data_idx, domain_data[domain_idx]['label'][curr_indice.item()])
+                            
+                    total_data_idx+=1
                                         
             elif inferred_match == 0 and perfect_match ==0:
                     
@@ -255,46 +261,55 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                     np.random.shuffle(rand_indices)           
                     curr_indices= ordered_curr_indices[rand_indices][:total_matches_per_point]
                     for _, curr_indice in enumerate(curr_indices):                            
-                        data_matched[perfect_indice][domain_idx].append(curr_indice.item())
-            
-#         print('Rand Counter: ', total_rand_counter, perm_size)
-        if perfect_match == 1 and inferred_match == 0 and domain_idx != base_domain_idx and total_rand_counter < perm_size:
-            print('Issue: Total random changes made are less than perm_size for domain', domain_idx, total_rand_counter, perm_size)
+                        data_matched[total_data_idx][domain_idx].append(curr_indice.item())
+                    total_data_idx+=1
+                    
                             
-    if total_data_idx != domain_size:
-        print('Issue: Some data points left from data_matched dictionary', total_data_idx, domain_size)
+        if total_data_idx != domain_size:
+            print('Issue: Some data points left from data_matched dictionary', total_data_idx, domain_size)
     
     # Sanity Check:  N keys; K vals per key
     for idx in range(len(data_matched)):
         if len(data_matched[idx]) != total_domains:
             print('Issue with data matching')
 
-    print('Debug.........')
-    print(data_matched[:5])
+#     print('Debug.........')
+#     print(data_matched[0])
+#     print(data_matched[1])
+#     print(data_matched[2])
+#     print(data_matched[3])
             
-    #Sanity Check: Ensure paired points have the same class label
-    wrong_case=0
-    for idx in range(len(data_matched)):
-        for d_i in range(len(data_matched[idx])):
-            for d_j in range(len(data_matched[idx])):
-                if d_j > d_i:
-                    key1= data_matched[idx][d_i]
-                    key2= data_matched[idx][d_j]
-                    if domain_data[d_i]['label'][key1] != domain_data[d_j]['label'][key2]:
-                        wrong_case+=1
-    print('Total Label MisMatch across pairs: ', wrong_case )    
+#     #Sanity Check: Ensure paired points have the same class label
+#     wrong_case=0
+#     for idx in range(len(data_matched)):
+#         for d_i in range(len(data_matched[idx])):
+#             for d_j in range(len(data_matched[idx])):
+#                 if d_j > d_i:
+#                     key1= data_matched[idx][d_i]
+#                     key2= data_matched[idx][d_j]
+                    
+#                     print( domain_data[d_i]['label'][key1])
+#                     print( domain_data[d_i]['label'][key2])
+                    
+#                     if domain_data[d_i]['label'][key1] != domain_data[d_j]['label'][key2]:
+#                         wrong_case+=1
+#     print('Total Label MisMatch across pairs: ', wrong_case )    
     
     
-    indices_matched={}
-    for idx in range(len(data_matched)):
-        indices_matched[idx]={}
-        for d_i in range(len(data_matched[idx])):            
-            keys= data_matched[idx][d_i]
-            temp=[]
-            for key in keys:                
-                temp.append(domain_data[d_i]['obj'][key])
+#     indices_matched={}
+#     for idx in range(len(data_matched)):
+#         indices_matched[idx]={}
+#         for d_i in range(len(data_matched[idx])):            
+#             keys= data_matched[idx][d_i]
+#             temp=[]
+#             for key in keys:                
+#                 temp.append(domain_data[d_i]['obj'][key])
                 
-            indices_matched[idx][d_i]= temp
+#             indices_matched[idx][d_i]= temp
     
-    return data_matched, domain_data, indices_matched, perfect_match_rank
-                                
+    
+    if inferred_match:
+        print(np.mean(np.array(perfect_match_rank)))
+    
+    print(len(data_matched))
+    return data_matched, domain_data, perfect_match_rank

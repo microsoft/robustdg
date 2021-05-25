@@ -30,9 +30,12 @@ class ErmMatch(BaseAlgo):
         self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                self.data_matched, self.domain_data= self.get_match_function(epoch)                            
-#                 data_match_tensor, label_match_tensor= self.get_match_function(epoch)
+            if epoch ==0:
+                inferred_match= 0
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)                
+            elif epoch % self.args.match_interrupt == 0 and self.args.match_flag:
+                inferred_match= 1
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
         
             penalty_erm=0
             penalty_ws=0
@@ -73,6 +76,7 @@ class ErmMatch(BaseAlgo):
                 
                     erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                     penalty_erm+= float(erm_loss)           
+                    loss_e += erm_loss
                     
                     train_acc+= torch.sum(torch.argmax(feat_match, dim=1) == label_match ).item()
                     train_size+= label_match.shape[0]
@@ -104,7 +108,6 @@ class ErmMatch(BaseAlgo):
                     else:
                         loss_e += ( self.args.penalty_ws*( epoch- self.args.penalty_s )/(self.args.epochs - self.args.penalty_s) )*wasserstein_loss
 
-                    loss_e += erm_loss
                         
                 loss_e.backward(retain_graph=False)
                 self.opt.step()

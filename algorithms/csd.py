@@ -71,7 +71,7 @@ class CSD(BaseAlgo):
         orth_loss = torch.mean((1-diag_tensor)*(cps - diag_tensor)**2)
 
         loss = class_loss + specific_loss + orth_loss 
-        return loss, logits_common
+        return loss, class_loss, logits_common
     
     def epoch_callback(self, nepoch, final=False):
         if nepoch % 100 == 0:
@@ -83,17 +83,10 @@ class CSD(BaseAlgo):
         self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                data_match_tensor, label_match_tensor= self.get_match_function(epoch)
-            
+            penalty_erm=0
             penalty_csd=0
             train_acc= 0.0
             train_size=0
-    
-            perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
     
             #Batch iteration over single epoch
             for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
@@ -106,9 +99,10 @@ class CSD(BaseAlgo):
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                 
                 #Forward Pass
-                csd_loss, out= self.forward(x_e, y_e, d_e.to(self.cuda), eval_case=0)
+                csd_loss, erm_loss, out= self.forward(x_e, y_e, d_e.to(self.cuda), eval_case=0)
                 loss_e+= csd_loss
                 penalty_csd += float(loss_e)
+                penalty_erm += float(erm_loss)
 
                 #Backprorp
                 loss_e.backward(retain_graph=False)
@@ -122,7 +116,7 @@ class CSD(BaseAlgo):
                 train_size+= y_e.shape[0]
                 
    
-            print('Train Loss Basic : ',  penalty_csd )
+            print('Train Loss Basic : ',  penalty_erm, penalty_csd - penalty_erm )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
             

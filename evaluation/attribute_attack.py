@@ -72,7 +72,7 @@ class AttributeAttack(BaseEval):
         dataset= SpurCorrDataLoader(self.train_dataset['data_obj'])            
         dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
         
-        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e, spur_e) in enumerate(dataset):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -101,7 +101,7 @@ class AttributeAttack(BaseEval):
         dataset= SpurCorrDataLoader(self.test_dataset['data_obj'])            
         dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
         
-        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e, spur_e) in enumerate(dataset):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -133,7 +133,7 @@ class AttributeAttack(BaseEval):
         train_data={}
         train_data['logits']=[]
         train_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -157,7 +157,7 @@ class AttributeAttack(BaseEval):
         test_data={}
         test_data['logits']=[]
         test_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]

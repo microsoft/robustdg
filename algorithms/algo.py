@@ -59,7 +59,7 @@ class BaseAlgo():
 
         if self.args.model_name == 'slab':
             from models.slab import SlabClf
-            if self.args.method_name in ['csd_slab', 'matchdg_ctr']:
+            if self.args.method_name in ['csd', 'csd_slab' 'matchdg_ctr']:
                 fc_layer=0
             else:
                 fc_layer= self.args.fc_layer
@@ -129,20 +129,20 @@ class BaseAlgo():
         return opt
 
     
-    def get_match_function(self, epoch):
+    def get_match_function(self, inferred_match, phi):
         
-        perfect_match= self.args.perfect_match
-        
-        #Start initially with randomly defined batch; else find the local approximate batch
-        if epoch > 0:                    
-            inferred_match=1
-            if self.args.match_flag:
-                data_matched, domain_data, _, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )
-            else:
-                temp_1, temp_2, _, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )                
-        else:
-            inferred_match=0
-            data_matched, domain_data, _, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )
+        data_matched, domain_data, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, phi, self.args.match_case, self.args.perfect_match, inferred_match )
+                
+#         #Start initially with randomly defined batch; else find the local approximate batch
+#         if epoch > 0:                    
+#             inferred_match=1
+#             if self.args.match_flag:
+#                 data_matched, domain_data, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )
+#             else:
+#                 temp_1, temp_2, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )                
+#         else:
+#             inferred_match=0
+#             data_matched, domain_data, _= get_matched_pairs( self.args, self.cuda, self.train_dataset, self.domain_size, self.total_domains, self.training_list_size, self.phi, self.args.match_case, perfect_match, inferred_match )
         
         
         # Randomly Shuffle the list of matched data indices and divide as per batch sizes

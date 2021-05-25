@@ -177,27 +177,27 @@ for run in range(args.n_runs):
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
-    if args.method_name == 'erm_match':
+    if args.method_name == 'erm_match' or args.method_name == 'mask_linear':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
                                 args, train_dataset, val_dataset,
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-    elif args.method_name == 'perf_match' or args.method_name == 'mask_linear':
-        from algorithms.perf_match import PerfMatch    
-        train_method= PerfMatch(
-                                args, train_dataset, val_dataset,
-                                test_dataset, base_res_dir, 
-                                run, cuda
-                              )        
-    elif args.method_name == 'rand_match':
-        from algorithms.rand_match import RandMatch    
-        train_method= RandMatch(
-                                args, train_dataset, val_dataset,
-                                test_dataset, base_res_dir, 
-                                run, cuda
-                              )
+#     elif args.method_name == 'perf_match' :
+#         from algorithms.perf_match import PerfMatch    
+#         train_method= PerfMatch(
+#                                 args, train_dataset, val_dataset,
+#                                 test_dataset, base_res_dir, 
+#                                 run, cuda
+#                               )        
+#     elif args.method_name == 'rand_match':
+#         from algorithms.rand_match import RandMatch    
+#         train_method= RandMatch(
+#                                 args, train_dataset, val_dataset,
+#                                 test_dataset, base_res_dir, 
+#                                 run, cuda
+#                               )
     elif args.method_name == 'matchdg_ctr':
         from algorithms.match_dg import MatchDG
         ctr_phase=1
@@ -235,13 +235,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-    elif args.method_name == 'irm_slab':
-        from algorithms.irm_slab import IRMSlab    
-        train_method= IRMSlab(
-                                args, train_dataset, val_dataset,
-                                test_dataset, base_res_dir, 
-                                run, cuda
-                              )
+#     elif args.method_name == 'irm_slab':
+#         from algorithms.irm_slab import IRMSlab    
+#         train_method= IRMSlab(
+#                                 args, train_dataset, val_dataset,
+#                                 test_dataset, base_res_dir, 
+#                                 run, cuda
+#                               )
     elif args.method_name == 'dro':
         from algorithms.dro import DRO    
         train_method= DRO(
@@ -256,13 +256,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-    elif args.method_name == 'csd_slab':
-        from algorithms.csd_slab import CSDSlab   
-        train_method= CSDSlab(
-                                args, train_dataset, val_dataset,
-                                test_dataset, base_res_dir, 
-                                run, cuda
-                              )
+#     elif args.method_name == 'csd_slab':
+#         from algorithms.csd_slab import CSDSlab   
+#         train_method= CSDSlab(
+#                                 args, train_dataset, val_dataset,
+#                                 test_dataset, base_res_dir, 
+#                                 run, cuda
+#                               )
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()

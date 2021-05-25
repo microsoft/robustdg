@@ -65,7 +65,7 @@ class BaseEval():
             
         if self.args.model_name == 'slab':
             from models.slab import SlabClf
-            if self.args.method_name in ['csd_slab', 'matchdg_ctr']:
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
                 fc_layer=0
             else:
                 fc_layer= self.args.fc_layer
@@ -160,7 +160,7 @@ class BaseEval():
 
         #Train Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -178,7 +178,7 @@ class BaseEval():
 
         #Test Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -222,7 +222,7 @@ class BaseEval():
         
         test_acc= 0.0
         test_size=0
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(dataset):
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
