@@ -6,7 +6,7 @@ import os
 base_dir= 'datasets/rot_mnist/'
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
-
+    
 if sys.argv[1] == 'resnet18':
 
     # Generate 10 random subsets of size 2,000 each for Rotated MNIST 
@@ -22,6 +22,10 @@ if sys.argv[1] == 'resnet18':
 
 
     for idx in range(total_subset):
+        
+        # Random Seed
+        np.random.seed(idx*10)     
+        
         # Train, Test indices
         res=np.random.choice(data_size, subset_size)
         np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
@@ -43,6 +47,10 @@ if sys.argv[1] == 'resnet18':
         os.makedirs(data_dir+'val/')
         
     for idx in range(total_subset):
+        
+        # Random Seed
+        np.random.seed(idx*10)     
+        
         # Train, Test indices
         res=np.random.choice(data_size, subset_size)
         np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
@@ -64,6 +72,10 @@ elif sys.argv[1] == 'lenet':
         os.makedirs(data_dir+'val/')    
 
     for idx in range(total_subset):
+        
+        # Random Seed
+        np.random.seed(idx*10)     
+        
         # Train, Test indices
         res=np.random.choice(data_size, subset_size)
         np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
@@ -87,6 +99,10 @@ if sys.argv[1] == 'domain_bed_mnist':
 
 
     for idx in range(total_subset):
+        
+        # Random Seed
+        np.random.seed(idx*10)
+        
         # Train, Test indices
         res=np.random.choice(data_size, subset_size)
         np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)

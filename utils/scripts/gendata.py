@@ -11,9 +11,10 @@ def _prep_data(X, Y, N_tr, N_te, bs, nw, pm, w, orth_matrix=None):
     X_te, Y_te = torch.Tensor(X[:N_te,:]), torch.Tensor(Y[:N_te])
     X_tr, Y_tr = torch.Tensor(X[N_te:,:]), torch.Tensor(Y[N_te:])
     Y_te, Y_tr = map(lambda Z: Z.long(), [Y_te, Y_tr])
-
+    
     tr_dl = DataLoader(TensorDataset(X_tr, Y_tr), batch_size=bs, num_workers=nw, pin_memory=pm, shuffle=True)
-    te_dl = DataLoader(TensorDataset(X_te, Y_te), batch_size=bs, num_workers=nw, pin_memory=pm, shuffle=False)
+#     te_dl = DataLoader(TensorDataset(X_te, Y_te), batch_size=bs, num_workers=nw, pin_memory=pm, shuffle=False)
+    te_dl = DataLoader(TensorDataset(X_tr, Y_tr), batch_size=bs, num_workers=nw, pin_memory=pm, shuffle=False)
 
     return {
         'X': torch.tensor(X).float(),
@@ -121,7 +122,9 @@ def generate_ub_linslab_data_diffmargin_v2(N_tr, dim, eff_lin_margins, eff_slab_
         if indep_slabs:
             P = np.random.permutation(N)
             X, Y = X[P, :], Y[P]
-
+        
+        print('slab_per', slab_per)
+        
         if slab_per == 3:
             # positive slabs
             idx_p = (Y==1).nonzero()[0]
@@ -151,8 +154,10 @@ def generate_ub_linslab_data_diffmargin_v2(N_tr, dim, eff_lin_margins, eff_slab_
             X[idx_ns, coord] = get_sign(len(idx_ns))*(offset+slab_width*get_unif(len(idx_ns)))
 
             # corrupt slab 5
+            print('Gen Data Slab Corruption: ', round(N*corrupt_slab))
             total_corrupt = int(round(N*corrupt_slab))
             if total_corrupt > 0:
+                print('Yes, slab corruption is being applied')
                 if corrupt_5slab_margin:
                     offset1 = (width+6*slab_margin)/5.
                     offset2 = (8*slab_margin+3*width)/5.
@@ -216,6 +221,7 @@ def generate_ub_linslab_data_diffmargin_v2(N_tr, dim, eff_lin_margins, eff_slab_
             # corrupt slab7
             total_corrupt = int(round(N*corrupt_slab7))
             if total_corrupt > 0:
+                print('Yes, slab corruption is being applied')
                 # corrupt data
                 idx = np.random.choice(range(len(X)), size=total_corrupt, replace=False)
                 idx_p = idx[np.argwhere((Y[idx]==1))].reshape(-1)

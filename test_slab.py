@@ -25,19 +25,32 @@ from sklearn.manifold import TSNE
 from utils.helper import *
 from utils.match_function import *
 
+#slab
+from utils.slab_data import *
+import utils.scripts.utils  as slab_utils
+import utils.scripts.lms_utils as slab_lms_utils
+
+def get_logits(model, loader, device, label=1):
+    X, Y = slab_utils.extract_tensors_from_loader(loader)
+    L = slab_utils.get_logits_given_tensor(X, model, device=device).detach()
+    L = L[Y==label].cpu().numpy()
+    S = L[:, 1] - L[:, 0] # compute score / difference to get scalar 
+    return S
+
+
 # Input Parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_name', type=str, default='rot_mnist', 
+parser.add_argument('--dataset_name', type=str, default='slab', 
                     help='Datasets: rot_mnist; fashion_mnist; pacs')
 parser.add_argument('--method_name', type=str, default='erm_match', 
                     help=' Training Algorithm: erm_match; matchdg_ctr; matchdg_erm')
-parser.add_argument('--model_name', type=str, default='resnet18', 
+parser.add_argument('--model_name', type=str, default='slab', 
                     help='Architecture of the model to be trained')
 parser.add_argument('--train_domains', nargs='+', type=str, default=["15", "30", "45", "60", "75"], 
                     help='List of train domains')
 parser.add_argument('--test_domains', nargs='+', type=str, default=["0", "90"], 
                     help='List of test domains')
-parser.add_argument('--out_classes', type=int, default=10, 
+parser.add_argument('--out_classes', type=int, default=2, 
                     help='Total number of classes in the dataset')
 parser.add_argument('--img_c', type=int, default= 1, 
                     help='Number of channels of the image in dataset')
@@ -155,7 +168,10 @@ train_domains= args.train_domains
 test_domains= args.test_domains
 
 #Initialize
-final_metric_score=[]
+final_acc= []
+final_auc= []
+final_s_auc= []
+final_sc_auc= []
 base_res_dir=(
                 "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)  
@@ -180,17 +196,17 @@ if args.perfect_match == 0 and args.test_metric == 'match_score' and args.match_
 #Execute the method for multiple runs ( total args.n_runs )
 for run in range(args.n_runs):
     
-    #Seed for repoduability
-    np.random.seed(run*10) 
-    torch.manual_seed(run*10)    
+    #Seed for reproducability
+    np.random.seed(10*run) 
+    torch.manual_seed(10*run)    
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(run*10)    
+        torch.cuda.manual_seed_all(10*run)    
     
     #DataLoader        
     train_dataset= torch.empty(0)
     val_dataset= torch.empty(0)
     test_dataset= torch.empty(0)
-    if args.test_metric in ['match_score', 'slab_feat_eval']:
+    if args.test_metric == 'match_score':
         if args.match_func_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.match_func_data_case== 'val':
@@ -205,8 +221,7 @@ for run in range(args.n_runs):
     elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
         train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'attribute_attack':
-        print( train_domains + test_domains)
+    elif args.test_metric == 'attribute_attack':        
         train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
     else:
@@ -215,120 +230,64 @@ for run in range(args.n_runs):
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the testing module
-    if args.test_metric == 'acc':
-        from evaluation.base_eval import BaseEval
-        test_method= BaseEval(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )
-        
-    elif args.test_metric == 'match_score':
-        from evaluation.match_eval import MatchEval
-        test_method= MatchEval(
-                               args, train_dataset, val_dataset,
-                               test_dataset, base_res_dir, 
-                               run, cuda
-                              )   
-        
-    elif args.test_metric == 'slab_feat_eval':
-        from evaluation.slab_feat_eval import SlabFeatEval
-        test_method= SlabFeatEval(
-                               args, train_dataset, val_dataset,
-                               test_dataset, base_res_dir, 
-                               run, cuda
-                              )         
+    from evaluation.base_eval import BaseEval
+    test_method= BaseEval(
+                          args, train_dataset, val_dataset,
+                          test_dataset, base_res_dir,
+                          run, cuda
+                         )
+    
+    test_method.get_model()  
+    model= test_method.phi
+    
+    test_method.get_metric_eval()
+    std_acc= test_method.metric_score['test accuracy']
+    print('Test Accuracy: ', std_acc)
 
-    elif args.test_metric == 't_sne':
-        from evaluation.t_sne import TSNE
-        test_method= TSNE(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
-        
-    elif args.test_metric == 'mia':
-        from evaluation.privacy_attack import PrivacyAttack
-        test_method= PrivacyAttack(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )       
-        
-    elif args.test_metric == 'attribute_attack':
-        from evaluation.attribute_attack import AttributeAttack
-        test_method= AttributeAttack(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
+    spur_prob= float(test_domains[0])
+    data, temp1, _, _= get_data(args.slab_num_samples, spur_prob, args.slab_noise, args.slab_total_slabs, 'test', run, args.method_name)
+    
+    # compute standard, S-randomized and S^c-randomized AUC 
+    std_auc = slab_utils.get_binary_auc(model, data['te_dl'], cuda)
 
-    elif args.test_metric == 'privacy_loss_attack':
-        from evaluation.privacy_loss_attack import PrivacyLossAttack
-        test_method= PrivacyLossAttack(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
-        
-    elif args.test_metric == 'privacy_entropy':
-        from evaluation.privacy_entropy import PrivacyEntropy
-        test_method= PrivacyEntropy(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
+    # get S-randomized and S^c-randomized datasets 
+    s_rand_dl = slab_lms_utils.get_randomized_loader(data['te_dl'], data['W'], [0]) # randomize linear coordinate
+    sc_rand_dl = slab_lms_utils.get_randomized_loader(data['te_dl'], data['W'], list(range(1, args.slab_data_dim))) # randomize all slab coordinates
 
-    elif args.test_metric == 'logit_hist':
-        from evaluation.logit_hist import LogitHist
-        test_method= LogitHist(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
-        
-    elif args.test_metric == 'adv_attack':
-        from evaluation.adv_attack import AdvAttack
-        test_method= AdvAttack(
-                              args, train_dataset, val_dataset,
-                              test_dataset, base_res_dir,
-                              run, cuda
-                             )        
-        
-    #Testing Phase
-    with torch.no_grad():
-        if args.test_metric == 'mia':
-            for mia_run in range(1):
-                if args.method_name in ['matchdg_erm', 'hybrid']:
-                    for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
-                        test_method.get_model(run_matchdg_erm)        
-                        test_method.get_metric_eval()
-                        final_metric_score.append( test_method.metric_score )
-                else:
-                    test_method.get_model()        
-                    test_method.get_metric_eval()
-                    final_metric_score.append( test_method.metric_score )
-        else:
-            if args.method_name in ['matchdg_erm', 'hybrid']:
-                for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
-                    test_method.get_model(run_matchdg_erm)        
-                    test_method.get_metric_eval()
-                    final_metric_score.append( test_method.metric_score )
-            else:
-                test_method.get_model()        
-                test_method.get_metric_eval()
-                final_metric_score.append( test_method.metric_score )    
+    # compute randomized AUC
+    s_rand_auc = slab_utils.get_binary_auc(model, s_rand_dl, cuda) 
+    sc_rand_auc = slab_utils.get_binary_auc(model, sc_rand_dl, cuda) 
+    
+    final_acc.append(std_acc)
+    final_auc.append(100*std_auc)
+    final_s_auc.append(100*s_rand_auc)
+    final_sc_auc.append(100*sc_rand_auc)
+#     print ('Standard AUC: {:.3f}'.format(std_auc))
+#     print ('Linear-Randomized or S-Randomized AUC: {:.3f}'.format(s_rand_auc))
+#     print ('Slabs-Randomized or Sc-Randomized AUC: {:.3f}'.format(sc_rand_auc))    
+    
+    
+    # compute logit scores
+    std_log = get_logits(model, data['te_dl'], cuda)
+    s_rand_log = get_logits(model, s_rand_dl, cuda)
+    sc_rand_log = get_logits(model, sc_rand_dl, cuda)
 
-if args.test_metric not in ['t_sne', 'logit_hist']:
-    print('\n')
-    print('Done for Model..')
+    # plot logit distributions
+    kw = dict(kde=False, bins=20, norm_hist=True, 
+              hist_kws={"histtype": "step", "linewidth": 2, 
+                        "alpha": 0.8, "ls": '-'})
 
-    keys=final_metric_score[0].keys()
-    for key in keys:
-        curr_metric_score=[]
-        for item in final_metric_score:
-            curr_metric_score.append( item[key] )
-        curr_metric_score= np.array(curr_metric_score)
-        print(key, ' : ', np.mean(curr_metric_score), np.std(curr_metric_score)/np.sqrt(curr_metric_score.shape[0]))
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax = sns.distplot(std_log, label='Standard Logits', **kw)
+#     ax = sns.distplot(s_rand_log, label=r'$S$-Randomized Logits', **kw)
+#     ax = sns.distplot(sc_rand_log, label=r'$S^c$-Randomized Logits', **kw)
 
-    print('\n')
+    slab_utils.update_ax(ax, 'Logit Distributions of Data', 'Logits', 'Density', 
+                    ticks_fs=13, label_fs=13, title_fs=16, legend_fs=14, legend_loc='upper left')
+    plt.savefig( 'results/slab_test_logit_plot/' + str(args.method_name)+ '_' + str(args.penalty_ws) + '_' + str(run) + '.jpg')
+
+print(final_sc_auc)
+print('Standard Acc', np.mean(final_acc), np.std(final_acc))
+print('Standard AUC', np.mean(final_auc), np.std(final_auc))        
+print('Linear Randmoized AUC', np.mean(final_s_auc), np.std(final_s_auc))        
+print('Slab Randomized AUC', np.mean(final_sc_auc), np.std(final_sc_auc))

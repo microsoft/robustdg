@@ -218,6 +218,7 @@ def get_logits(model, loader, device):
     S, Y = [], []
     with torch.no_grad():
         for xb, yb in loader:
+            #print(xb, yb)
             xb = xb.to(device)
             out = model(xb).cpu().numpy()
             S.append(out)
@@ -228,6 +229,7 @@ def get_logits(model, loader, device):
 def get_scores(model, loader, device):
     """binary tasks only"""
     S, Y = get_logits(model, loader, device)
+    print('Acc check: ', 100*np.sum(np.argmax(S, axis=1)==Y)/Y.shape[0])
     return S[:,1]-S[:,0], Y
 
 def get_multiclass_logit_score(L, Y):

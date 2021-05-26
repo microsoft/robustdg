@@ -52,6 +52,12 @@ class MatchDG(BaseAlgo):
             if self.args.ctr_model_name == 'lenet':
                 from models.lenet import LeNet5
                 ctr_phi= LeNet5().to(self.cuda)
+                
+            if self.args.model_name == 'slab':
+                from models.slab import SlabClf
+                fc_layer=0
+                ctr_phi= SlabClf(self.args.slab_data_dim, self.args.out_classes, fc_layer).to(self.cuda)
+                
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
                 ctr_phi= alexnet(self.args.out_classes, self.args.pre_trained, 'matchdg_ctr').to(self.cuda)                
@@ -74,7 +80,12 @@ class MatchDG(BaseAlgo):
             if self.args.os_env:
                 base_res_dir=os.getenv('PT_DATA_DIR') + '/' + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
             else:
-                base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)             
+                base_res_dir="results/" + self.args.dataset_name + '/' + 'matchdg_ctr' + '/' + self.args.ctr_match_layer + '/' + 'train_' + str(self.args.train_domains)                
+
+            #TODO: Handle slab noise case in helper functions
+            if self.args.dataset_name == 'slab':
+                base_res_dir= base_res_dir + '/slab_noise_'  + str(self.args.slab_noise)
+                
             save_path= base_res_dir + '/Model_' + self.ctr_load_post_string + '.pth'
             ctr_phi.load_state_dict( torch.load(save_path) )
             ctr_phi.eval()
