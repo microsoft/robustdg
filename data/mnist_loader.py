@@ -21,100 +21,26 @@ class MnistRotated(BaseDataLoader):
         
         self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
 
-    def load_inds(self):
-        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '_indices'
-        if self.data_case != 'val':
-            return np.load(data_dir + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
-        else:
-            return np.load(data_dir + '/val' + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
-            
     def _get_data(self):
-                
-        if self.args.dataset_name =='rot_mnist':
-            data_obj_train= datasets.MNIST(self.root,
-                                        train=True,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            
-            data_obj_test= datasets.MNIST(self.root,
-                                        train=False,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
-            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
-            
-        elif self.args.dataset_name == 'fashion_mnist':
-            data_obj_train= datasets.FashionMNIST(self.root,
-                                                train=True,
-                                                download=self.download,
-                                                transform=transforms.ToTensor()
-                                            )
-            
-            data_obj_test= datasets.FashionMNIST(self.root,
-                                        train=False,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
-            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
-            
-        # Get total number of labeled examples
-        sup_inds = self.load_inds()
-        mnist_labels = mnist_labels[sup_inds]
-        mnist_imgs = mnist_imgs[sup_inds]
-        mnist_size = mnist_labels.shape[0] 
-
-        to_pil=  transforms.Compose([
-                transforms.ToPILImage(),
-                transforms.Resize((self.args.img_w, self.args.img_h))
-            ])
         
-        to_augment= transforms.Compose([
-                transforms.RandomResizedCrop(self.args.img_w, scale=(0.7,1.0)),
-                transforms.RandomHorizontalFlip()
-            ])
-        
-        to_tensor=  transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.1307,), (0.3081,))
-            ])
-
         # Choose subsets that should be included into the training
         list_img = []
         list_labels = []
         list_idx= []
         list_size= []
-
-#         if self.data_case == 'test':
-#             self.list_train_domains= ['30', '45']
-            
+        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '/'           
+        
         for domain in self.list_domains:
-            # Run transforms
-            mnist_img_rot= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))
-            mnist_idx=[]
-                        
-            for i in range(len(mnist_imgs)):
-                #Rotation
-                if domain == '0':
-                    img_rotated= to_pil(mnist_imgs[i])
-                else:
-                    img_rotated= transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) )
-                    
-                #Augmentation
-                if self.data_case =='train' and self.args.dataset_name =="fashion_mnist":
-                    mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
-                else:
-                    mnist_img_rot[i]= to_tensor(img_rotated)        
-                    
-                mnist_idx.append( i )
+            load_dir= data_dir + self.data_case + '/' + 'seed_' + str(self.mnist_subset) + '_domain_' + str(domain)
+            mnist_imgs= torch.load( load_dir +  '_data.pt')
+            mnist_labels= torch.load( load_dir +  '_label.pt')
+            mnist_idx= list(range(len(mnist_imgs)))
             
             print('Source Domain ', domain)
-            list_img.append(mnist_img_rot)
+            list_img.append(mnist_imgs)
             list_labels.append(mnist_labels)
             list_idx.append(mnist_idx)
-            list_size.append(mnist_img_rot.shape[0])
+            list_size.append(mnist_imgs.shape[0])
              
         if self.match_func:
             print('Match Function Updates')
@@ -143,9 +69,12 @@ class MnistRotated(BaseDataLoader):
         
         # Create domain labels
         data_domains = torch.zeros(data_labels.size())
+        domain_start=0
         for idx in range(len(self.list_domains)):
-            data_domains[idx * mnist_size: (idx+1) * mnist_size] += idx
-
+            curr_domain_size= self.training_list_size[idx]
+            data_domains[ domain_start: domain_start+ curr_domain_size ] += idx
+            domain_start+= curr_domain_size        
+        
         # Shuffle everything one more time
         inds = np.arange(data_labels.size()[0])
         np.random.shuffle(inds)

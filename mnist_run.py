@@ -13,11 +13,11 @@ if metric in ['acc', 'match_score', 'attribute_attack']:
 # test_diff, test_common
 test_case=['test_diff']
     
-# methods=['erm', 'irm', 'csd', 'rand', 'matchdg', 'perf']
-methods=['erm', 'irm', 'csd', 'rand', 'perf']
+methods=['erm', 'irm', 'csd', 'rand', 'matchdg', 'perf']
+# methods=['matchdg'] 
 
 if metric == 'train':
-    base_script= 'python train.py --epochs 25 --dataset ' + str(dataset)
+    base_script= 'python train.py --dataset ' + str(dataset)
     res_dir= 'results/' + str(dataset) + '/train_logs' + '/'    
 
 elif metric == 'mia':
@@ -83,48 +83,48 @@ for method in methods:
     case= res_dir + str(method)
 
     if method == 'erm':
-        script= base_script + ' --method_name erm_match --penalty_ws 0.0 --match_case 0.0 ' +  ' > ' + case + '.txt'           
+        script= base_script + ' --method_name erm_match --penalty_ws 0.0 --match_case 0.0 --epochs 25 ' +  ' > ' + case + '.txt'           
         os.system(script)
 
     elif method == 'rand':
         if dataset == 'rot_mnist_spur':        
-            script= base_script + ' --method_name erm_match --penalty_ws 10.0 --match_case 0.0 '  +  ' > ' + case + '.txt'   
+            script= base_script + ' --method_name erm_match --penalty_ws 10.0 --match_case 0.0 --epochs 25 '  +  ' > ' + case + '.txt'   
         else:
-            script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.0 ' +  ' > ' + case + '.txt'       
+            script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.0 --epochs 25 ' +  ' > ' + case + '.txt'       
         os.system(script)
 
     elif method == 'approx_25':
-        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.25 ' +  ' > ' + case + '.txt'
+        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.25 --epochs 25 ' +  ' > ' + case + '.txt'
         os.system(script)
 
     elif method == 'approx_50':
-        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.50 ' +  ' > ' + case + '.txt'
+        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.50 --epochs 25 ' +  ' > ' + case + '.txt'
         os.system(script)
 
     elif method == 'approx_75':
-        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.75 ' + ' > ' + case + '.txt'
+        script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 0.75 --epochs 25 ' + ' > ' + case + '.txt'
         os.system(script)
 
     elif method == 'perf':
         if dataset == 'rot_mnist_spur':                   
-            script= base_script + ' --method_name erm_match --penalty_ws 10.0 --match_case 1.0 ' +  ' > ' + case + '.txt' 
+            script= base_script + ' --method_name erm_match --penalty_ws 10.0 --match_case 1.0 --epochs 25 ' +  ' > ' + case + '.txt' 
         else:
-            script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 1.0 ' +  ' > ' + case + '.txt' 
+            script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 1.0 --epochs 25 ' +  ' > ' + case + '.txt' 
             os.system(script)
 
     elif method == 'matchdg':
         if metric == 'train':
-            script= 'python train.py --dataset ' + str(dataset) + ' --method_name matchdg_ctr --match_case 0.0 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos ' +  ' > ' + res_dir + 'matchdg_ctr' + '.txt'  
+            script= base_script + ' --method_name matchdg_ctr --match_case 0.0 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos ' +  ' > ' + res_dir + 'matchdg_ctr' + '.txt'  
             os.system(script)
         
-        script= base_script + ' --method_name matchdg_erm --penalty_ws 0.1 --match_case -1 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 ' +  ' > ' + case + '.txt'           
+        script= base_script + ' --method_name matchdg_erm --penalty_ws 0.1 --match_case -1 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --epochs 25 ' +  ' > ' + case + '.txt'           
         os.system(script)
 
     elif method == 'csd':
-        script= base_script + ' --method_name csd --penalty_ws 0.0 --match_case 0.0 --rep_dim 512 ' +  ' > ' + case + '.txt'
+        script= base_script + ' --method_name csd --penalty_ws 0.0 --match_case 0.0 --rep_dim 512 --epochs 25 ' +  ' > ' + case + '.txt'
         os.system(script)
 
     elif method == 'irm':
-        script= base_script + ' --method_name irm --match_case 0.0 --penalty_irm 1.0 --penalty_s 5 ' + ' > ' + case + '.txt'
+        script= base_script + ' --method_name irm --match_case 0.0 --penalty_irm 1.0 --penalty_s 5 --epochs 25 ' + ' > ' + case + '.txt'
         os.system(script)        
 

@@ -298,7 +298,7 @@ for run in range(args.n_runs):
     #Testing Phase
     with torch.no_grad():
         if args.test_metric == 'mia':
-            for mia_run in range(1):
+            for mia_run in range(2):
                 if args.method_name in ['matchdg_erm', 'hybrid']:
                     for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
                         test_method.get_model(run_matchdg_erm)        

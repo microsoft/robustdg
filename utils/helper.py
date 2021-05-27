@@ -286,7 +286,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         else:
             mnist_subset=run            
         print('MNIST Subset: ', mnist_subset)
-        data_obj=  MnistRotated(args, domains, mnist_subset, '/rot_mnist/', data_case=data_case, match_func=match_func)
+        data_obj=  MnistRotated(args, domains, mnist_subset, '/mnist/', data_case=data_case, match_func=match_func)
         
     dataset['data_loader']= data_utils.DataLoader(data_obj, batch_size=batch_size, shuffle=True, **kwargs )
     

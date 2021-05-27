@@ -1,112 +1,189 @@
+#Common imports
 import numpy as np
 import sys
 import os
+import random
+import copy
+
+#Pytorch
+import torch
+import torch.utils.data as data_utils
+from torchvision import datasets, transforms
+
+def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, domain, save_dir, img_w, img_h):    
+
+    # Get total number of labeled examples
+    mnist_labels = labels[indices]
+    mnist_imgs = imgs[indices]
+    mnist_size = mnist_labels.shape[0] 
+
+    to_pil=  transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((img_w, img_h))
+        ])
+
+    to_augment= transforms.Compose([
+            transforms.RandomResizedCrop(img_w, scale=(0.7,1.0)),
+            transforms.RandomHorizontalFlip()
+        ])
+
+    to_tensor=  transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+
+    # Run transforms
+    mnist_img_rot= torch.zeros((mnist_size, img_w, img_h))
+    mnist_idx=[]
+
+    for i in range(len(mnist_imgs)):
+        #Rotation
+        if domain == '0':
+            img_rotated= to_pil(mnist_imgs[i])
+        else:
+            img_rotated= transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) )
+
+        #Augmentation
+        if data_case =='train' and dataset =="fashion_mnist":
+            mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
+        else:
+            mnist_img_rot[i]= to_tensor(img_rotated)        
+
+    torch.save(mnist_img_rot, save_dir + '_data.pt')        
+    torch.save(mnist_labels, save_dir + '_label.pt')            
+        
+    print('Data Case: ', data_case, ' Source Domain: ', domain, ' Shape: ', mnist_img_rot.shape, mnist_labels.shape)        
+    
+    return
+
+# Main Function
+
+dataset= sys.argv[1]
+model= sys.argv[2]
 
 #Generate Dataset for Rotated / Fashion MNIST
-base_dir= 'datasets/rot_mnist/'
+base_dir= 'datasets/mnist/'
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
+
+if model == 'resnet18':
+    if dataset == 'rot_mnist':
+        # Generate 10 random subsets of size 2,000 each for Rotated MNIST 
+        data_size=60000
+        subset_size=2000
+        val_size= 400    
+        total_subset=10
+        img_w= 224
+        img_h= 224
+        data_dir= base_dir + 'rot_mnist_resnet18/'
+
+    elif dataset == 'fashion_mnist':
+        # Genetate 10 random subsets of size 10,000 each for Fashion MNIST
+        data_size=60000
+        subset_size=10000
+        val_size= 2000
+        total_subset=10
+        img_w= 224
+        img_h= 224
+        data_dir= base_dir + 'fashion_mnist_resnet18/'
+
+elif model == 'lenet':
+    if dataset == 'rot_mnist':
+        # Generate 10 random subsets of size 1,000 each for Rotated MNIST 
+        data_size=60000
+        subset_size=1000
+        val_size= 200
+        total_subset=10
+        img_w= 32
+        img_h= 32
+        data_dir= base_dir + 'rot_mnist_lenet/'
+    elif dataset == 'fashion_mnist':
+        print('Fashion MNIST not implemented for LeNet')
     
-if sys.argv[1] == 'resnet18':
-
-    # Generate 10 random subsets of size 2,000 each for Rotated MNIST 
-    data_size=60000
-    subset_size=2000
-    val_size= 400    
-    total_subset=10
-    data_dir= base_dir + 'rot_mnist_resnet18_indices/'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    if not os.path.exists(data_dir+'val/'):
-        os.makedirs(data_dir+'val/')
-
-
-    for idx in range(total_subset):
+elif model == 'domain_bed_mnist':
+    if dataset == 'rot_mnist':
+        # Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST 
+        data_size=70000
+        subset_size=55000
+        val_size= 1000
+        total_subset=10
+        img_w= 28
+        img_h= 28
+        data_dir= base_dir + 'rot_mnist_domain_bed/'   
+    elif dataset == 'fashion_mnist':
+        print('Fashion MNIST not implemented for DomainBed')    
         
-        # Random Seed
-        np.random.seed(idx*10)     
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+    
+    
+if dataset =='rot_mnist':
+    data_obj_train= datasets.MNIST(base_dir,
+                                train=True,
+                                download=True,
+                                transform=transforms.ToTensor()
+                            )
+
+    data_obj_test= datasets.MNIST(base_dir,
+                                train=False,
+                                download=True,
+                                transform=transforms.ToTensor()
+                            )
+    mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
+    mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
+
+elif dataset == 'fashion_mnist':
+    data_obj_train= datasets.FashionMNIST(base_dir,
+                                        train=True,
+                                        download=True,
+                                        transform=transforms.ToTensor()
+                                    )
+
+    data_obj_test= datasets.FashionMNIST(base_dir,
+                                train=False,
+                                download=True,
+                                transform=transforms.ToTensor()
+                            )
+    mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
+    mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
+    
+    
+# For testing over different base objects; seed 9
+seed_list= [0, 1, 2, 9]    
+domains= [0, 15, 30, 45, 60, 75, 90]
+
+for seed in seed_list:
+    
+    # Random Seed
+    np.random.seed(seed*10)     
+    # Indices
+    res=np.random.choice(data_size, subset_size+val_size)
+    print('Seed: ', seed)
+    for domain in domains:
         
-        # Train, Test indices
-        res=np.random.choice(data_size, subset_size)
-        np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
+        #Train
+        data_case= 'train/'
+        if not os.path.exists(data_dir + data_case):
+            os.makedirs(data_dir + data_case)
 
-        # Val indices
-        res=np.random.choice(data_size, val_size)
-        np.save( data_dir + 'val/' + 'supervised_inds_' + str(idx) +'.npy', res)
-
-
-    # Genetate 10 random subsets of size 10,000 each for Fashion MNIST
-    data_size=60000
-    subset_size=10000
-    val_size= 2000
-    total_subset=10
-    data_dir= base_dir + 'fashion_mnist_resnet18_indices/'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    if not os.path.exists(data_dir+'val/'):
-        os.makedirs(data_dir+'val/')
+        save_dir= data_dir + data_case + 'seed_' + str(seed) + '_domain_' + str(domain)
+        indices= res[:subset_size]
+        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)     
         
-    for idx in range(total_subset):
+        #Test
+        data_case= 'test/'
+        if not os.path.exists(data_dir + data_case):
+            os.makedirs(data_dir + data_case)
+            
+        save_dir= data_dir + data_case + 'seed_' + str(seed) + '_domain_' + str(domain)
+        indices= res[:subset_size]
+        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
         
-        # Random Seed
-        np.random.seed(idx*10)     
+        #Val 
+        data_case= 'val/'
+        if not os.path.exists(data_dir + data_case):
+            os.makedirs(data_dir + data_case)
         
-        # Train, Test indices
-        res=np.random.choice(data_size, subset_size)
-        np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
-
-        # Val indices
-        res=np.random.choice(data_size, val_size)
-        np.save( data_dir + 'val/' + 'supervised_inds_' + str(idx) +'.npy', res)
-        
-elif sys.argv[1] == 'lenet':
-    # Generate 10 random subsets of size 1,000 each for Rotated MNIST 
-    data_size=60000
-    subset_size=1000
-    val_size= 200
-    total_subset=10
-    data_dir= base_dir + 'rot_mnist_lenet_indices/'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    if not os.path.exists(data_dir+'val/'):
-        os.makedirs(data_dir+'val/')    
-
-    for idx in range(total_subset):
-        
-        # Random Seed
-        np.random.seed(idx*10)     
-        
-        # Train, Test indices
-        res=np.random.choice(data_size, subset_size)
-        np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
-
-        # Val indices
-        res=np.random.choice(data_size, val_size)
-        np.save( data_dir + 'val/' + 'supervised_inds_' + str(idx) +'.npy', res)
-
-if sys.argv[1] == 'domain_bed_mnist':
-
-    # Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST 
-    data_size=70000
-    subset_size=55000
-    val_size= 1000
-    total_subset=10
-    data_dir= base_dir + 'rot_mnist_domain_bed_mnist_indices/'
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    if not os.path.exists(data_dir+'val/'):
-        os.makedirs(data_dir+'val/')
-
-
-    for idx in range(total_subset):
-        
-        # Random Seed
-        np.random.seed(idx*10)
-        
-        # Train, Test indices
-        res=np.random.choice(data_size, subset_size)
-        np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
-
-        # Val indices
-        res=np.random.choice(data_size, val_size)
-        np.save( data_dir + 'val/' + 'supervised_inds_' + str(idx) +'.npy', res)
+        save_dir= data_dir +  'val/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+        indices= res[subset_size:]
+        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)
