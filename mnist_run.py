@@ -13,8 +13,8 @@ if metric in ['acc', 'match_score', 'attribute_attack']:
 # test_diff, test_common
 test_case=['test_diff']
     
-methods=['erm', 'irm', 'csd', 'rand', 'matchdg', 'perf']
-# methods=['matchdg'] 
+# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
+methods=['erm', 'irm', 'csd', 'rand', 'perf']
 
 if metric == 'train':
     base_script= 'python train.py --dataset ' + str(dataset)

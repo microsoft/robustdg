@@ -5,6 +5,12 @@ import os
 import random
 import copy
 
+#Sklearn
+from scipy.stats import bernoulli
+
+#Pillow
+from PIL import Image, ImageColor, ImageOps 
+
 #Pytorch
 import torch
 import torch.utils.data as data_utils
@@ -31,28 +37,59 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])
-
+    
+    if dataset == 'rot_mnist_spur':
+        color_list=['red', 'blue', 'green', 'orange', 'yellow', 'brown', 'pink', 'magenta', 'olive', 'cyan']    
+        # Adding color with 70 percent probability
+        rand_var= bernoulli.rvs(0.7, size=mnist_size)
+    
     # Run transforms
-    mnist_img_rot= torch.zeros((mnist_size, img_w, img_h))
+    if dataset == 'rot_mnist_spur':
+        mnist_img_rot= torch.zeros((mnist_size, 3, img_w, img_h))        
+        mnist_img_rot_org= torch.zeros((mnist_size, 3, img_w, img_h))        
+    else:
+        mnist_img_rot= torch.zeros((mnist_size, img_w, img_h))
+        mnist_img_rot_org= torch.zeros((mnist_size, img_w, img_h))
+        
     mnist_idx=[]
 
     for i in range(len(mnist_imgs)):
+        
+        curr_image= to_pil(mnist_imgs[i])         
+        
+        #Color the image
+        if dataset == 'rot_mnist_spur':
+            if rand_var[i]:
+                # Change colors per label for test domains relative to the train domains
+                if data_case == 'test':
+                    curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
+                    # Choose this for test domain with permuted colors
+#                     curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[(mnist_labels[i].item()+1)%10]  )
+                else:
+                    curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
+            else:
+                curr_image = ImageOps.colorize(curr_image, black ="black", white ="white")               
+        
         #Rotation
         if domain == '0':
-            img_rotated= to_pil(mnist_imgs[i])
+            img_rotated= curr_image
         else:
-            img_rotated= transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) )
+            img_rotated= transforms.functional.rotate( curr_image, int(domain) )
 
+        mnist_img_rot_org[i]= to_tensor(img_rotated)        
         #Augmentation
-        if data_case =='train' and dataset =="fashion_mnist":
-            mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
-        else:
-            mnist_img_rot[i]= to_tensor(img_rotated)        
+        mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
 
-    torch.save(mnist_img_rot, save_dir + '_data.pt')        
-    torch.save(mnist_labels, save_dir + '_label.pt')            
+    if data_case == 'train':
+        torch.save(mnist_img_rot, save_dir + '_data.pt')    
         
-    print('Data Case: ', data_case, ' Source Domain: ', domain, ' Shape: ', mnist_img_rot.shape, mnist_labels.shape)        
+    torch.save(mnist_img_rot_org, save_dir + '_org_data.pt')        
+    torch.save(mnist_labels, save_dir + '_label.pt')    
+    
+    if dataset == 'rot_mnist_spur':
+        np.save(save_dir + '_spur.npy', rand_var)
+        
+    print('Data Case: ', data_case, ' Source Domain: ', domain, ' Shape: ', mnist_img_rot.shape, mnist_img_rot_org.shape, mnist_labels.shape)        
     
     return
 
@@ -67,7 +104,7 @@ if not os.path.exists(base_dir):
     os.makedirs(base_dir)
 
 if model == 'resnet18':
-    if dataset == 'rot_mnist':
+    if dataset == 'rot_mnist' or dataset == 'rot_mnist_spur':
         # Generate 10 random subsets of size 2,000 each for Rotated MNIST 
         data_size=60000
         subset_size=2000
@@ -75,7 +112,6 @@ if model == 'resnet18':
         total_subset=10
         img_w= 224
         img_h= 224
-        data_dir= base_dir + 'rot_mnist_resnet18/'
 
     elif dataset == 'fashion_mnist':
         # Genetate 10 random subsets of size 10,000 each for Fashion MNIST
@@ -84,9 +120,8 @@ if model == 'resnet18':
         val_size= 2000
         total_subset=10
         img_w= 224
-        img_h= 224
-        data_dir= base_dir + 'fashion_mnist_resnet18/'
-
+        img_h= 224        
+        
 elif model == 'lenet':
     if dataset == 'rot_mnist':
         # Generate 10 random subsets of size 1,000 each for Rotated MNIST 
@@ -96,11 +131,10 @@ elif model == 'lenet':
         total_subset=10
         img_w= 32
         img_h= 32
-        data_dir= base_dir + 'rot_mnist_lenet/'
     elif dataset == 'fashion_mnist':
         print('Fashion MNIST not implemented for LeNet')
     
-elif model == 'domain_bed_mnist':
+elif model == 'domain_bed':
     if dataset == 'rot_mnist':
         # Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST 
         data_size=70000
@@ -109,15 +143,15 @@ elif model == 'domain_bed_mnist':
         total_subset=10
         img_w= 28
         img_h= 28
-        data_dir= base_dir + 'rot_mnist_domain_bed/'   
     elif dataset == 'fashion_mnist':
         print('Fashion MNIST not implemented for DomainBed')    
         
+data_dir= base_dir + dataset + '_' + model + '/'
 if not os.path.exists(data_dir):
     os.makedirs(data_dir)
     
     
-if dataset =='rot_mnist':
+if dataset =='rot_mnist' or dataset == 'rot_mnist_spur':
     data_obj_train= datasets.MNIST(base_dir,
                                 train=True,
                                 download=True,
@@ -162,28 +196,28 @@ for seed in seed_list:
     for domain in domains:
         
         #Train
-        data_case= 'train/'
-        if not os.path.exists(data_dir + data_case):
-            os.makedirs(data_dir + data_case)
+        data_case= 'train'
+        if not os.path.exists(data_dir + data_case +  '/'):
+            os.makedirs(data_dir + data_case + '/')
 
-        save_dir= data_dir + data_case + 'seed_' + str(seed) + '_domain_' + str(domain)
+        save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]
         generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)     
         
         #Test
-        data_case= 'test/'
-        if not os.path.exists(data_dir + data_case):
-            os.makedirs(data_dir + data_case)
+        data_case= 'test'
+        if not os.path.exists(data_dir +  data_case  +  '/'):
+            os.makedirs(data_dir + data_case + '/')
             
-        save_dir= data_dir + data_case + 'seed_' + str(seed) + '_domain_' + str(domain)
+        save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]
         generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
         
         #Val 
-        data_case= 'val/'
-        if not os.path.exists(data_dir + data_case):
-            os.makedirs(data_dir + data_case)
+        data_case= 'val'
+        if not os.path.exists(data_dir +  data_case +  '/'):
+            os.makedirs(data_dir + data_case + '/')
         
-        save_dir= data_dir +  'val/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+        save_dir= data_dir + data_case +  '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[subset_size:]
         generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)

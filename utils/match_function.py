@@ -28,7 +28,7 @@ def init_data_match_dict(args, keys, vals, variation):
         else:
             val_dim= vals
         
-        if args.dataset_name in ['rot_mnist', 'fashion_mnist', 'pacs', 'chestxray']:
+        if args.dataset_name in ['rot_mnist', 'rot_mnist_spur', 'fashion_mnist', 'pacs', 'chestxray']:
             data[key]['data']= torch.rand((val_dim, args.img_c, args.img_w, args.img_h))
         elif args.dataset_name in ['slab']:
             data[key]['data']= torch.rand((val_dim, args.slab_data_dim))            

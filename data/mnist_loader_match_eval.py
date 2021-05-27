@@ -20,66 +20,8 @@ class MnistRotatedAugEval(BaseDataLoader):
         self.download = download
         
         self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
-
-    def load_inds(self):
-        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '_indices'
-        if self.data_case != 'val':
-            return np.load(data_dir + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
-        else:
-            return np.load(data_dir + '/val' + '/supervised_inds_' + str(self.mnist_subset) + '.npy')
             
-    def _get_data(self):
-                
-        if self.args.dataset_name =='rot_mnist':
-            data_obj_train= datasets.MNIST(self.root,
-                                        train=True,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            
-            data_obj_test= datasets.MNIST(self.root,
-                                        train=False,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
-            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
-            
-        elif self.args.dataset_name == 'fashion_mnist':
-            data_obj_train= datasets.FashionMNIST(self.root,
-                                                train=True,
-                                                download=self.download,
-                                                transform=transforms.ToTensor()
-                                            )
-            
-            data_obj_test= datasets.FashionMNIST(self.root,
-                                        train=False,
-                                        download=self.download,
-                                        transform=transforms.ToTensor()
-                                    )
-            mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
-            mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
-            
-        # Get total number of labeled examples
-        sup_inds = self.load_inds()
-        mnist_labels = mnist_labels[sup_inds]
-        mnist_imgs = mnist_imgs[sup_inds]
-        mnist_size = mnist_labels.shape[0] 
-
-        to_pil=  transforms.Compose([
-                transforms.ToPILImage(),
-                transforms.Resize((self.args.img_w, self.args.img_h))
-            ])
-        
-        to_augment= transforms.Compose([
-                transforms.RandomResizedCrop(self.args.img_w, scale=(0.7,1.0)),
-                transforms.RandomHorizontalFlip(),            
-            ])
-        
-        to_tensor=  transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.1307,), (0.3081,))
-            ])
+    def _get_data(self):    
 
         # Choose subsets that should be included into the training
         list_img = {'aug':[], 'org':[] }
@@ -87,29 +29,19 @@ class MnistRotatedAugEval(BaseDataLoader):
         list_idx= {'aug':[], 'org':[] }
         list_size= {'aug':0, 'org':0 }
         list_classes={'aug':[], 'org':[] }
-
+        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '/'           
             
-        image_counter=0
         for domain in self.list_domains:
-            # Run transforms
-            mnist_img_rot= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))
-            mnist_img_rot_org= torch.zeros((mnist_size, self.args.img_w, self.args.img_h))
-            mnist_idx=[]
             
-            for i in range(len(mnist_imgs)):
-                if domain == '0':
-                    mnist_img_rot[i]= to_tensor( to_augment( to_pil(mnist_imgs[i]) ) )
-                    mnist_img_rot_org[i]= to_tensor(to_pil(mnist_imgs[i]))
-                else:
-                    mnist_img_rot[i]= to_tensor( to_augment( transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) ) ) )        
-                    mnist_img_rot_org[i]= to_tensor( transforms.functional.rotate( to_pil(mnist_imgs[i]), int(domain) ) )        
-                    
-                mnist_idx.append( image_counter )
-                image_counter+= 1                
+            load_dir= data_dir + self.data_case + '/' + 'seed_' + str(self.mnist_subset) + '_domain_' + str(domain)
+            mnist_imgs= torch.load( load_dir +  '_data.pt')
+            mnist_imgs_org= torch.load( load_dir +  '_org_data.pt')
+            mnist_labels= torch.load( load_dir +  '_label.pt')
+            mnist_idx= list(range(len(mnist_imgs)))            
             
             print('Source Domain ', domain)
-            list_img['aug'].append(mnist_img_rot)            
-            list_img['org'].append(mnist_img_rot_org)      
+            list_img['aug'].append(mnist_imgs)            
+            list_img['org'].append(mnist_imgs_org)      
                         
             list_labels['aug'].append(mnist_labels)
             list_labels['org'].append(mnist_labels)
@@ -117,8 +49,8 @@ class MnistRotatedAugEval(BaseDataLoader):
             list_idx['aug'].append( mnist_idx )            
             list_idx['org'].append( mnist_idx )            
             
-            list_size['aug']+= mnist_img_rot.shape[0]
-            list_size['org']+= mnist_img_rot.shape[0]    
+            list_size['aug']+= mnist_imgs.shape[0]
+            list_size['org']+= mnist_imgs_org.shape[0]    
             
         if self.match_func:
             print('Match Function Updates')
