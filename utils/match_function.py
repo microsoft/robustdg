@@ -257,7 +257,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                     
                 for idx in range(ordered_base_indices.shape[0]):                    
                     perfect_indice= ordered_base_indices[idx].item()                    
-                    rand_indices = np.arange(data_labels.size()[0])
+                    rand_indices = np.arange(ordered_curr_indices.size()[0])
                     np.random.shuffle(rand_indices)           
                     curr_indices= ordered_curr_indices[rand_indices][:total_matches_per_point]
                     for _, curr_indice in enumerate(curr_indices):                            

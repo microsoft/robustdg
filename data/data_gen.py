@@ -80,7 +80,7 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
         #Augmentation
         mnist_img_rot[i]= to_tensor(to_augment(img_rotated))        
 
-    if data_case == 'train':
+    if data_case == 'train' or data_case == 'val':
         torch.save(mnist_img_rot, save_dir + '_data.pt')    
         
     torch.save(mnist_img_rot_org, save_dir + '_org_data.pt')        
@@ -183,6 +183,7 @@ elif dataset == 'fashion_mnist':
     
     
 # For testing over different base objects; seed 9
+# Seed 9 only for test data, See 0:3 for train data
 seed_list= [0, 1, 2, 9]    
 domains= [0, 15, 30, 45, 60, 75, 90]
 
@@ -190,10 +191,14 @@ for seed in seed_list:
     
     # Random Seed
     np.random.seed(seed*10)     
+    torch.manual_seed(seed*10)    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed*10)
+        
     # Indices
     res=np.random.choice(data_size, subset_size+val_size)
     print('Seed: ', seed)
-    for domain in domains:
+    for domain in domains:        
         
         #Train
         data_case= 'train'
@@ -201,18 +206,10 @@ for seed in seed_list:
             os.makedirs(data_dir + data_case + '/')
 
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
-        indices= res[:subset_size]
-        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)     
-        
-        #Test
-        data_case= 'test'
-        if not os.path.exists(data_dir +  data_case  +  '/'):
-            os.makedirs(data_dir + data_case + '/')
-            
-        save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
-        indices= res[:subset_size]
-        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
-        
+        indices= res[:subset_size]        
+        if seed in [0, 1, 2]:
+            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)     
+
         #Val 
         data_case= 'val'
         if not os.path.exists(data_dir +  data_case +  '/'):
@@ -220,4 +217,16 @@ for seed in seed_list:
         
         save_dir= data_dir + data_case +  '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[subset_size:]
-        generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)
+        if seed in [0, 1, 2]:
+            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)
+            
+        #Test
+        data_case= 'test'
+        if not os.path.exists(data_dir +  data_case  +  '/'):
+            os.makedirs(data_dir + data_case + '/')
+            
+        save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+        indices= res[:subset_size]
+        if seed in [9]:
+            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
+        
