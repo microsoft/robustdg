@@ -7,7 +7,9 @@ model= sys.argv[2]
 domains= ['photo', 'art_painting', 'cartoon', 'sketch']
 
 if method == 'rand':
-    base_script= 'python train.py --dataset pacs  --method_name erm_match --match_case 0.01 --test_metric acc --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name resnet18 --epochs 50 --weight_decay 0.001 '
+
+for test_domain in domains:
+    base_script= 'python train.py --dataset pacs  --method_name erm_match --match_case 0.01 --test_metric acc --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --weight_decay 0.001 '
 
 for test_domain in domains:
 	
@@ -39,8 +41,7 @@ for test_domain in domains:
         elif model == 'resnet50':
             if test_domain == 'photo':
                 lr= 0.0005 
-                penalty= 0.1
-            elif domain == 'art_painting':
+            elif test_domain == 'art_painting':
                 lr= 0.001 
                 penalty= 0.5
             elif test_domain == 'cartoon':
@@ -50,5 +51,5 @@ for test_domain in domains:
                 lr= 0.01 
                 penalty= 0.1            
                 
-    script= base_script + ' --train_domains ' + train_domains + ' --test_domains ' + test_domain + ' --lr ' + str(lr) + ' --penalty_ws ' + str(penalty)
+    script= base_script + ' --train_domains ' + train_domains + ' --test_domains ' + test_domain + ' --lr ' + str(lr) + ' --penalty_ws ' + str(penalty) + ' --model_name ' + str(model)
     os.system(script)
