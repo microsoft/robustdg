@@ -19,7 +19,7 @@ class ChestXRayAug(BaseDataLoader):
     def __init__(self, args, list_domains, root, transform=None, data_case='train', match_func=False):
         
         super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
-        self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
+        self.data, self.data_org, self.labels, self.domains, self.indices, self.objects = self._get_data()
         
     def __getitem__(self, index):
         x = self.data[index]
@@ -27,10 +27,11 @@ class ChestXRayAug(BaseDataLoader):
         y = self.labels[index]
         d = self.domains[index]
         idx = self.indices[index]
+        obj =  self.objects[index]
             
         if self.transform is not None:
             x = self.transform(x)
-        return x, x_org, y, d, idx        
+        return x, x_org, y, d, idx, obj        
 
     def _get_data(self):
         

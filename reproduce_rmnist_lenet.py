@@ -25,7 +25,7 @@ for test_domain in domains:
 			train_domains+= str(d) + ' '
 	print(train_domains)
 	
-	res_dir= 'logs/rmnist_lenet/'
+	res_dir= 'results/rmnist_lenet/'
 	if not os.path.exists(res_dir):
 		os.makedirs(res_dir)
 	

@@ -110,6 +110,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
             print('Issue: Some data points are missing from domain_data dictionary')
     
     # Creating the random permutation tensor for each domain
+    ## TODO: Perm Prob might become 2.0 in case of matchdg_erm, handle that case
     perm_prob= 1.0-match_case
     print('Perm prob: ', perm_prob)
     total_matches_per_point=1
