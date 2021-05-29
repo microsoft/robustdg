@@ -19,7 +19,7 @@ class MnistRotatedAugEval(BaseDataLoader):
         self.mnist_subset = mnist_subset
         self.download = download
         
-        self.train_data, self.train_labels, self.train_domain, self.train_indices, self.train_spur = self._get_data()
+        self.data, self.labels, self.domains, self.indices, self.objects, self.spur= self._get_data()
             
     def _get_data(self):
                 
@@ -41,8 +41,8 @@ class MnistRotatedAugEval(BaseDataLoader):
             mnist_spur= np.load(load_dir +  '_spur.npy')            
             
             print('Source Domain ', domain)
-            list_img['aug'].append(mnist_img_rot)            
-            list_img['org'].append(mnist_img_rot_org)      
+            list_img['aug'].append(mnist_imgs)            
+            list_img['org'].append(mnist_imgs_org)      
             
             
             list_labels['aug'].append(mnist_labels)
@@ -52,10 +52,10 @@ class MnistRotatedAugEval(BaseDataLoader):
             list_idx['org'].append( mnist_idx )            
                         
             list_spur['aug'].append( mnist_spur )            
-            _list_spur['org'].append( mnist_spur )            
+            list_spur['org'].append( mnist_spur )            
                         
-            list_size['aug']+= mnist_img_rot.shape[0]
-            list_size['org']+= mnist_img_rot.shape[0]    
+            list_size['aug']+= mnist_imgs.shape[0]
+            list_size['org']+= mnist_imgs.shape[0]    
             
         if self.match_func:
             print('Match Function Updates')
@@ -87,7 +87,7 @@ class MnistRotatedAugEval(BaseDataLoader):
         data_indices= np.hstack(data_indices)
         self.training_list_size = [ list_size['aug'],  list_size['org'] ]               
         data_spur =  np.array(list_spur['aug']+list_spur['org']) 
-        train_spur= np.hstack(data_spur)            
+        data_spur= np.hstack(data_spur)            
                            
         #Rotated MNIST the objects are same the data indices
         data_objects= copy.deepcopy(data_indices)
@@ -122,5 +122,5 @@ class MnistRotatedAugEval(BaseDataLoader):
         if len(data_imgs.shape)==3:
             data_imgs= data_imgs.unsqueeze(1)        
         
-        print('Shape: Data ', data_imgs.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape, ' Spur Corr ', train_spur.shape)
+        print('Shape: Data ', data_imgs.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape, ' Spur Corr ', data_spur.shape)
         return data_imgs, data_labels, data_domains, data_indices, data_objects, data_spur
