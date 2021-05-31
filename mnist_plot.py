@@ -28,6 +28,9 @@ def get_base_dir(train_case, test_case, dataset, metric):
 
     elif metric  == 'match_score:test':
         res_dir= 'results/' + str(dataset) + '/match_score_' + 'test' + '/'
+
+    elif metric  == 'feat_eval:train':
+        res_dir= 'results/' + str(dataset) + '/feat_eval_' + 'train' + '/'
         
     #Train Domains 30, 45 case
     if train_case == 'train_abl_2':
@@ -53,10 +56,10 @@ train_case= sys.argv[2]
 # test_diff, test_common
 test_case=['test_diff']
 
-x=['ERM', 'Rand', 'CSD', 'IRM', 'Perf']
-methods=['erm', 'rand', 'csd', 'irm', 'perf']
+x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Perf']
+methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
 
-metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test']
+metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test', 'feat_eval:train']
 
 acc_train=[]
 acc_train_err=[]
@@ -78,6 +81,9 @@ rank_train_err=[]
 
 rank_test=[]
 rank_test_err=[]
+
+feat_eval_train=[]
+feat_eval_train_err=[]
 
 for metric in metrics:
     for method in methods:
@@ -111,8 +117,11 @@ for metric in metrics:
         elif metric == 'match_score:test':
             rank_test.append(mean)
             rank_test_err.append(sd)
+        elif metric == 'feat_eval:train':
+            feat_eval_train.append(mean)
+            feat_eval_train_err.append(sd)
 
-for idx in range(3):
+for idx in range(4):
     
     matplotlib.rcParams.update({'errorbar.capsize': 2})
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
@@ -136,11 +145,18 @@ for idx in range(3):
         ax.legend(fontsize=fontsize_lgd)
 
     if idx == 2:
-        ax.errorbar(x, rank_train, yerr=rank_train_err, fmt='o--', color='brown')
-        ax.errorbar(x, rank_test, yerr=rank_test_err, fmt='o--', color='green')
+        ax.errorbar(x, rank_train, yerr=rank_train_err, label='Train', fmt='o--', color='brown')
+        ax.errorbar(x, rank_test, yerr=rank_test_err, label='Test', fmt='o--', color='green')
 #         ax.set_xlabel('Models', fontsize=fontsize)
         ax.set_ylabel('Mean Rank of Perfect Match', fontsize=fontsize)
+        ax.legend(fontsize=fontsize_lgd)
 
+    if idx == 3:
+        ax.errorbar(x, feat_eval_train, yerr=feat_eval_train_err, fmt='o--', color='brown')
+#         ax.set_xlabel('Models', fontsize=fontsize)
+        ax.set_ylabel('Cosine Similarity of same object features', fontsize=fontsize)
+    
+    
     save_dir= 'results/' + dataset+ '/plots_' + train_case + '/'    
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)        

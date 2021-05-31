@@ -227,6 +227,11 @@ for seed in seed_list:
             
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]
-        if seed in [9]:
-            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
+        
+        if model== 'lenet':
+            if seed in [0, 1, 2]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
+        else:
+            if seed in [9]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
         

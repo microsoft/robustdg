@@ -139,7 +139,9 @@ class PrivacyLossAttack(BaseEval):
                 members= members[indices]
 
                 metric= loss
-                threshold_data[y_c]= torch.max(metric)
+#                 threshold_data[y_c]= torch.max(metric)
+                threshold_data[y_c]= torch.mean(metric)
+                
                 print('Label: ', y_c, threshold_data[y_c])
 
                 mem_predict= 1.0*(metric < threshold_data[y_c])
@@ -193,29 +195,37 @@ class PrivacyLossAttack(BaseEval):
             
         self.eval_entropy_attack(train_attack_data, threshold_data, case='train')
         
-        max_train_acc=0.0
-        max_scale= -1
-        lim_scale= max(threshold_data.values())
-        if lim_scale <= 10:
-            lim_scale = 10
-        else:
-            lim_scale =int(lim_scale)
+#         max_train_acc=0.0
+#         max_scale= -1
+#         lim_scale= max(threshold_data.values())
+#         if lim_scale <= 10:
+#             lim_scale = 10
+#         else:
+#             lim_scale =int(lim_scale)
          
-        print('Upper Limit on Scale: ', lim_scale)
-        for scale in np.random.randint(1, lim_scale, 10):
-            train_metric= self.eval_entropy_attack(train_attack_data, threshold_data, scale= scale, case= 'test')
-            print('Scale: ', scale, ' Acc: ', train_metric)
-            if train_metric > max_train_acc:
-                max_train_acc= train_metric
-                max_scale= scale
-            print('Max Scale: ', max_scale, 'Max Acc: ', max_train_acc)
+#         print('Upper Limit on Scale: ', lim_scale)
+#         for scale in np.random.randint(1, lim_scale, 10):
+#             train_metric= self.eval_entropy_attack(train_attack_data, threshold_data, scale= scale, case= 'test')
+#             print('Scale: ', scale, ' Acc: ', train_metric)
+#             if train_metric > max_train_acc:
+#                 max_train_acc= train_metric
+#                 max_scale= scale
+#             print('Max Scale: ', max_scale, 'Max Acc: ', max_train_acc)
              
+#         print('Threshold after training')
+#         for y_c in range(self.args.out_classes):
+#             print( 'Label : ', y_c, threshold_data[y_c]/max_scale )
+#         test_metric= self.eval_entropy_attack(test_attack_data, threshold_data, scale= max_scale, case= 'test')
+        
+    
         print('Threshold after training')
         for y_c in range(self.args.out_classes):
-            print( 'Label : ', y_c, threshold_data[y_c]/max_scale )
-        test_metric= self.eval_entropy_attack(test_attack_data, threshold_data, scale= max_scale, case= 'test')
-        
-        print('\nTrain Attack accuracy: ', max_train_acc)
+            print( 'Label : ', y_c, threshold_data[y_c] )
+            
+        train_metric= self.eval_entropy_attack(train_attack_data, threshold_data, scale= 1.0, case= 'test')
+        test_metric= self.eval_entropy_attack(test_attack_data, threshold_data, scale= 1.0, case= 'test')       
+    
+        print('\nTrain Attack accuracy: ', train_metric)
         print('\nTest Attack accuracy: ', test_metric)
 
         self.metric_score['train_acc']= train_metric

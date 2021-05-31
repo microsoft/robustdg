@@ -101,7 +101,7 @@ class ChestXRay(BaseDataLoader):
         data_labels = y[data_labels]
 
         # Convert to onehot
-        d = torch.eye(len(self.list_train_domains))
+        d = torch.eye(len(self.list_domains))
         data_domains = d[data_domains]
         
         # If shape (B,H,W) change it to (B,C,H,W) with C=1

@@ -4,6 +4,7 @@ import argparse
 import copy
 import random
 import json
+from more_itertools import chunked
 
 import torch
 from torch.autograd import grad
@@ -15,14 +16,36 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 from .base_eval import BaseEval
-from utils.match_function import get_matched_pairs, perfect_match_score
+from utils.match_function import get_matched_pairs
 from utils.helper import l1_dist, l2_dist, embedding_dist, cosine_similarity
 
 class FeatEval(BaseEval):
     
     def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         super().__init__(args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda)
-                
+                            
+    def get_match_function_batch(self, batch_idx):
+            curr_data_matched= self.data_matched[batch_idx]
+            curr_batch_size= len(curr_data_matched)
+
+            data_match_tensor=[]
+            label_match_tensor=[]
+            for idx in range(curr_batch_size):
+                data_temp=[]
+                label_temp= []
+                for d_i in range(len(curr_data_matched[idx])):
+                    key= random.choice( curr_data_matched[idx][d_i] )
+                    data_temp.append(self.domain_data[d_i]['data'][key])
+                    label_temp.append(self.domain_data[d_i]['label'][key])
+
+                data_match_tensor.append( torch.stack(data_temp) )
+                label_match_tensor.append( torch.stack(label_temp) )                    
+
+            data_match_tensor= torch.stack( data_match_tensor ) 
+            label_match_tensor= torch.stack( label_match_tensor )
+    #         print('Shape: ', data_match_tensor.shape, label_match_tensor.shape)
+            return data_match_tensor, label_match_tensor, curr_batch_size
+
     def get_metric_eval(self):
         
         if self.args.match_func_data_case=='train':
@@ -48,45 +71,39 @@ class FeatEval(BaseEval):
     
         inferred_match=0    
         pos_metric= 'cos'
-        
+                    
         # Self Augmentation Match Function evaluation will always follow perfect matches
         if self.args.match_func_aug_case:
             perfect_match= 1
         else:
             perfect_match= self.args.perfect_match
             
-        data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, perfect_match, inferred_match )        
+        self.data_matched, self.domain_data, _= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, perfect_match, inferred_match )        
                 
+         # Randomly Shuffle the list of matched data indices and divide as per batch sizes
+        random.shuffle(self.data_matched)
+        self.data_matched= list(chunked(self.data_matched, self.args.batch_size))
+           
         # Perfect Match Prediction Discrepancy        
         with torch.no_grad():
             
-            data_match_tensor_split= torch.split(data_match_tensor, self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor, self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
-            total_batches= len(data_match_tensor_split)
+            total_batches= len(self.data_matched)
             penalty_ws= 0.0
             for batch_idx in range(total_batches):
+                
+                # Sample batch from matched data points
+                data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)
 
-                curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
-
-                data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )            
+                data_match= data_match_tensor.to(self.cuda)
+                data_match= data_match.flatten(start_dim=0, end_dim=1)
                 feat_match= self.phi( data_match )
 
-                label_match= label_match_tensor_split[batch_idx].to(self.cuda)
-                label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+                label_match= label_match_tensor.to(self.cuda)
+                label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
 
                 # Creating tensor of shape ( domain size, total domains, feat size )
-                if len(feat_match.shape) == 4:
-                    feat_match= feat_match.view( curr_batch_size, total_domains, feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                else:
-                     feat_match= feat_match.view( curr_batch_size, total_domains, feat_match.shape[1] )
-
-                label_match= label_match.view( curr_batch_size, total_domains )
-
-        #             print(feat_match.shape)
-                data_match= data_match.view( curr_batch_size, total_domains, data_match.shape[1], data_match.shape[2], data_match.shape[3] )    
-
+                feat_match= torch.stack(torch.split(feat_match, total_domains))                    
+                
                 #Positive Match Loss
                 wasserstein_loss=torch.tensor(0.0).to(self.cuda)
                 pos_match_counter=0

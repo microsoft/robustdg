@@ -251,7 +251,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     
     # Set match_func to True in case of test metric as match_score
     try:
-        if args.test_metric in ['match_score']:
+        if args.test_metric in ['match_score', 'feat_eval']:
             match_func=True
     except AttributeError:
         match_func= match_func

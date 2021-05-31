@@ -5,16 +5,17 @@ import sys
 dataset=sys.argv[1]
 # train_all, train_abl_3, train_abl_2
 train_case= sys.argv[2]
-# train, acc, mia, privacy_entropy, privacy_loss_attack, match_score, attribute_attack
+# train, acc, mia, privacy_entropy, privacy_loss_attack, match_score, feat_eval, attribute_attack
 metric=sys.argv[3]
-if metric in ['acc', 'match_score', 'attribute_attack']:
+if metric in ['acc', 'match_score', 'feat_eval', 'attribute_attack']:
     data_case= sys.argv[4]
 
 # test_diff, test_common
 test_case=['test_diff']
     
-# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
-methods=['approx_25', 'approx_50', 'approx_75']
+methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
+# methods= ['matchdg']
+# methods=['approx_25', 'approx_50', 'approx_75']
 
 if metric == 'train':
     base_script= 'python train.py --dataset ' + str(dataset)
@@ -57,6 +58,11 @@ elif metric  == 'match_score':
     base_script= 'python test.py --test_metric match_score ' + ' --dataset ' + str(dataset) + ' --match_func_data_case ' + data_case
     res_dir= 'results/' + str(dataset) + '/match_score_' + data_case + '/'
 
+elif metric  == 'feat_eval':
+    base_script= 'python test.py --test_metric feat_eval ' + ' --dataset ' + str(dataset) + ' --match_func_data_case ' + data_case
+    res_dir= 'results/' + str(dataset) + '/feat_eval_' + data_case + '/'
+    
+    
 #Train Domains 30, 45 case
 if train_case == 'train_abl_2':
     base_script+= ' --train_domains 30 45'

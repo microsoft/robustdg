@@ -92,7 +92,7 @@ class ChestXRayAugEval(BaseDataLoader):
         data_indices = np.array(list_idx['aug']+list_idx['org']) 
         data_indices= np.hstack(data_indices)
         list_classes= list_classes['aug'] + list_classes['org']
-        self.training_list_size = [ list_size['aug'], list_size['org'] ]           print('Train indices', len(np.unique(train_indices)) )        
+        self.training_list_size = [ list_size['aug'], list_size['org'] ]           
 
         #No ground truth objects in PACS, for reference we set them same as data indices
         data_objects= copy.deepcopy(data_indices)                        
