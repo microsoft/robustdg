@@ -4,6 +4,7 @@ import sys
 import os
 import random
 import copy
+import os 
 
 #Sklearn
 from scipy.stats import bernoulli
@@ -99,7 +100,13 @@ dataset= sys.argv[1]
 model= sys.argv[2]
 
 #Generate Dataset for Rotated / Fashion MNIST
-base_dir= 'datasets/mnist/'
+#TODO: Manage OS Env from args
+os_env=0
+if os_env:
+    base_dir= os.getenv('PT_DATA_DIR') + '/mnist/'
+else:
+    base_dir= 'data/datasets/mnist/'
+    
 if not os.path.exists(base_dir):
     os.makedirs(base_dir)
 
@@ -207,9 +214,14 @@ for seed in seed_list:
 
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]        
-        if seed in [0, 1, 2]:
-            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)     
 
+        if model == 'resnet18':
+            if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
+        elif model == 'lenet':
+            if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
+                    
         #Val 
         data_case= 'val'
         if not os.path.exists(data_dir +  data_case +  '/'):
@@ -217,8 +229,13 @@ for seed in seed_list:
         
         save_dir= data_dir + data_case +  '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[subset_size:]
-        if seed in [0, 1, 2]:
-            generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)
+        
+        if model == 'resnet18':
+            if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
+        elif model == 'lenet':
+            if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
             
         #Test
         data_case= 'test'
@@ -228,10 +245,9 @@ for seed in seed_list:
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]
         
-        if model== 'lenet':
-            if seed in [0, 1, 2]:
+        if model == 'resnet18':
+            if seed in [9] and domain in [0, 90]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
-        else:
-            if seed in [9]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
-        
+        elif model == 'lenet':
+            if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                     

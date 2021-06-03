@@ -4,49 +4,31 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-def get_base_dir(train_case, test_case, dataset, metric):
+def get_base_dir(test_domain, dataset, metric):
     
     if metric == 'mia':
-        res_dir= 'results/'+str(dataset)+'/privacy/'
+        res_dir= 'results/'+str(dataset)+'/privacy/' + str(test_domain) + '/'
 
     elif metric == 'privacy_entropy':
-        res_dir= 'results/'+str(dataset)+'/privacy_entropy/'
+        res_dir= 'results/'+str(dataset)+'/privacy_entropy/' + str(test_domain) + '/'
 
     elif metric == 'privacy_loss_attack':
-        res_dir= 'results/'+str(dataset)+'/privacy_loss/'
+        res_dir= 'results/'+str(dataset)+'/privacy_loss/' + str(test_domain) + '/' 
 
     elif metric == 'attribute_attack':
-        res_dir= 'results/'+str(dataset)+'/attribute_attack_' + data_case + '/'  
+        res_dir= 'results/'+str(dataset)+'/attribute_attack_' + data_case + '/'  + str(test_domain) + '/'  
 
     elif metric  == 'acc:train':
-        res_dir= 'results/' + str(dataset) + '/acc_' + 'train' + '/'
+        res_dir= 'results/' + str(dataset) + '/acc_' + 'train' + '/' + str(test_domain) + '/'
 
     elif metric  == 'acc:test':
-        res_dir= 'results/' + str(dataset) + '/acc_' + 'test' + '/'
+        res_dir= 'results/' + str(dataset) + '/acc_' + 'test' + '/' + str(test_domain) + '/'
         
     elif metric  == 'match_score:train':
-        res_dir= 'results/' + str(dataset) + '/match_score_' + 'train' + '/'
+        res_dir= 'results/' + str(dataset) + '/match_score_' + 'train' + '/' + str(test_domain) + '/'    
 
     elif metric  == 'match_score:test':
-        res_dir= 'results/' + str(dataset) + '/match_score_' + 'test' + '/'
-
-    elif metric  == 'feat_eval:train':
-        res_dir= 'results/' + str(dataset) + '/feat_eval_' + 'train' + '/'
-
-    elif metric  == 'feat_eval:test':
-        res_dir= 'results/' + str(dataset) + '/feat_eval_' + 'test' + '/'
-        
-    #Train Domains 30, 45 case
-    if train_case == 'train_abl_2':
-        res_dir= res_dir[:-1] +'_30_45/'
-
-    #Train Domains 30, 45, 60 case
-    if train_case == 'train_abl_3':
-        res_dir= res_dir[:-1] +'_30_45_60/'            
-
-    #Test on 30, 45 angles instead of the standard 0, 90
-    if test_case  == 'test_common':
-        res_dir+= 'test_common_domains/'
+        res_dir= 'results/' + str(dataset) + '/match_score_' + 'test' + '/' + str(test_domain) + '/'    
         
     return res_dir
 
@@ -54,16 +36,13 @@ def get_base_dir(train_case, test_case, dataset, metric):
 #rot_mnist, fashion_mnist, rot_mnist_spur
 dataset=sys.argv[1]
 
-# train_all, train_abl_3, train_abl_2
-train_case= sys.argv[2]
+# kaggle, nih, chex
+test_domain= sys.argv[2]
 
-# test_diff, test_common
-test_case=['test_diff']
+x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Hybrid']
+methods=['erm', 'rand', 'matchdg_erm', 'csd', 'irm', 'hybrid']
 
-x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Perf']
-methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
-
-# metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test', 'feat_eval:train', 'feat_eval:test']
+# metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test']
 
 metrics= ['acc:train', 'acc:test', 'privacy_entropy', 'privacy_loss_attack', 'match_score:test']
 
@@ -88,16 +67,10 @@ rank_train_err=[]
 rank_test=[]
 rank_test_err=[]
 
-feat_eval_train=[]
-feat_eval_train_err=[]
-
-feat_eval_test=[]
-feat_eval_test_err=[]
-
 for metric in metrics:
     for method in methods:
         
-        res_dir= get_base_dir(train_case, test_case, dataset, metric)
+        res_dir= get_base_dir(test_domain, dataset, metric)
         
         f= open(res_dir+method+'.txt')
         data= f.readlines()
@@ -126,12 +99,6 @@ for metric in metrics:
         elif metric == 'match_score:test':
             rank_test.append(mean)
             rank_test_err.append(sd)
-        elif metric == 'feat_eval:train':
-            feat_eval_train.append(mean)
-            feat_eval_train_err.append(sd)
-        elif metric == 'feat_eval:test':
-            feat_eval_test.append(mean)
-            feat_eval_test_err.append(sd)
 
 for idx in range(4):
     
@@ -162,23 +129,15 @@ for idx in range(4):
 #         ax.set_xlabel('Models', fontsize=fontsize)
         ax.set_ylabel('Mean Rank of Perfect Match', fontsize=fontsize)
         ax.legend(fontsize=fontsize_lgd)
-
-        
+    
     if idx == 3:
         ax.errorbar(x, np.array(acc_train) - np.array(acc_test), yerr=acc_train_err, label='Train Accuracy', fmt='o--')
 #         ax.set_xlabel('Models', fontsize=fontsize)
         ax.set_ylabel('Train-Test Accuracy Gap of ML Model', fontsize=fontsize)
         ax.legend(fontsize=fontsize_lgd)
-        
-#     if idx == 3:
-#         ax.errorbar(x, feat_eval_train, yerr=feat_eval_train_err, label='Train', fmt='o--', color='brown')
-#         ax.errorbar(x, feat_eval_test, yerr=feat_eval_test_err, label='Test', fmt='o--', color='brown')
-# #         ax.set_xlabel('Models', fontsize=fontsize)
-#         ax.set_ylabel('Cosine Similarity of same object features', fontsize=fontsize)
-#         ax.legend(fontsize=fontsize_lgd)
+            
     
-    
-    save_dir= 'results/' + dataset+ '/plots_' + train_case + '/'    
+    save_dir= 'results/' + dataset+ '/plots/'+ test_domain +'/'    
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)        
     

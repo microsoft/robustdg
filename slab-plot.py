@@ -40,7 +40,7 @@ attribute=[]
 attribute_err=[]
 
 # eval_metrics= ['mi', 'entropy', 'loss', 'attribute']
-eval_metrics= ['mi', 'entropy', 'loss']
+eval_metrics= ['entropy', 'loss']
 for metric in eval_metrics:
     for method in methods:
         f= open(base_dir+method+'-'+metric+ '-' + str(test_domain)+'.txt')
@@ -74,16 +74,16 @@ for idx in range(0, 2):
     if idx == 0:
 #         ax.errorbar(x, train_acc, yerr=train_acc_err, fmt='o--', label='Train-Acc')
         ax.errorbar(x, acc, yerr=acc_err, fmt='o--', label='Acc')
-        ax.errorbar(x, auc, yerr=auc_err, fmt='o--', label='AUC')
+#         ax.errorbar(x, auc, yerr=auc_err, fmt='o--', label='AUC')
         ax.errorbar(x, s_auc, yerr=s_auc_err, fmt='o--', label='Linear-RAUC')
-        ax.errorbar(x, sc_auc, yerr=sc_auc_err, fmt='o--', label='Slab-RAUC')
+#         ax.errorbar(x, sc_auc, yerr=sc_auc_err, fmt='o--', label='Slab-RAUC')
 #         ax.set_xlabel('Models', fontsize=fontsize)
         ax.set_ylabel('ML Model Acc/ AUC', fontsize=fontsize)
         ax.set_title('OOD Evaluation', fontsize=fontsize)
         ax.legend(fontsize=fontsize)
         
     if idx == 1:
-        ax.errorbar(x, mia, yerr=mia_err, label='Classifier Attack', color='blue', fmt='o--')        
+#         ax.errorbar(x, mia, yerr=mia_err, label='Classifier Attack', color='blue', fmt='o--')        
         ax.errorbar(x, entropy, yerr=entropy_err, label='Entropy Attack', color='red', fmt='o--')
         ax.errorbar(x, loss, yerr=loss_err, label='Loss Attack', color='orange', fmt='o--')
         ax.set_ylabel('Attack Model Accuracy', fontsize=fontsize)

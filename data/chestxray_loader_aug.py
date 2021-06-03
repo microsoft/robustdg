@@ -18,7 +18,7 @@ from .data_loader import BaseDataLoader
 class ChestXRayAug(BaseDataLoader):
     def __init__(self, args, list_domains, root, transform=None, data_case='train', match_func=False):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
         self.data, self.data_org, self.labels, self.domains, self.indices, self.objects = self._get_data()
         
     def __getitem__(self, index):
@@ -69,8 +69,8 @@ class ChestXRayAug(BaseDataLoader):
                 base_class_size=0
                 base_class_idx=-1
                 for d_idx, domain in enumerate( self.list_domains ):
-                    class_idx= training_labels[d_idx] == y_c
-                    curr_class_size= training_labels[d_idx][class_idx].shape[0]
+                    class_idx= list_labels[d_idx] == y_c
+                    curr_class_size= list_labels[d_idx][class_idx].shape[0]
                     if base_class_size < curr_class_size:
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
@@ -92,7 +92,7 @@ class ChestXRayAug(BaseDataLoader):
         data_domains = torch.zeros(data_labels.size())
         domain_start=0
         for idx in range(len(self.list_domains)):
-            curr_domain_size= self.training_size[idx]
+            curr_domain_size= self.training_list_size[idx]
             data_domains[ domain_start: domain_start+ curr_domain_size ] += idx
             domain_start+= curr_domain_size
            

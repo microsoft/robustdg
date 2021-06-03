@@ -33,8 +33,10 @@ if not os.path.exists(base_dir):
 
 num_samples= 10000
 total_slabs= 7
-slab_noise_list= [0.0, 0.05, 0.10, 0.15, 0.20, 0.25]
-spur_corr_list= [0.0, 0.05, 0.10, 0.15, 0.30, 0.50, 0.70, 0.90]
+# slab_noise_list= [0.0, 0.05, 0.10, 0.15, 0.20, 0.25]
+# spur_corr_list= [0.0, 0.05, 0.10, 0.15, 0.30, 0.50, 0.70, 0.90]
+slab_noise_list= [0.0, 0.10]
+spur_corr_list= [0.20, 0.90]
 
 for seed in range(10):
     np.random.seed(seed*10)                     

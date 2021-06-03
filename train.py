@@ -121,7 +121,7 @@ parser.add_argument('--test_metric', type=str, default='match_score',
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
-parser.add_argument('--match_func_aug_case', type=int, default=1, 
+parser.add_argument('--match_func_aug_case', type=int, default=0, 
                     help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
 parser.add_argument('--match_func_data_case', type=str, default='val', 
                     help='Dataset Train/Val/Test for the match score evaluation metric')
@@ -177,7 +177,7 @@ for run in range(args.n_runs):
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
-    if args.method_name == 'erm_match' or args.method_name == 'mask_linear':
+    if args.method_name == 'erm_match' or args.method_name == 'mask_linear' or args.method_name == 'dp_erm':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
                                 args, train_dataset, val_dataset,

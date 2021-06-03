@@ -67,7 +67,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
         domain_count[domain]= 0
         
     # Create dictionary: class label -> list of ordered indices
-    if args.method_name == 'hybrid':
+    if args.method_name == 'hybrid' and args.match_func_aug_case == 0:
         for batch_idx, (x_e, _, y_e ,d_e, idx_e, obj_e) in enumerate(train_dataset):
             x_e= x_e
             y_e= torch.argmax(y_e, dim=1)

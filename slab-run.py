@@ -5,10 +5,11 @@ case= sys.argv[1]
 slab_noise= float(sys.argv[2])
 total_seed= 3
 
-# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'mask_linear']
-# metrics= ['auc', 'mi', 'entropy', 'loss', 'attribute']
-methods=['matchdg']
-metrics= ['auc', 'mi', 'entropy', 'loss']
+methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg', 'mask_linear']
+# metrics= ['auc', 'mi', 'entropy', 'loss']
+metrics= ['auc', 'entropy', 'loss']
+# methods=['matchdg']
+# metrics= ['entropy', 'loss']
 
 if case == 'train':
     
@@ -78,7 +79,8 @@ elif case == 'test':
             elif method == 'matchdg':
                 upd_script = base_script + ' --method_name matchdg_erm --match_case -1 --penalty_ws 1.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name slab '                
                 
-            for test_domain in [0.05, 0.15, 0.3, 0.5, 0.7, 0.9]:
+#             for test_domain in [0.05, 0.15, 0.3, 0.5, 0.7, 0.9]:
+            for test_domain in [0.2, 0.9]:
                 script= upd_script + ' --test_domains ' + str(test_domain) + ' > ' + res_dir + str(method) + '-' + str(metric) + '-' + str(test_domain) + '.txt'
                 os.system(script)
 

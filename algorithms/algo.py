@@ -48,7 +48,7 @@ class BaseAlgo():
         self.val_acc=[]
         self.train_acc=[]
         
-        if self.args.dp_noise:
+        if self.args.method_name == 'dp_erm':
             self.privacy_engine= self.get_dp_noise()
     
     def get_model(self):
@@ -206,8 +206,8 @@ class BaseAlgo():
         from opacus.dp_model_inspector import DPModelInspector
         from opacus.utils import module_modification
         
-        inspector = DPModelInspector()
-        
+        inspector = DPModelInspector()        
+        print(self.phi)
         self.phi = module_modification.convert_batchnorm_modules(self.phi)
         print(self.phi)
         inspector.validate(self.phi)

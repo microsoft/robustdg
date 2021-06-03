@@ -76,6 +76,8 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_irm', type=float, default=0.0, 
                     help='Penalty weight for IRM invariant classifier loss')
+parser.add_argument('--penalty_aug', type=float, default=1.0, 
+                    help='Penalty weight for Augmentation in Hybrid approach loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
