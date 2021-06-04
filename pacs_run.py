@@ -60,7 +60,21 @@ for test_domain in domains:
             elif test_domain == 'sketch':
                 lr= 0.01 
                 penalty= 0.0
-    
+
+        elif model == 'alexnet':
+            if test_domain == 'photo':
+                lr= 0.0005 
+                penalty= 0.0
+            elif test_domain == 'art_painting':
+                lr= 0.001 
+                penalty= 0.0
+            elif test_domain == 'cartoon':
+                lr= 0.001
+                penalty= 0.0
+            elif test_domain == 'sketch':
+                lr= 0.001 
+                penalty= 0.0
+                
     elif method == 'rand':        
         if model == 'resnet18':
             if test_domain == 'photo':
@@ -89,6 +103,20 @@ for test_domain in domains:
             elif test_domain == 'sketch':
                 lr= 0.01 
                 penalty= 0.1            
+                
+        elif model == 'alexnet':
+            if test_domain == 'photo':
+                lr= 0.001 
+                penalty= 0.1
+            elif test_domain == 'art_painting':
+                lr= 0.001 
+                penalty= 0.1
+            elif test_domain == 'cartoon':
+                lr= 0.001
+                penalty= 0.5
+            elif test_domain == 'sketch':
+                lr= 0.001 
+                penalty= 0.5
 
     elif method == 'matchdg_erm':        
         if model == 'resnet18':
@@ -117,7 +145,22 @@ for test_domain in domains:
                 penalty= 1.0
             elif test_domain == 'sketch':
                 lr= 0.001 
-                penalty= 0.5            
+                penalty= 0.5    
+                
+        elif model == 'alexnet':
+            if test_domain == 'photo':
+                lr= 0.0005 
+                penalty= 0.5
+            elif test_domain == 'art_painting':
+                lr= 0.001 
+                penalty= 0.1
+            elif test_domain == 'cartoon':
+                lr= 0.001
+                penalty= 0.1
+            elif test_domain == 'sketch':
+                lr= 0.001 
+                penalty= 0.1
+
                 
     elif method == 'hybrid':        
         if model == 'resnet18':
@@ -156,6 +199,25 @@ for test_domain in domains:
                 penalty= 0.01
                 penalty_aug= 0.1
                 
+        elif model == 'alexnet':
+            if test_domain == 'photo':
+                lr= 0.0005 
+                penalty= 0.1
+                penalty_aug= 0.1
+            elif test_domain == 'art_painting':
+                lr= 0.001 
+                penalty= 0.01
+                penalty_aug= 0.1
+            elif test_domain == 'cartoon':
+                lr= 0.001
+                penalty= 0.01
+                penalty_aug= 0.1
+            elif test_domain == 'sketch':
+                lr= 0.001 
+                penalty= 0.01
+                penalty_aug= 0.1
+                
+                
     if method == 'matchdg_ctr':
         script= base_script + ' --train_domains ' + train_domains + ' --test_domains ' + test_domain + ' --model_name ' + str(model)
     else:
@@ -164,6 +226,10 @@ for test_domain in domains:
     #TODO: Add penalty_aug for hybrid method
     if method == 'hybrid':
         script= script + ' --penalty_aug ' + str(penalty_aug)
+    
+    #TOOD: Figure out the appropriate batch size
+    if model == 'alexnet':
+        script= script + ' --img_w 256 ' + ' --img_h 256 '
     
     save_dir= res_dir + str(method) + '_' + str(model) + '.txt'
     script= script + ' > ' + save_dir    

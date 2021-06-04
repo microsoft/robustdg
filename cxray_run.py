@@ -2,6 +2,7 @@ import os
 import sys
 
 methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
+# methods=['erm', 'irm', 'csd', 'rand', 'matchdg_erm', 'hybrid']
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
 
@@ -69,7 +70,6 @@ for method in methods:
         script= base_script + ' --method_name matchdg_erm  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'
 
     elif method == 'hybrid':
-        print('Yes')
         script= base_script + ' --method_name hybrid  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 1.0 --penalty_aug 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'    
     
     train_domains=''

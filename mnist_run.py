@@ -91,7 +91,9 @@ if dataset == 'rot_mnist_spur':
 
 for method in methods:
     case= res_dir + str(method)
-
+    
+    print('Method: ', method, ' Train Domains: ', train_case)
+ 
     if method == 'erm':
         script= base_script + ' --method_name erm_match --penalty_ws 0.0 --match_case 0.0 --epochs 25 ' +  ' > ' + case + '.txt'           
         os.system(script)
