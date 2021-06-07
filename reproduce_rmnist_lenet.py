@@ -16,9 +16,12 @@ elif method == 'matchdg_ctr':
     base_script= 'python train.py --dataset rot_mnist --mnist_case lenet --method_name matchdg_ctr --match_case 0.0 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos --model_name lenet --img_h 32 --img_w 32 --match_func_aug_case 1 '
     
 elif method == 'matchdg_erm':
-    base_script= 'python train.py --dataset rot_mnist --mnist_case lenet --method_name matchdg_erm --match_case -1 --penalty_ws 1.0 --epochs 100 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18  --model_name lenet --img_h 32 --img_w 32 '
+    base_script= 'python train.py --dataset rot_mnist --mnist_case lenet --method_name matchdg_erm --match_case -1 --penalty_ws 1.0 --epochs 100 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name lenet  --model_name lenet --img_h 32 --img_w 32 '
 
 for test_domain in domains:
+    
+    if test_domain != 0:
+        continue
     
     train_domains=''
     for d in domains:

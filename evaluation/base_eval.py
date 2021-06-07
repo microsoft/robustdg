@@ -61,7 +61,11 @@ class BaseEval():
         
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
-            phi= LeNet5()
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer                        
+            phi= LeNet5(fc_layer)
             
         if self.args.model_name == 'slab':
             from models.slab import SlabClf
@@ -81,7 +85,11 @@ class BaseEval():
             
         if self.args.model_name == 'domain_bed_mnist':
             from models.domain_bed_mnist import DomainBed
-            phi= DomainBed( self.args.img_c )
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer                        
+            phi= DomainBed(self.args.img_c, fc_layer)
             
         if self.args.model_name == 'alexnet':
             from models.alexnet import alexnet

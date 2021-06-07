@@ -51,12 +51,18 @@ class MatchDG(BaseAlgo):
             
             if self.args.ctr_model_name == 'lenet':
                 from models.lenet import LeNet5
-                ctr_phi= LeNet5().to(self.cuda)
+                fc_layer=0
+                ctr_phi= LeNet5(fc_layer).to(self.cuda)
                 
             if self.args.model_name == 'slab':
                 from models.slab import SlabClf
                 fc_layer=0
                 ctr_phi= SlabClf(self.args.slab_data_dim, self.args.out_classes, fc_layer).to(self.cuda)
+                                
+            if self.args.model_name == 'domain_bed_mnist':
+                from models.domain_bed_mnist import DomainBed
+                fc_layer=0
+                ctr_phi= DomainBed(self.args.img_c, fc_layer).to(self.cuda)
                 
             if self.args.ctr_model_name == 'alexnet':
                 from models.alexnet import alexnet
@@ -65,10 +71,12 @@ class MatchDG(BaseAlgo):
                 from models.fc import FC
                 fc_layer=0
                 ctr_phi= FC(self.args.out_classes, fc_layer).to(self.cuda)              
+                
             if 'resnet' in self.args.ctr_model_name:
                 from models.resnet import get_resnet
                 fc_layer=0                
                 ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
+                
             if 'densenet' in self.args.ctr_model_name:
                 from models.densenet import get_densenet
                 fc_layer=0
@@ -371,3 +379,10 @@ class MatchDG(BaseAlgo):
                     self.save_model_erm_phase(run_erm)
                 
                 print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
+
+#                 if epoch > 0 and epoch % 25==0 and self.args.model_name == 'lenet':
+#                     lr=self.args.lr/(2**(int(epoch/5)))
+#                     print('Learning Rate Scheduling; New LR: ', lr)                
+#                     self.opt= optim.SGD([
+#                              {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) }, 
+#                     ], lr= lr, weight_decay= self.args.weight_decay, momentum= 0.9,  nesterov=True )                  

@@ -11,12 +11,13 @@ MNIST CNN architecture from the the paper DomainBed: https://github.com/facebook
 """
 class DomainBed(torch.nn.Module):          
      
-    def __init__(self, num_ch):     
+    def __init__(self, num_ch, fc_layer):     
         super(DomainBed, self).__init__()
         print('DomainBed CNN')
         
         self.n_outputs = 128
         self.num_classes= 10
+        self.fc_layer= fc_layer
     
         self.conv1 = nn.Conv2d(num_ch, 64, 3, 1, padding=1)
         self.conv2 = nn.Conv2d(64, 128, 3, stride=2, padding=1)
@@ -49,4 +50,7 @@ class DomainBed(torch.nn.Module):
 
         x = x.mean(dim=(2,3))
         
-        return self.classifier(x)
+        if self.fc_layer:
+            return self.classifier(x)
+        else:
+            return x
