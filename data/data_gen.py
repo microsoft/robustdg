@@ -89,7 +89,7 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
     
     if dataset == 'rot_mnist_spur':
         np.save(save_dir + '_spur.npy', rand_var)
-        
+    
     print('Data Case: ', data_case, ' Source Domain: ', domain, ' Shape: ', mnist_img_rot.shape, mnist_img_rot_org.shape, mnist_labels.shape)        
     
     return
@@ -188,7 +188,7 @@ elif dataset == 'fashion_mnist':
     mnist_imgs= torch.cat((data_obj_train.data, data_obj_test.data))
     mnist_labels= torch.cat((data_obj_train.targets, data_obj_test.targets))
     
-    
+
 # For testing over different base objects; seed 9
 # Seed 9 only for test data, See 0:3 for train data
 seed_list= [0, 1, 2, 9]    
@@ -197,6 +197,7 @@ domains= [0, 15, 30, 45, 60, 75, 90]
 for seed in seed_list:
     
     # Random Seed
+    random.seed(run*10)
     np.random.seed(seed*10)     
     torch.manual_seed(seed*10)    
     if torch.cuda.is_available():
@@ -206,14 +207,14 @@ for seed in seed_list:
     res=np.random.choice(data_size, subset_size+val_size)
     print('Seed: ', seed)
     for domain in domains:        
-        
+                
         #Train
         data_case= 'train'
         if not os.path.exists(data_dir + data_case +  '/'):
             os.makedirs(data_dir + data_case + '/')
 
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
-        indices= res[:subset_size]        
+        indices= res[:subset_size]      
 
         if model == 'resnet18':
             if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:

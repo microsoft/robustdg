@@ -138,6 +138,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
     for domain_idx in range(total_domains):
         
         total_data_idx=0         
+        perf_match_mistakes= 0
         
         for y_c in range(args.out_classes):
             
@@ -245,6 +246,8 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                         curr_indices= ordered_curr_indices[rand_indices][:total_matches_per_point]
                         for _, curr_indice in enumerate(curr_indices):                            
                             data_matched[total_data_idx][domain_idx].append(curr_indice.item())
+                            if curr_indice.item() != perfect_indice:
+                                perf_match_mistakes+= 1                            
                             
                     # Sample perfect matches
                     else:
@@ -253,11 +256,13 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                         curr_indices= ordered_curr_indices[match_obj_indices]
                         for _, curr_indice in enumerate(curr_indices):
                             data_matched[total_data_idx][domain_idx].append(curr_indice.item())
+                            if curr_indice.item() != perfect_indice:
+                                perf_match_mistakes+= 1
 #                             print(domain_idx, y_c, 'Label ', total_data_idx, domain_data[domain_idx]['label'][curr_indice.item()])
                             
                     total_data_idx+=1
                                         
-            elif inferred_match == 0 and perfect_match ==0:
+            elif inferred_match == 0 and perfect_match == 0:
                     
                 for idx in range(ordered_base_indices.shape[0]):                    
                     perfect_indice= ordered_base_indices[idx].item()                    
@@ -268,7 +273,9 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                         data_matched[total_data_idx][domain_idx].append(curr_indice.item())
                     total_data_idx+=1
                     
-                            
+        
+        print('Perfect Match Mistakes: ', perf_match_mistakes)
+        
         if total_data_idx != domain_size:
             print('Issue: Some data points left from data_matched dictionary', total_data_idx, domain_size)
     

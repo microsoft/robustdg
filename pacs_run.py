@@ -232,5 +232,5 @@ for test_domain in domains:
         script= script + ' --img_w 256 ' + ' --img_h 256 '
     
     save_dir= res_dir + str(method) + '_' + str(model) + '.txt'
-    script= script + ' > ' + save_dir    
+#     script= script + ' > ' + save_dir    
     os.system(script)

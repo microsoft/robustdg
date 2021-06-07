@@ -116,6 +116,13 @@ parser.add_argument('--os_env', type=int, default=0,
 parser.add_argument('--dp_noise', type=int, default=0, 
                     help='0: No DP noise; 1: Add DP noise')
 
+#MMD, DANN
+parser.add_argument('--d_steps_per_g_step', type=int, default=1)
+parser.add_argument('--grad_penalty', type=float, default=0.0)
+parser.add_argument('--conditional', type=int, default=1)
+parser.add_argument('--gaussian', type=int, default=1)
+
+
 #Test Based Args
 parser.add_argument('--test_metric', type=str, default='match_score', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
@@ -162,6 +169,7 @@ if not os.path.exists(base_res_dir):
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    random.seed(run*10)
     np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
@@ -184,20 +192,6 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-#     elif args.method_name == 'perf_match' :
-#         from algorithms.perf_match import PerfMatch    
-#         train_method= PerfMatch(
-#                                 args, train_dataset, val_dataset,
-#                                 test_dataset, base_res_dir, 
-#                                 run, cuda
-#                               )        
-#     elif args.method_name == 'rand_match':
-#         from algorithms.rand_match import RandMatch    
-#         train_method= RandMatch(
-#                                 args, train_dataset, val_dataset,
-#                                 test_dataset, base_res_dir, 
-#                                 run, cuda
-#                               )
     elif args.method_name == 'matchdg_ctr':
         from algorithms.match_dg import MatchDG
         ctr_phase=1
@@ -235,13 +229,6 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-#     elif args.method_name == 'irm_slab':
-#         from algorithms.irm_slab import IRMSlab    
-#         train_method= IRMSlab(
-#                                 args, train_dataset, val_dataset,
-#                                 test_dataset, base_res_dir, 
-#                                 run, cuda
-#                               )
     elif args.method_name == 'dro':
         from algorithms.dro import DRO    
         train_method= DRO(
@@ -256,13 +243,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )
-#     elif args.method_name == 'csd_slab':
-#         from algorithms.csd_slab import CSDSlab   
-#         train_method= CSDSlab(
-#                                 args, train_dataset, val_dataset,
-#                                 test_dataset, base_res_dir, 
-#                                 run, cuda
-#                               )
+    elif args.method_name == 'mmd':
+        from algorithms.mmd import MMD    
+        train_method= MMD(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )           
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()
