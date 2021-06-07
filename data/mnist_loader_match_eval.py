@@ -29,15 +29,18 @@ class MnistRotatedAugEval(BaseDataLoader):
         list_idx= {'aug':[], 'org':[] }
         list_size= {'aug':0, 'org':0 }
         list_classes={'aug':[], 'org':[] }
-        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '/'           
+        data_dir= self.root + self.args.dataset_name + '_' + self.args.mnist_case + '/'
             
+        image_counter= 0
         for domain in self.list_domains:
             
             load_dir= data_dir + self.data_case + '/' + 'seed_' + str(self.mnist_subset) + '_domain_' + str(domain)
             mnist_imgs= torch.load( load_dir +  '_data.pt')
             mnist_imgs_org= torch.load( load_dir +  '_org_data.pt')
             mnist_labels= torch.load( load_dir +  '_label.pt')
-            mnist_idx= list(range(len(mnist_imgs)))            
+            mnist_idx= image_counter + np.array(list(range(len(mnist_imgs))))
+            mnist_idx= mnist_idx.tolist()
+            image_counter+= len(mnist_imgs)
             
             print('Source Domain ', domain)
             list_img['aug'].append(mnist_imgs)            

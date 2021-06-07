@@ -28,7 +28,7 @@ class MnistRotated(BaseDataLoader):
         list_labels = []
         list_idx= []
         list_size= []
-        data_dir= self.root + self.args.dataset_name + '_' + self.args.model_name + '/'           
+        data_dir= self.root + self.args.dataset_name + '_' + self.args.mnist_case + '/'           
         
         for domain in self.list_domains:
             load_dir= data_dir + self.data_case + '/' + 'seed_' + str(self.mnist_subset) + '_domain_' + str(domain)

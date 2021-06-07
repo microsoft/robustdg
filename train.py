@@ -133,6 +133,10 @@ parser.add_argument('--match_func_aug_case', type=int, default=0,
 parser.add_argument('--match_func_data_case', type=str, default='val', 
                     help='Dataset Train/Val/Test for the match score evaluation metric')
 
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+
 args = parser.parse_args()
 
 #GPU
@@ -250,6 +254,13 @@ for run in range(args.n_runs):
                                 test_dataset, base_res_dir, 
                                 run, cuda
                               )           
+    elif args.method_name == 'dann':
+        from algorithms.dann import DANN    
+        train_method= DANN(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
         
     #Train the method: It will save the model's weights post training and evalute it on test accuracy
     train_method.train()

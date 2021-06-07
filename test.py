@@ -183,6 +183,7 @@ if args.perfect_match == 0 and args.test_metric == 'match_score' and args.match_
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    random.seed(run*10) 
     np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():

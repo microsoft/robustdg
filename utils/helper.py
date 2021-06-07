@@ -281,7 +281,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         data_obj= ChestXRay(args, domains, '/chestxray_spur/', data_case=data_case, match_func=match_func)
         
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist', 'rot_mnist_spur']:       
-        if data_case == 'test' and args.model_name not in ['lenet']:
+        if data_case == 'test' and args.mnist_case not in ['lenet']:
             mnist_subset=9
         else:
             mnist_subset=run            
@@ -295,6 +295,8 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
     dataset['domain_list']= domains
     dataset['base_domain_size']= data_obj.base_domain_size       
     dataset['domain_size_list']= data_obj.training_list_size    
+    
+    print(data_case, data_obj.base_domain_size, data_obj.training_list_size)
     
     if eval_case and args.test_metric in ['match_score'] and args.match_func_aug_case:
         dataset['total_domains']= 2

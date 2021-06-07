@@ -197,7 +197,7 @@ domains= [0, 15, 30, 45, 60, 75, 90]
 for seed in seed_list:
     
     # Random Seed
-    random.seed(run*10)
+    random.seed(seed*10)
     np.random.seed(seed*10)     
     torch.manual_seed(seed*10)    
     if torch.cuda.is_available():
