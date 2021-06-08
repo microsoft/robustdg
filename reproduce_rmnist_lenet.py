@@ -20,9 +20,6 @@ elif method == 'matchdg_erm':
 
 for test_domain in domains:
     
-    if test_domain != 0:
-        continue
-    
     train_domains=''
     for d in domains:
         if d != test_domain:
@@ -34,7 +31,7 @@ for test_domain in domains:
         os.makedirs(res_dir)
         
     script= base_script + ' --train_domains ' + str(train_domains) + ' --test_domains ' + str(test_domain) 
-#     script= script + ' > ' + res_dir + method + '_' + str(test_domain) + '.txt'
+    script= script + ' > ' + res_dir + method + '_' + str(test_domain) + '.txt'
     
     print('Method: ', method, ' Test Domain: ', test_domain)
     os.system(script)

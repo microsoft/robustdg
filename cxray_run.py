@@ -45,7 +45,11 @@ elif metric  == 'feat_eval_rand':
     res_dir= 'results/' + str(dataset) + '/feat_eval_rand_' + data_case + '/'
         
 #Test Domain
-res_dir=  res_dir+ test_domain + '/'    
+# curr_test_domain= test_domain
+# curr_test_domain= test_domain + '_opp_trans'
+curr_test_domain= test_domain + '_trans'
+
+res_dir=  res_dir+ curr_test_domain + '/'    
 if not os.path.exists(res_dir):
     os.makedirs(res_dir)        
     
@@ -77,8 +81,7 @@ for method in methods:
         if d != test_domain:
             train_domains+= str(d) + '_trans' + ' '
     
-    print('Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', test_domain)
-    script= script + ' --train_domains ' + train_domains + ' --test_domains ' + test_domain
-#     script= script + '_opp_trans'
+    print('Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
+    script= script + ' --train_domains ' + train_domains + ' --test_domains ' + curr_test_domain
     script= script + ' > ' + res_dir + str(method) + '.txt'
     os.system(script)
