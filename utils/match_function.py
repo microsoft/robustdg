@@ -117,7 +117,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
     else:
         perm_prob= 1.0-match_case
     print('Perm prob: ', perm_prob)
-    total_matches_per_point=1
+    total_matches_per_point= args.total_matches_per_point
 
     #Determine the base_domain_idx as the domain with the max samples of the current class
     base_domain_dict={}

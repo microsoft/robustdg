@@ -137,6 +137,10 @@ parser.add_argument('--match_func_data_case', type=str, default='val',
 parser.add_argument('--mnist_case', type=str, default='resnet18', 
                     help='MNIST Dataset Case: resnet18; lenet, domainbed')
 
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
 args = parser.parse_args()
 
 #GPU

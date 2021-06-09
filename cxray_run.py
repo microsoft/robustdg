@@ -2,7 +2,7 @@ import os
 import sys
 
 # methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
-methods=['erm', 'csd']
+methods=['matchdg_ctr', 'hybrid']
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
 

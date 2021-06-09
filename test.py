@@ -141,6 +141,14 @@ parser.add_argument('--cuda_device', type=int, default=0,
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
 args = parser.parse_args()
 
 #GPU

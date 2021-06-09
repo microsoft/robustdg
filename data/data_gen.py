@@ -139,19 +139,20 @@ elif model == 'lenet':
         img_w= 32
         img_h= 32
     elif dataset == 'fashion_mnist':
-        print('Fashion MNIST not implemented for LeNet')
-    
-elif model == 'domain_bed':
+        print('Fashion MNIST not implemented for LeNet')    
+        
+elif model == 'lenet_mdg':
     if dataset == 'rot_mnist':
-        # Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST 
-        data_size=70000
-        subset_size=55000
-        val_size= 1000
+        # Generate 10 random subsets of size 1,000 each for Rotated MNIST 
+        data_size=60000
+        subset_size=1000
+        val_size= 200
         total_subset=10
-        img_w= 28
-        img_h= 28
+        img_w= 224
+        img_h= 224
     elif dataset == 'fashion_mnist':
-        print('Fashion MNIST not implemented for DomainBed')    
+        print('Fashion MNIST not implemented for LeNet')    
+        
         
 data_dir= base_dir + dataset + '_' + model + '/'
 if not os.path.exists(data_dir):
@@ -219,7 +220,7 @@ for seed in seed_list:
         if model == 'resnet18':
             if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
-        elif model == 'lenet':
+        elif model in ['lenet', 'lenet_mdg']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
                     
@@ -234,7 +235,7 @@ for seed in seed_list:
         if model == 'resnet18':
             if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
-        elif model == 'lenet':
+        elif model in ['lenet', 'lenet_mdg']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
             
@@ -249,6 +250,6 @@ for seed in seed_list:
         if model == 'resnet18':
             if seed in [9] and domain in [0, 90]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
-        elif model == 'lenet':
+        elif model in ['lenet', 'lenet_mdg']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                     

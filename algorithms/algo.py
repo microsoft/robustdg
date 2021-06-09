@@ -55,11 +55,7 @@ class BaseAlgo():
         
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
-            if self.args.method_name in ['csd', 'matchdg_ctr']:
-                fc_layer=0
-            else:
-                fc_layer= self.args.fc_layer                        
-            phi= LeNet5(fc_layer)
+            phi= LeNet5()
 
         if self.args.model_name == 'slab':
             from models.slab import SlabClf

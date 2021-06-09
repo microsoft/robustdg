@@ -139,10 +139,16 @@ class ErmMatch(BaseAlgo):
                                 
             print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
             
-#             if epoch > 0 and epoch % 5==0 and self.args.model_name == 'domain_bed_mnist':
-#                 lr=self.args.lr/(2**(int(epoch/5)))
-#                 print('Learning Rate Scheduling; New LR: ', lr)                
-#                 self.opt= optim.SGD([
-#                          {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) }, 
-#                 ], lr= lr, weight_decay= self.args.weight_decay, momentum= 0.9,  nesterov=True )     
+            if epoch > 0 and self.args.model_name in ['domain_bed_mnist', 'lenet']:
+                if self.args.model_name == 'lenet':
+                    lr_schedule_step= 25
+                elif self.args.model_name == 'domain_bed_mnist':
+                    lr_schedule_step= 10
+            
+                if epoch % lr_schedule_step==0 :
+                    lr=self.args.lr/(2**(int(epoch/lr_schedule_step)))
+                    print('Learning Rate Scheduling; New LR: ', lr)                
+                    self.opt= optim.SGD([
+                             {'params': filter(lambda p: p.requires_grad, self.phi.parameters()) }, 
+                    ], lr= lr, weight_decay= self.args.weight_decay, momentum= 0.9,  nesterov=True )     
                 

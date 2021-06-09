@@ -281,7 +281,7 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         data_obj= ChestXRay(args, domains, '/chestxray_spur/', data_case=data_case, match_func=match_func)
         
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist', 'rot_mnist_spur']:       
-        if data_case == 'test' and args.mnist_case not in ['lenet']:
+        if data_case == 'test' and args.mnist_case not in ['lenet', 'lenet_mdg']:
             mnist_subset=9
         else:
             mnist_subset=run            
