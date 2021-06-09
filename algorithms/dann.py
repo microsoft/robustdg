@@ -35,7 +35,7 @@ class DANN(BaseAlgo):
         self.grad_penalty= self.args.grad_penalty
         self.lambda_= self.args.penalty_ws
         self.d_steps_per_g_step= self.args.d_steps_per_g_step
-        self.initial_lr= 0.1
+        self.initial_lr= 0.01
         
         # Optimizers
         self.disc_opt = torch.optim.SGD(
@@ -102,7 +102,7 @@ class DANN(BaseAlgo):
                             (self.lambda_ * -disc_loss))
 
                 penalty_erm += float(classifier_loss)
-                penalty_dann += float(-disc_loss)
+                penalty_dann += float(disc_loss)
                 
                 d_steps_per_g = self.d_steps_per_g_step
                 if (epoch % (1+d_steps_per_g) < d_steps_per_g):

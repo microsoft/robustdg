@@ -6,7 +6,7 @@ slab_noise= float(sys.argv[2])
 case= sys.argv[3]
 total_seed= 3
 
-base_script= 'python train.py --dataset slab --model_name slab --batch_size 64 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 0.90 --slab_data_dim 2 ' + ' --slab_noise ' + str(slab_noise) + ' --n_runs ' + str(total_seed)
+base_script= 'python train.py --dataset slab --model_name slab --batch_size 128 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 0.90 --slab_data_dim 2 ' + ' --slab_noise ' + str(slab_noise) + ' --n_runs ' + str(total_seed)
 
 res_dir= 'results/slab/htune/slab_noise_' + str(slab_noise) + '/'
 if not os.path.exists(res_dir):

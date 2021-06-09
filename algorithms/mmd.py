@@ -124,7 +124,8 @@ class MMD(BaseAlgo):
                         features_c= features[ y_e == y_c ]
                         d_c= d_e[ y_e == y_c ]
                         if len(torch.unique(d_c)) != nmb:
-                            print('Error: Some classes not distributed across all the domains')
+                            print('*********************************')
+                            print('Error: Some classes not distributed across all the domains; issues for class conditional methods')
                             continue
                         mmd_loss+= self.mmd_regularization(features_c, d_c, nmb)
                 else:

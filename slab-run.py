@@ -5,15 +5,16 @@ case= sys.argv[1]
 slab_noise= float(sys.argv[2])
 total_seed= 3
 
-methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg', 'mask_linear']
+# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg', 'mask_linear']
+methods=['erm', 'rand', 'perf']
 # metrics= ['auc', 'mi', 'entropy', 'loss']
-metrics= ['auc', 'entropy', 'loss']
+metrics= ['auc']
 # methods=['matchdg']
 # metrics= ['entropy', 'loss']
 
 if case == 'train':
     
-    base_script= 'python train.py --dataset slab --model_name slab --batch_size 64 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 0.90 --slab_data_dim 2 '
+    base_script= 'python train.py --dataset slab --model_name slab --batch_size 128 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 0.90 --slab_data_dim 2 '
     
     base_script= base_script + ' --slab_noise ' + str(slab_noise) +  ' --n_runs ' + str(total_seed)    
 

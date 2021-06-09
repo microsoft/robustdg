@@ -45,9 +45,9 @@ elif metric  == 'feat_eval_rand':
     res_dir= 'results/' + str(dataset) + '/feat_eval_rand_' + data_case + '/'
         
 #Test Domain
-# curr_test_domain= test_domain
+curr_test_domain= test_domain
 # curr_test_domain= test_domain + '_opp_trans'
-curr_test_domain= test_domain + '_trans'
+# curr_test_domain= test_domain + '_trans'
 
 res_dir=  res_dir+ curr_test_domain + '/'    
 if not os.path.exists(res_dir):
