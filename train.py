@@ -42,11 +42,6 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
-parser.add_argument('--slab_data_dim', type=int, default= 2, 
-                    help='Number of features in the slab dataset')
-parser.add_argument('--slab_total_slabs', type=int, default=7)
-parser.add_argument('--slab_num_samples', type=int, default=1000)
-parser.add_argument('--slab_noise', type=float, default=0.0)
 parser.add_argument('--fc_layer', type=int, default= 1, 
                     help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
@@ -122,6 +117,12 @@ parser.add_argument('--grad_penalty', type=float, default=0.0)
 parser.add_argument('--conditional', type=int, default=1)
 parser.add_argument('--gaussian', type=int, default=1)
 
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
 
 #Test Based Args
 parser.add_argument('--test_metric', type=str, default='match_score', 

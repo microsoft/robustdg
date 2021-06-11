@@ -175,6 +175,7 @@ class BaseAlgo():
         data_match_tensor= torch.stack( data_match_tensor ) 
         label_match_tensor= torch.stack( label_match_tensor )
 #         print('Shape: ', data_match_tensor.shape, label_match_tensor.shape)
+        
         return data_match_tensor, label_match_tensor, curr_batch_size
     
     def get_test_accuracy(self, case):

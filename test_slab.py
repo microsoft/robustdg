@@ -40,17 +40,17 @@ def get_logits(model, loader, device, label=1):
 
 # Input Parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_name', type=str, default='slab', 
+parser.add_argument('--dataset_name', type=str, default='rot_mnist', 
                     help='Datasets: rot_mnist; fashion_mnist; pacs')
 parser.add_argument('--method_name', type=str, default='erm_match', 
                     help=' Training Algorithm: erm_match; matchdg_ctr; matchdg_erm')
-parser.add_argument('--model_name', type=str, default='slab', 
+parser.add_argument('--model_name', type=str, default='resnet18', 
                     help='Architecture of the model to be trained')
 parser.add_argument('--train_domains', nargs='+', type=str, default=["15", "30", "45", "60", "75"], 
                     help='List of train domains')
 parser.add_argument('--test_domains', nargs='+', type=str, default=["0", "90"], 
                     help='List of test domains')
-parser.add_argument('--out_classes', type=int, default=2, 
+parser.add_argument('--out_classes', type=int, default=10, 
                     help='Total number of classes in the dataset')
 parser.add_argument('--img_c', type=int, default= 1, 
                     help='Number of channels of the image in dataset')
@@ -58,11 +58,6 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
-parser.add_argument('--slab_data_dim', type=int, default= 2, 
-                    help='Number of features in the slab dataset')
-parser.add_argument('--slab_total_slabs', type=int, default=7)
-parser.add_argument('--slab_num_samples', type=int, default=1000)
-parser.add_argument('--slab_noise', type=float, default=0.0)
 parser.add_argument('--fc_layer', type=int, default= 1, 
                     help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
@@ -89,6 +84,8 @@ parser.add_argument('--penalty_s', type=int, default=-1,
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_irm', type=float, default=0.0, 
                     help='Penalty weight for IRM invariant classifier loss')
+parser.add_argument('--penalty_aug', type=float, default=1.0, 
+                    help='Penalty weight for Augmentation in Hybrid approach loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -151,6 +148,21 @@ parser.add_argument('--cuda_device', type=int, default=0,
                     help='Select the cuda device by id among the avaliable devices' )
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
+
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
 
 args = parser.parse_args()
 

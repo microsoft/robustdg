@@ -45,11 +45,6 @@ parser.add_argument('--img_h', type=int, default= 224,
                     help='Height of the image in dataset')
 parser.add_argument('--img_w', type=int, default= 224, 
                     help='Width of the image in dataset')
-parser.add_argument('--slab_data_dim', type=int, default= 2, 
-                    help='Number of features in the slab dataset')
-parser.add_argument('--slab_total_slabs', type=int, default=7)
-parser.add_argument('--slab_num_samples', type=int, default=1000)
-parser.add_argument('--slab_noise', type=float, default=0.0)
 parser.add_argument('--fc_layer', type=int, default= 1, 
                     help='ResNet architecture customization; 0: No fc_layer with resnet; 1: fc_layer for classification with resnet')
 parser.add_argument('--match_layer', type=str, default='logit_match', 
@@ -141,6 +136,19 @@ parser.add_argument('--cuda_device', type=int, default=0,
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 
+#MMD, DANN
+parser.add_argument('--d_steps_per_g_step', type=int, default=1)
+parser.add_argument('--grad_penalty', type=float, default=0.0)
+parser.add_argument('--conditional', type=int, default=1)
+parser.add_argument('--gaussian', type=int, default=1)
+
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
+
 #Differentiate between resnet, lenet, domainbed cases of mnist
 parser.add_argument('--mnist_case', type=str, default='resnet18', 
                     help='MNIST Dataset Case: resnet18; lenet, domainbed')
@@ -208,7 +216,7 @@ for run in range(args.n_runs):
             val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
         elif args.match_func_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'acc':
+    elif args.test_metric in ['acc', 'per_domain_acc']:
         if args.acc_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.acc_data_case== 'test':
@@ -229,6 +237,14 @@ for run in range(args.n_runs):
     if args.test_metric == 'acc':
         from evaluation.base_eval import BaseEval
         test_method= BaseEval(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )
+
+    elif args.test_metric == 'per_domain_acc':
+        from evaluation.per_domain_acc import PerDomainAcc
+        test_method= PerDomainAcc(
                               args, train_dataset, val_dataset,
                               test_dataset, base_res_dir,
                               run, cuda

@@ -2,7 +2,8 @@ import os
 import sys
 
 # methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
-methods=['matchdg_ctr', 'hybrid']
+# methods=['erm', 'csd', 'matchdg_ctr', 'hybrid', 'matchdg_erm']
+methods=['erm', 'csd']
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
 
@@ -74,7 +75,7 @@ for method in methods:
         script= base_script + ' --method_name matchdg_erm  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'
 
     elif method == 'hybrid':
-        script= base_script + ' --method_name hybrid  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 1.0 --penalty_aug 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'    
+        script= base_script + ' --method_name hybrid  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 0.0 --penalty_aug 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'    
     
     train_domains=''
     for d in domains:
@@ -83,5 +84,7 @@ for method in methods:
     
     print('Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
     script= script + ' --train_domains ' + train_domains + ' --test_domains ' + curr_test_domain
+    
+    script= script + ' --n_runs 2 '
     script= script + ' > ' + res_dir + str(method) + '.txt'
     os.system(script)
