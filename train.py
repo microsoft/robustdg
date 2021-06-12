@@ -176,7 +176,7 @@ if not os.path.exists(base_res_dir):
 
 #Execute the method for multiple runs ( total args.n_runs )
 for run in range(args.n_runs):
-    
+    print('Run', run)
     #Seed for repoduability
     random.seed(run*10)
     np.random.seed(run*10) 

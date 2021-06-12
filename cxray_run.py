@@ -1,9 +1,7 @@
 import os
 import sys
 
-# methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
-# methods=['erm', 'csd', 'matchdg_ctr', 'hybrid', 'matchdg_erm']
-methods=['erm', 'csd']
+methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
 
@@ -33,6 +31,10 @@ elif metric  == 'acc':
     base_script= 'python test.py --dataset chestxray --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --test_metric acc ' + ' --acc_data_case ' + data_case
     res_dir= 'results/' + str(dataset) + '/acc_' + str(data_case) + '/'
 
+elif metric  == 'per_domain_acc':
+    base_script= 'python test.py --dataset chestxray --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --test_metric per_domain_acc --acc_data_case val '
+    res_dir= 'results/' + str(dataset) + '/per_domin_acc/'
+    
 elif metric  == 'match_score':
     base_script= 'python test.py --dataset chestxray --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --test_metric match_score --match_func_aug_case 1' + ' --match_func_data_case ' + data_case
     res_dir= 'results/' + str(dataset) + '/match_score_' + data_case + '/'
@@ -75,16 +77,21 @@ for method in methods:
         script= base_script + ' --method_name matchdg_erm  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'
 
     elif method == 'hybrid':
-        script= base_script + ' --method_name hybrid  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 0.0 --penalty_aug 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'    
+        script= base_script + ' --method_name hybrid  --epochs 40 --lr 0.001  --match_case -1 --penalty_ws 1.0 --penalty_aug 50.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121'    
     
+    #To train and test on different domains (Out of Distribution Generalization)
     train_domains=''
     for d in domains:
         if d != test_domain:
             train_domains+= str(d) + '_trans' + ' '
     
+    # To train and test on the same domains (In Distribution Generalization)
+#     train_domains= curr_test_domain
+            
     print('Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
     script= script + ' --train_domains ' + train_domains + ' --test_domains ' + curr_test_domain
     
-    script= script + ' --n_runs 2 '
+    # 5 seeds to formally define the trends for the privacy part
+    script= script + ' --n_runs 5 '
     script= script + ' > ' + res_dir + str(method) + '.txt'
     os.system(script)

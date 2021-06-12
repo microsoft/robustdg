@@ -219,6 +219,8 @@ for run in range(args.n_runs):
     elif args.test_metric in ['acc', 'per_domain_acc']:
         if args.acc_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        elif args.acc_data_case== 'val':
+            val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
         elif args.acc_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
     elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
