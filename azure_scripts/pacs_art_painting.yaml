@@ -1,0 +1,71 @@
+description: Hyperparam sweep on PACS
+
+target:
+  service: amlk8s
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  name: itpeusp100cl
+#   name:  itpeusp40cl
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements_new.txt
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+
+search:
+  job_template:
+    # you may use {random_string:s} to avoid job name collisions
+    # {auto:3s} generates lr_0.00000_mom_0.5, .. etc
+    # {auto:2s} generates lr_0.00000_mo_0.5, .. etc
+    name: search_{experiment_name:s}_{auto:5s}
+    sku: G1
+    command:
+    
+    # ERM, RandMatch
+#     - echo "--debug" && python train.py --dataset pacs --method_name {method} --match_case 0.0 --n_runs 3 --train_domains photo cartoon sketch --test_domains art_painting --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr {lr} --batch_size {batch_size} --weight_decay {weight_decay} --penalty_ws {penalty} --penalty_aug {penalty_aug} --model_name {model} 
+    
+    
+    # MDG, Hybrid
+    - echo "--debug" && python train.py --dataset pacs --method_name {method}  --match_case -1 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo cartoon sketch --test_domains art_painting --out_classes 7 --perfect_match 0  --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr {lr} --batch_size {batch_size} --weight_decay {weight_decay} --penalty_ws {penalty} --penalty_aug {penalty_aug} --model_name {model} 
+
+    
+  type: grid
+  max_trials: 100
+  params:
+    - name: penalty
+      spec: discrete
+#       values: [0.1, 0.5, 1.0, 5.0]
+      values: [0.01, 1.0]
+    - name: penalty_aug
+      spec: discrete
+#       values: [0.1, 1.0, 5.0, 10.0]
+      values: [0.1, 1.0]
+    - name: lr
+      spec: discrete
+      values: [0.001]
+#       values: [0.01, 0.001, 0.0005]
+    - name: model
+      spec: discrete
+      values: [alexnet]
+#       values: [alexnet, resnet18, resnet50]
+    - name: method
+      spec: discrete
+#       values: [erm_match, matchdg_erm, hybrid]
+      values: [hybrid]
+    - name: batch_size
+      spec: discrete
+      values: [16]
+    - name: weight_decay
+      spec: discrete
+      values: [0.0005]
+      

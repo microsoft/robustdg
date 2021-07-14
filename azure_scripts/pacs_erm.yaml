@@ -1,0 +1,49 @@
+description: PACS ERM Dataset
+
+target:
+  service: amlk8s
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  name: itpeusp100cl
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements_new.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+    
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+# - name: photo_r18
+#   # one gpu
+#   sku: G1
+#   command:
+#   - python train.py --dataset pacs --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --train_domains art_painting cartoon sketch --test_domains photo --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --lr 0.0005 --epochs 50 --model_name resnet18 --weight_decay 0.001 --os_env 1
+  
+# - name: art_painting_r18
+#   # one gpu
+#   sku: G1
+#   command:
+#   - python train.py --dataset pacs --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --train_domains photo cartoon sketch --test_domains art_painting --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --lr 0.01 --epochs 50 --model_name resnet18 --weight_decay 0.001 --os_env 1
+  
+# - name: cartoon_r18
+#   # one gpu
+#   sku: G1
+#   command:
+#   - python train.py --dataset pacs --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --train_domains photo art_painting sketch --test_domains cartoon --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --lr 0.001 --epochs 50 --model_name resnet18 --weight_decay 0.001 --os_env 1
+
+- name: sketch_r18
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset pacs --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --train_domains photo art_painting cartoon --test_domains sketch --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --lr 0.01 --epochs 50 --model_name resnet18 --weight_decay 0.001 --os_env 1

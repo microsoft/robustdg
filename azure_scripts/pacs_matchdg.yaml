@@ -1,0 +1,73 @@
+description: PACS MatchDG Dataset
+
+target:
+  service: philly
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  cluster: rr1
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+    
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+# - name: photo_r18
+#   # one gpu
+#   sku: G1
+#   command:
+#   - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains art_painting cartoon sketch --test_domains photo --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.0005  --batch_size 16 --weight_decay 0.001 --penalty_ws 0.1 --penalty_aug 0.1 --model_name resnet18
+  
+# - name: art_painting_r18
+#   # one gpu
+#   sku: G1
+#   command:
+#   - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo cartoon sketch --test_domains art_painting --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.001 --batch_size 16 --weight_decay 0.001 --penalty_ws 0.5 --penalty_aug 0.1 --model_name resnet18
+  
+- name: cartoon_r18
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo art_painting sketch --test_domains cartoon --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.001 --batch_size 16 --weight_decay 0.001 --penalty_ws 1.0 --penalty_aug 0.1 --model_name resnet18
+
+- name: sketch_r18
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo art_painting cartoon --test_domains sketch --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.01 --batch_size 16 --weight_decay 0.001 --penalty_ws 0.5 --penalty_aug 0.1 --model_name resnet18
+
+- name: photo_r50
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains art_painting cartoon sketch --test_domains photo --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.0005  --batch_size 16 --weight_decay 0.001 --penalty_ws 0.1 --penalty_aug 0.1 --model_name resnet50
+  
+- name: art_painting_r50
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo cartoon sketch --test_domains art_painting --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.001 --batch_size 16 --weight_decay 0.001 --penalty_ws 0.1 --penalty_aug 0.1 --model_name resnet50
+  
+- name: cartoon_r50
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo art_painting sketch --test_domains cartoon --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.0005 --batch_size 16 --weight_decay 0.001 --penalty_ws 1.0 --penalty_aug 0.1 --model_name resnet50
+
+- name: sketch_r50
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset pacs --method_name matchdg_erm --match_case -1 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet50 --n_runs 3 --train_domains photo art_painting cartoon --test_domains sketch --out_classes 7 --perfect_match 0 --img_c 3 --pre_trained 1 --epochs 50 --os_env 1  --lr 0.001 --batch_size 16 --weight_decay 0.001 --penalty_ws 0.5 --penalty_aug 0.1 --model_name resnet50

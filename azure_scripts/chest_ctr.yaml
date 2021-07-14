@@ -1,0 +1,43 @@
+description: ChestXray Dataset Constrastive Learning
+
+target:
+  service: philly
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  cluster: rr1
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+    
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+# - name: kaggle_test
+#   # one gpu
+#   sku: G1
+#   command:
+#   - python train.py --dataset chestxray --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos --train_domains nih_trans chex_trans --test_domains kaggle --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --os_env 1
+
+- name: chex_test
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset chestxray --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos --train_domains nih_trans kaggle_trans --test_domains chex_trans --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --os_env 1
+
+- name: nih_test
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset chestxray --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos --train_domains chex_trans kaggle_trans --test_domains nih_trans --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --os_env 1
