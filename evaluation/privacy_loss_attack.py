@@ -48,12 +48,13 @@ class PrivacyLossAttack(BaseEval):
         train_data={}
         train_data['loss']=[]
         train_data['labels']=[]
+        train_data['obj']= []
         for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
             y_e= y_e[rand_indices]
-            
+            obj_e= obj_e[rand_indices]
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)                
                 y_e= y_e.to(self.cuda)
@@ -62,19 +63,24 @@ class PrivacyLossAttack(BaseEval):
                 loss=  cross_entropy(out, torch.argmax(y_e, dim=1).long()).to(self.cuda)
                 train_data['loss'].append(loss)
                 train_data['labels'].append(y_e)
+                train_data['obj'].append(obj_e)
         
         train_data['loss']= torch.cat(train_data['loss'], dim=0)
         train_data['labels']= torch.cat(train_data['labels'], dim=0)
+        train_data['obj']= torch.cat(train_data['obj'], dim=0)
 
         #Test Environment Data
         test_data={}
         test_data['loss']=[]
         test_data['labels']=[]
+        test_data['obj']=[]
+        test_data['free']=[]
         for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
             y_e= y_e[rand_indices]
+            obj_e= obj_e[rand_indices]
 
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)                
@@ -85,13 +91,20 @@ class PrivacyLossAttack(BaseEval):
                 
                 test_data['loss'].append(loss)
                 test_data['labels'].append(y_e)
+                test_data['obj'].append(obj_e)
+                test_data['free']= test_data['free'] + [1]*out.shape[0] 
         
         test_data['loss']= torch.cat(test_data['loss'], dim=0)
         test_data['labels']= torch.cat(test_data['labels'], dim=0)
+        test_data['obj']= torch.cat(test_data['obj'], dim=0)
+        test_data['free']= torch.tensor(test_data['free'])
         
-        print('Train Logits: ', train_data['loss'].shape, 'Train Labels: ', train_data['labels'].shape )
-        print('Test Logits: ', test_data['loss'].shape, 'Test Labels: ', test_data['labels'].shape )
-    
+        print('Train Logits: ', train_data['loss'].shape, 'Train Labels: ', train_data['labels'].shape, ' Train Objs: ', train_data['obj'].shape )
+        print(torch.unique(train_data['obj']))
+        print('Test Logits: ', test_data['loss'].shape, 'Test Labels: ', test_data['labels'].shape, ' Test Objs: ', test_data['obj'].shape )
+        print(torch.unique(test_data['obj']))
+        print('Test Free: ', test_data['free'].shape, test_data['free'])
+        
         return train_data, test_data
 
     def create_attack_data(self, train_data, test_data, sample_size, case='train'):
@@ -102,6 +115,7 @@ class PrivacyLossAttack(BaseEval):
 
             test_loss= test_data['loss'][:sample_size]
             test_labels= test_data['labels'][:sample_size]
+            
         elif case == 'test':
             train_loss= train_data['loss'][-1-sample_size:-1]
             train_labels= train_data['labels'][-1-sample_size:-1]
@@ -116,6 +130,67 @@ class PrivacyLossAttack(BaseEval):
         print(case, attack_data['loss'].shape, attack_data['labels'].shape, attack_data['members'].shape)
         
         return attack_data
+
+    
+#     def create_attack_data(self, train_data, test_data, sample_size, case='train'):
+        
+#         if case == 'train':
+#             train_loss= train_data['loss'][:sample_size]
+#             train_labels= train_data['labels'][:sample_size]
+#             train_obj= train_data['obj'][:sample_size]
+            
+#             test_loss= []
+#             test_labels= []
+#             for idx in range(sample_size):
+#                 obj= train_obj[idx]
+#                 indice= (test_data['obj'] == obj).nonzero()
+                
+#                 for idx_obj in range(indice.shape[0]):
+#                     curr_indice= indice[idx_obj, 0].item()
+#                     if test_data['free'][curr_indice] == 1:
+#                         test_loss.append(test_data['loss'][curr_indice].view(1))
+#                         #TODO: Change 10 to num_classes
+#                         test_labels.append(test_data['labels'][curr_indice].view(1, 10))
+#                         test_data['free'][curr_indice]= 0        
+#                         break
+            
+#             test_loss= torch.cat(test_loss, dim=0)
+#             test_labels= torch.cat(test_labels, dim=0)
+            
+#         elif case == 'test':
+#             train_loss= train_data['loss'][-1-sample_size:-1]
+#             train_labels= train_data['labels'][-1-sample_size:-1]
+#             train_obj= train_data['obj'][-1-sample_size:-1]
+
+#             test_loss= []
+#             test_labels= []
+#             for idx in range(sample_size):
+#                 obj= train_obj[idx]
+#                 indice= (test_data['obj'] == obj).nonzero()
+                
+#                 for idx_obj in range(indice.shape[0]):
+#                     curr_indice= indice[idx_obj, 0].item()
+#                     if test_data['free'][curr_indice] == 1:
+#                         test_loss.append(test_data['loss'][curr_indice].view(1))
+#                         #TODO: Change 10 to num_classes
+#                         test_labels.append(test_data['labels'][curr_indice].view(1, 10))
+#                         test_data['free'][curr_indice]= 0        
+#                         break
+            
+#             test_loss= torch.cat(test_loss, dim=0)
+#             test_labels= torch.cat(test_labels, dim=0)
+        
+#         print('Attack Dataset Members: ', train_loss.shape, train_labels.shape)
+#         print('Attack Dataset Non Members: ', test_loss.shape, test_labels.shape)
+#         attack_data={}        
+#         attack_data['loss']= torch.cat( (train_loss, test_loss), dim=0 )
+#         attack_data['labels']= torch.cat( (train_labels, test_labels), dim=0 )
+# #         attack_data['members']= torch.cat( (torch.ones((sample_size,1)), torch.zeros((sample_size,1))), dim=0).to(self.cuda)     
+#         attack_data['members']= torch.cat( (torch.ones((train_loss.shape[0], 1)), torch.zeros((test_loss.shape[0],1))), dim=0).to(self.cuda)     
+        
+#         print(case, attack_data['loss'].shape, attack_data['labels'].shape, attack_data['members'].shape)
+        
+#         return attack_data
     
     def eval_entropy_attack(self, data, threshold_data, scale=1.0, case='train'):
         

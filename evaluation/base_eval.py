@@ -103,7 +103,7 @@ class BaseEval():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
-                            self.args.img_c, self.args.pre_trained, self.args.os_env)
+                            self.args.img_c, self.args.pre_trained, self.args.dp_noise, self.args.os_env)
             
         if 'densenet' in self.args.model_name:
             from models.densenet import get_densenet

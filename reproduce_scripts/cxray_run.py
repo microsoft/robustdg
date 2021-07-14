@@ -88,7 +88,7 @@ for method in methods:
     # To train and test on the same domains (In Distribution Generalization)
 #     train_domains= curr_test_domain
             
-    print('Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
+    print('Metric', metric, ' Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
     script= script + ' --train_domains ' + train_domains + ' --test_domains ' + curr_test_domain
     
     # 5 seeds to formally define the trends for the privacy part

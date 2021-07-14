@@ -247,7 +247,12 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         match_func=False            
         # Can select a higher batch size for val and test domains
         ## TODO: If condition for test batch size less than total size
-        batch_size= 512
+        
+        #Don't try higher batch size in the case of dp-noise trained models to avoid CUDA errors
+        if args.dp_noise:
+            batch_size= args.batch_size*5
+        else:
+            batch_size= 512
     
     # Set match_func to True in case of test metric as match_score
     try:
@@ -285,6 +290,12 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
             mnist_subset=9
         else:
             mnist_subset=run            
+        
+        #TODO: Only Temporary, in order to see if it changes results on MNIST
+#         if eval_case:
+#             if args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
+#                 mnist_subset=run
+        
         print('MNIST Subset: ', mnist_subset)
         data_obj=  MnistRotated(args, domains, mnist_subset, '/mnist/', data_case=data_case, match_func=match_func)
         

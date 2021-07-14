@@ -36,11 +36,12 @@ class SpurCorrDataLoader(data_utils.Dataset):
     def __init__(self, dataloader):
         super(SpurCorrDataLoader, self).__init__()
         
-        self.x= dataloader.train_data
-        self.y= dataloader.train_labels
-        self.d= dataloader.train_domain
-        self.indices= dataloader.train_indices
-        self.spur_corr= dataloader.train_spur
+        self.x= dataloader.data
+        self.y= dataloader.labels
+        self.d= dataloader.domains
+        self.indices= dataloader.indices
+        self.objects= dataloader.objects
+        self.spur_corr= dataloader.spur
         
 
     def __len__(self):
@@ -51,9 +52,10 @@ class SpurCorrDataLoader(data_utils.Dataset):
         batch_y = self.y[index]
         batch_d = self.d[index]
         batch_idx = self.indices[index]
+        batch_obj= self.objects[index]
         batch_spur= self.spur_corr[index]
             
-        return batch_x, batch_y, batch_d, batch_idx, batch_spur        
+        return batch_x, batch_y, batch_d, batch_idx, batch_obj, batch_spur        
 
 class AttributeAttack(BaseEval):
     

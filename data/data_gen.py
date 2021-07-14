@@ -248,7 +248,7 @@ for seed in seed_list:
         indices= res[:subset_size]
         
         if model == 'resnet18':
-            if seed in [9] and domain in [0, 90]:
+            if seed in [0, 1, 2, 9] and domain in [0, 90]:
                 generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
         elif model in ['lenet', 'lenet_mdg']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:

@@ -74,7 +74,7 @@ class MatchDG(BaseAlgo):
             if 'resnet' in self.args.ctr_model_name:
                 from models.resnet import get_resnet
                 fc_layer=0                
-                ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.os_env).to(self.cuda)
+                ctr_phi= get_resnet(self.args.ctr_model_name, self.args.out_classes, fc_layer, self.args.img_c, self.args.pre_trained, self.args.dp_noise, self.args.os_env).to(self.cuda)
                 
             if 'densenet' in self.args.ctr_model_name:
                 from models.densenet import get_densenet

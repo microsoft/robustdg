@@ -112,6 +112,7 @@ class PrivacyEntropy(BaseEval):
         print(case, attack_data['logits'].shape, attack_data['labels'].shape, attack_data['members'].shape)
         
         return attack_data
+
     
     def eval_entropy_attack(self, data, threshold_data, scale=1.0, case='train'):
         
@@ -141,6 +142,8 @@ class PrivacyEntropy(BaseEval):
 #                 print('F_y, F_i', F_y.shape, F_i.shape)
 #                 print('Neg term: ', (F_i*torch.log(1.0-F_i)).shape, F_i[0])
                 metric= -1*(1.0 - F_y)*torch.log(F_y) -1*torch.sum( F_i*torch.log(1.0-F_i), dim=1 )
+#                 metric= -1*(1.0 - F_y)*torch.log(F_y)
+#                 metric= -1*(1.0)*torch.log(F_y)
     
 #                 threshold_data[y_c]= torch.max(metric)
                 threshold_data[y_c]= torch.mean(metric)
@@ -166,6 +169,8 @@ class PrivacyEntropy(BaseEval):
             F_y= torch.sum( logits*labels, dim=1)
             F_i= logits*(1.0-labels)
             metric= -1*(1.0 - F_y)*torch.log(F_y) -1*torch.sum( F_i*torch.log(1.0-F_i), dim=1 )
+#             metric= -1*(1.0 - F_y)*torch.log(F_y)
+#             metric= -1*(1.0)*torch.log(F_y)
             
             mem_predict= 1.0*(metric < (threshold_data[y_c]/scale))
             acc+= torch.sum( mem_predict == members ).item()

@@ -1,0 +1,36 @@
+#Entorpy Attack
+
+python  test.py --test_metric privacy_entropy --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name erm_match --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python  test.py --test_metric privacy_entropy --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name erm_match --match_case 0.01 --penalty_ws 10 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric privacy_entropy --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name csd --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric privacy_entropy --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name irm --match_case 0.01 --penalty_s 5 --penalty_ws 10.0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric privacy_entropy --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name matchdg_erm --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --penalty_ws 50.0 --match_case -1 --train_domains nih_trans chex_trans --test_domains kaggle
+
+#MIA Attack
+
+python  test.py --test_metric mia --mia_sample_size 1000 --mia_logit 1 --batch_size 64 --dataset chestxray --method_name erm_match --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle 
+
+python  test.py --test_metric mia --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name erm_match --match_case 0.01 --penalty_ws 10 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric mia --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name csd --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric mia --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name irm --match_case 0.01 --penalty_s 5 --penalty_ws 10.0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric mia --mia_sample_size 1000 --batch_size 64 --dataset chestxray --method_name matchdg_erm --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --penalty_ws 50.0 --match_case -1 --train_domains nih_trans chex_trans --test_domains kaggle
+
+
+#Mean Rank
+
+python test.py --test_metric match_score --batch_size 64 --dataset chestxray --match_func_data_case test --match_func_aug_case 1 --method_name erm_match --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle 
+
+python test.py --test_metric match_score --batch_size 64 --dataset chestxray --match_func_data_case test --match_func_aug_case 1 --method_name erm_match --match_case 0.01 --penalty_ws 10.0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle 
+
+python test.py --test_metric match_score --batch_size 64 --dataset chestxray --match_func_data_case test --match_func_aug_case 1 --method_name csd --match_case 0.01 --penalty_ws 0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+ 
+python test.py --test_metric match_score --batch_size 64 --dataset chestxray --match_func_data_case test --match_func_aug_case 1 --method_name irm --match_case 0.01 --penalty_s 5 --penalty_ws 10.0 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --train_domains nih_trans chex_trans --test_domains kaggle
+
+python test.py --test_metric match_score --batch_size 64 --dataset chestxray --match_func_data_case test --match_func_aug_case 1 --method_name matchdg_erm --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name densenet121 --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 --penalty_ws 50.0 --match_case -1 --train_domains nih_trans chex_trans --test_domains kaggle

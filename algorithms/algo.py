@@ -19,6 +19,59 @@ import torch.utils.data as data_utils
 
 from utils.match_function import get_matched_pairs
 
+
+def get_noise_multiplier(
+    target_epsilon: float,
+    target_delta: float,
+    sample_rate: float,
+    epochs: int,
+    alphas: [float],
+    sigma_min: float = 0.01,
+    sigma_max: float = 10.0,
+) -> float:
+    r"""
+    Computes the noise level sigma to reach a total budget of (target_epsilon, target_delta)
+    at the end of epochs, with a given sample_rate
+
+    Args:
+        target_epsilon: the privacy budget's epsilon
+        target_delta: the privacy budget's delta
+        sample_rate: the sampling rate (usually batch_size / n_data)
+        epochs: the number of epochs to run
+        alphas: the list of orders at which to compute RDP
+
+    Returns:
+        The noise level sigma to ensure privacy budget of (target_epsilon, target_delta)
+
+    """
+    
+    from opacus import privacy_analysis
+    
+    eps = float("inf")
+    while eps > target_epsilon:
+        sigma_max = 2 * sigma_max
+        rdp = privacy_analysis.compute_rdp(
+            sample_rate, sigma_max, epochs / sample_rate, alphas
+        )
+        eps = privacy_analysis.get_privacy_spent(alphas, rdp, target_delta)[0]
+        if sigma_max > 2000:
+            raise ValueError("The privacy budget is too low.")
+
+    while sigma_max - sigma_min > 0.01:
+        sigma = (sigma_min + sigma_max) / 2
+        rdp = privacy_analysis.compute_rdp(
+            sample_rate, sigma, epochs / sample_rate, alphas
+        )
+        eps = privacy_analysis.get_privacy_spent(alphas, rdp, target_delta)[0]
+
+        if eps < target_epsilon:
+            sigma_max = sigma
+        else:
+            sigma_min = sigma
+
+    return sigma
+
+
 class BaseAlgo():
     def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         self.args= args
@@ -48,7 +101,8 @@ class BaseAlgo():
         self.val_acc=[]
         self.train_acc=[]
         
-        if self.args.method_name == 'dp_erm':
+#         if self.args.method_name == 'dp_erm':
+        if self.args.dp_noise:
             self.privacy_engine= self.get_dp_noise()
     
     def get_model(self):
@@ -97,7 +151,7 @@ class BaseAlgo():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
-                            self.args.img_c, self.args.pre_trained, self.args.os_env)
+                            self.args.img_c, self.args.pre_trained, self.args.dp_noise, self.args.os_env)
             
         if 'densenet' in self.args.model_name:
             from models.densenet import get_densenet
@@ -179,6 +233,11 @@ class BaseAlgo():
         return data_match_tensor, label_match_tensor, curr_batch_size
     
     def get_test_accuracy(self, case):
+        import opacus
+        
+        if self.args.dp_noise:
+            opacus.autograd_grad_sample.disable_hooks()
+            #self.privacy_engine.module.disable_hooks()
         
         #Test Env Code
         test_acc= 0.0
@@ -190,6 +249,10 @@ class BaseAlgo():
 
         for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(dataset):
             with torch.no_grad():
+                
+                self.opt.zero_grad()
+#                 print(x_e.shape)
+#                 print(torch.cuda.memory_allocated())                
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
 
@@ -198,9 +261,15 @@ class BaseAlgo():
                 
                 test_acc+= torch.sum( torch.argmax(out, dim=1) == y_e ).item()
                 test_size+= y_e.shape[0]
+                
+                # To avoid CUDA memory issues
+                if self.args.dp_noise:
+                    self.opt.zero_grad()
 
         print(' Accuracy: ', case, 100*test_acc/test_size )         
-        
+                
+        #self.privacy_engine.module.enable_hooks()
+        opacus.autograd_grad_sample.enable_hooks()        
         return 100*test_acc/test_size
     
     def get_dp_noise(self):
@@ -212,23 +281,32 @@ class BaseAlgo():
         from opacus.utils import module_modification
         
         inspector = DPModelInspector()        
-        print(self.phi)
-        self.phi = module_modification.convert_batchnorm_modules(self.phi)
-        print(self.phi)
+#         print(self.phi)
+#         self.phi = module_modification.convert_batchnorm_modules(self.phi) 
         inspector.validate(self.phi)
         
-        MAX_GRAD_NORM = 1.2
-        EPSILON = 50.0
-        NOISE_MULTIPLIER = .38
+        MAX_GRAD_NORM = 10.0
+#         NOISE_MULTIPLIER = 0.8
+#         NOISE_MULTIPLIER = 1.46
+#         NOISE_MULTIPLIER = 1.15
+#         NOISE_MULTIPLIER = 0.7
+        NOISE_MULTIPLIER = 0.0
         DELTA = 1.0/(self.total_domains*self.domain_size)
-        BATCH_SIZE = self.args.batch_size
-        VIRTUAL_BATCH_SIZE = 2*BATCH_SIZE
+        BATCH_SIZE = self.args.batch_size * self.total_domains
+        VIRTUAL_BATCH_SIZE = 10*BATCH_SIZE
         assert VIRTUAL_BATCH_SIZE % BATCH_SIZE == 0 # VIRTUAL_BATCH_SIZE should be divisible by BATCH_SIZE
         N_ACCUMULATION_STEPS = int(VIRTUAL_BATCH_SIZE / BATCH_SIZE)        
         SAMPLE_RATE = BATCH_SIZE /(self.total_domains*self.domain_size)
+        DEFAULT_ALPHAS = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
+        
+        print(BATCH_SIZE, SAMPLE_RATE, N_ACCUMULATION_STEPS, SAMPLE_RATE*N_ACCUMULATION_STEPS)
         
         print(f"Using sigma={NOISE_MULTIPLIER} and C={MAX_GRAD_NORM}")
-    
+        
+#         epsilon=20.0
+#         print('Value of Noise Multiplier Needed')
+#         print(get_noise_multiplier(epsilon, DELTA, SAMPLE_RATE, self.args.epochs, DEFAULT_ALPHAS))
+#         sys.exit(-1)
         from opacus import PrivacyEngine        
 #         privacy_engine = PrivacyEngine(
 #             self.phi,
@@ -237,9 +315,16 @@ class BaseAlgo():
 #             noise_multiplier=NOISE_MULTIPLIER,
 #             max_grad_norm=MAX_GRAD_NORM,
 #         )
+#         privacy_engine = PrivacyEngine(
+#             self.phi,
+#             sample_rate=SAMPLE_RATE * N_ACCUMULATION_STEPS,
+#             noise_multiplier=NOISE_MULTIPLIER,
+#             max_grad_norm=MAX_GRAD_NORM,
+#         )
         privacy_engine = PrivacyEngine(
             self.phi,
-            sample_rate=SAMPLE_RATE * N_ACCUMULATION_STEPS,
+            batch_size= BATCH_SIZE,
+            sample_size= self.total_domains*self.domain_size,
             noise_multiplier=NOISE_MULTIPLIER,
             max_grad_norm=MAX_GRAD_NORM,
         )

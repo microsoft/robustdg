@@ -65,7 +65,8 @@ methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
 
 # metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test', 'feat_eval:train', 'feat_eval:test']
 
-metrics= ['acc:train', 'acc:test', 'privacy_entropy', 'privacy_loss_attack', 'match_score:test']
+# metrics= ['acc:train', 'acc:test', 'privacy_entropy', 'privacy_loss_attack', 'match_score:test']
+metrics= ['privacy_loss_attack', 'privacy_entropy']
 
 acc_train=[]
 acc_train_err=[]
@@ -133,7 +134,7 @@ for metric in metrics:
             feat_eval_test.append(mean)
             feat_eval_test_err.append(sd)
 
-for idx in range(4):
+for idx in range(1,2):
     
     matplotlib.rcParams.update({'errorbar.capsize': 2})
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))

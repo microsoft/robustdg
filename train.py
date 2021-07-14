@@ -162,7 +162,14 @@ if args.os_env:
     res_dir= os.getenv('PT_OUTPUT_DIR') + '/'
 else:
     res_dir= 'results/'
-base_res_dir=(
+
+if args.dp_noise:
+    base_res_dir=(
+                res_dir + args.dataset_name + '/' + 'dp_' + args.method_name + '/' + args.match_layer 
+                + '/' + 'train_' + str(args.train_domains)
+            )    
+else:
+    base_res_dir=(
                 res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )

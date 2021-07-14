@@ -26,8 +26,8 @@ class ErmMatch(BaseAlgo):
                 
     def train(self):
         
-        self.max_epoch=-1
-        self.max_val_acc=0.0
+        self.max_epoch= -1
+        self.max_val_acc= 0.0
         for epoch in range(self.args.epochs):   
             
             if epoch ==0:
@@ -44,8 +44,6 @@ class ErmMatch(BaseAlgo):
                     
             #Batch iteration over single epoch
             for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
-        #         print('Batch Idx: ', batch_idx)
-
                 self.opt.zero_grad()
                 loss_e= torch.tensor(0.0).to(self.cuda)
                 
@@ -53,8 +51,6 @@ class ErmMatch(BaseAlgo):
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
                 d_e= torch.argmax(d_e, dim=1).numpy()
                 
-                #Forward Pass
-                out= self.phi(x_e)
 
                 wasserstein_loss=torch.tensor(0.0).to(self.cuda)
                 erm_loss= torch.tensor(0.0).to(self.cuda) 
@@ -70,6 +66,7 @@ class ErmMatch(BaseAlgo):
                     data_match= data_match_tensor.to(self.cuda)
                     data_match= data_match.flatten(start_dim=0, end_dim=1)
                     feat_match= self.phi( data_match )
+#                     print(feat_match.shape)
             
                     label_match= label_match_tensor.to(self.cuda)
                     label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
@@ -111,7 +108,9 @@ class ErmMatch(BaseAlgo):
                         
                 loss_e.backward(retain_graph=False)
                 self.opt.step()
+#                 self.opt.zero_grad()
                 
+#                 del out
                 del erm_loss
                 del wasserstein_loss 
                 del loss_e
