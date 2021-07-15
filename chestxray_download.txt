@@ -1,0 +1,16 @@
+NIH Dataset:
+
+curl -o nih.zip "https://storage.googleapis.com/kaggle-data-sets/5839%2F18613%2Fbundle%2Farchive.zip?GoogleAccessId=gcp-kaggle-com@kaggle-161607.iam.gserviceaccount.com&Expires=1600359450&Signature=MPds%2FPBnAPNGFXy1cnmRVhHaHsTRggstPA44ZCE0onI35vc4UMwdPSyQS%2Fypf5B%2FhmOsf6%2B6oxy0%2BKL8HCBh8BtFrwMyfY7dVczTmPkBEGPALf7roGbuWFB6oUVrXAVHFpJwCKEwMCSrxkpFIccLxXII%2B84aG4xrqwzu1LQq%2BRyE3W7Rg22ib1tiyX%2FsZjGk8%2BmHqlA7gg2Y9pr4s7xZgTpnpUv0NPiVjLcsWHgWznx2fuWZm8Ox%2Faj6CzZa6dbpYg%2FNWIHpCJ%2BzfPRCZQuGVaoSfKjoPZK9ei3W1FrZ2MDHBzPREQh1OCngT3v2%2Fn%2BXFj5tQ5b4OfvL1YB%2FMou5Cg%3D%3D"
+
+CheXpert:
+
+curl -o chexpert.zip http://download.cs.stanford.edu/deep/CheXpert-v1.0-small.zip
+
+OpenI:
+
+curl -o openi.tgz https://openi.nlm.nih.gov/imgs/collections/NLMCXR_reports.tgz
+
+Kaggle:
+
+curl -o kaggle.zip "https://storage.googleapis.com/kaggle-competitions-data/kaggle-v2/10338/862042/bundle/archive.zip?GoogleAccessId=web-data@kaggle161607.iam.gserviceaccount.com&Expires=1600347314&Signature=hilOASDiejHlo7KgvJR%2FqzaPg3eKcnBKauYVS%2FM6CIoVUl6mjgDdiDFwXJYOmeuK%2F1WfLO32JEjsc8XB6h7SQWhsMJ6Xs%2F1P7oMKNURjcYkZ2OQYXSV5gFDWVqZ%2Bna4t4B2y%2Bz6Gp9GpGt5HEjc4leOGlMizwLQEhQmlZWSpBqFzgTjLF9eVbNc2ekln5SCsLFWLz0YGFeAgkulq5qgh2Rfu%2BD5QafmPgTc3iMMJf%2BQcVJ0dgqHjcROmANWTnvdWcMjweZMBwXOgYHOomCHHRAgXnWvaXC5AxZsKXmmsbWe%2BsuCDJ4bIwAzm%2BC27XJwnIaeaOudn6BL%2FuLtf1lvv7A%3D%3D&response-content-disposition=attachment%3B+filename%3Drsna-pneumonia-detection-challenge.zip"
+

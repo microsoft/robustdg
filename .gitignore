@@ -9,14 +9,14 @@ matchdg-env/
 results/
 
 #extra-files
-*.sh
+#*.sh
 
 #philly_tools
 .ptignore
 .amltignore
 pt/
 amlt/
-*.yaml
+#*.yaml
 .ptconfig
 .amltconfig
 

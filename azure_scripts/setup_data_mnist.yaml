@@ -32,15 +32,15 @@ jobs:
   command:
   - echo "--debug" &&  python data/data_gen.py rot_mnist resnet18
 
-- name: fashion_mnist_resnet18
-  # one gpu
-  sku: G1
-  command:
-  - echo "--debug" &&  python data/data_gen.py fashion_mnist resnet18
+#- name: fashion_mnist_resnet18
+#  # one gpu
+#  sku: G1
+#  command:
+#  - echo "--debug" &&  python data/data_gen.py fashion_mnist resnet18
 
-- name: rot_mnist_lenet
-  # one gpu
-  sku: G1
-  command:
-  - echo "--debug" &&  python data/data_gen.py rot_mnist lenet
+#- name: rot_mnist_lenet
+#  # one gpu
+#  sku: G1
+#  command:
+#  - echo "--debug" &&  python data/data_gen.py rot_mnist lenet
 
