@@ -135,6 +135,11 @@ class ErmMatch(BaseAlgo):
                 self.max_val_acc=self.val_acc[-1]
                 self.max_epoch= epoch
                 self.save_model()
+                
+                # Sanity check on the test accuracy
+#                 self.test_method.get_model()        
+#                 self.test_method.get_metric_eval()
+#                 print( ' Sanity Check Test Accuracy: ', self.test_method.metric_score )    
                                 
             print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
             

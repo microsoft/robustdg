@@ -1,6 +1,9 @@
 import os
 import sys
 
+'''
+argv1: Method for which HParams need to be tuned (erm, rand, perf, mmd, coral, c-mmd, c-coral, dann, c-dann)
+'''
 method= sys.argv[1]
 total_seed= 3
 
@@ -49,19 +52,19 @@ grad_penalty_glist= [0.01, 0.1, 1.0, 10.0]
 disc_steps_glist= [1, 2, 4, 8]
 
 # Train for different hyper configurations
-# if method in ['dann', 'c-dann']:    
-#     for penalty in penalty_glist:
-#         for grad_penalty in grad_penalty_glist:
-#             for disc_steps in disc_steps_glist:
-#                 script= base_script + ' --penalty_ws ' + str(penalty) + ' --grad_penalty ' + str(grad_penalty) + ' --d_steps_per_g_step ' + str(disc_steps) 
-#                 script= script + ' > ' + res_dir + str(method) + '_' + str(penalty) + '_' + str(grad_penalty) + '_' + str(disc_steps) + '.txt'
-#                 os.system(script)
+if method in ['dann', 'c-dann']:    
+    for penalty in penalty_glist:
+        for grad_penalty in grad_penalty_glist:
+            for disc_steps in disc_steps_glist:
+                script= base_script + ' --penalty_ws ' + str(penalty) + ' --grad_penalty ' + str(grad_penalty) + ' --d_steps_per_g_step ' + str(disc_steps) 
+                script= script + ' > ' + res_dir + str(method) + '_' + str(penalty) + '_' + str(grad_penalty) + '_' + str(disc_steps) + '.txt'
+                os.system(script)
 
-# else:
-#     for penalty in penalty_glist:
-#         script= base_script + ' --penalty_ws ' + str(penalty) 
-#         script= script + ' > ' + res_dir + str(method) + '_' + str(penalty) + '.txt'
-#         os.system(script)
+else:
+    for penalty in penalty_glist:
+        script= base_script + ' --penalty_ws ' + str(penalty) 
+        script= script + ' > ' + res_dir + str(method) + '_' + str(penalty) + '.txt'
+        os.system(script)
 
 # Search over different hyper configurations and infer the best values
     
@@ -97,4 +100,4 @@ else:
             best_case= f_name
 
 print('Best Hparam for method: ', method, best_case)
-print('Best Accuracy', best_acc, best_err)
+print('Best Accuracy: ', best_acc, best_err)

@@ -35,7 +35,7 @@ class MnistRotated(BaseDataLoader):
             load_dir= data_dir + self.data_case + '/' + 'seed_' + str(self.mnist_subset) + '_domain_' + str(domain)
 
             #Augmentation
-            if self.data_case =='train' and self.args.dataset_name =="fashion_mnist":                
+            if self.data_case =='train' and self.args.mnist_aug:                
                 mnist_imgs= torch.load( load_dir +  '_data.pt')
             else:
                 mnist_imgs= torch.load( load_dir +  '_org_data.pt')

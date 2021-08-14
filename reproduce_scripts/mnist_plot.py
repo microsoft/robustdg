@@ -65,8 +65,7 @@ methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
 
 # metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test', 'feat_eval:train', 'feat_eval:test']
 
-# metrics= ['acc:train', 'acc:test', 'privacy_entropy', 'privacy_loss_attack', 'match_score:test']
-metrics= ['privacy_loss_attack', 'privacy_entropy']
+metrics= ['acc:train', 'acc:test', 'privacy_loss_attack', 'match_score:test']
 
 acc_train=[]
 acc_train_err=[]
@@ -134,7 +133,7 @@ for metric in metrics:
             feat_eval_test.append(mean)
             feat_eval_test_err.append(sd)
 
-for idx in range(1,2):
+for idx in range(4):
     
     matplotlib.rcParams.update({'errorbar.capsize': 2})
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
@@ -152,7 +151,7 @@ for idx in range(1,2):
     
     if idx == 1:
 #         ax.errorbar(x, mia, yerr=mia_err, label='Classifier Attack', color='blue', fmt='o--')        
-        ax.errorbar(x, entropy, yerr=entropy_err, label='Entropy Attack', color='red', fmt='o--')
+#         ax.errorbar(x, entropy, yerr=entropy_err, label='Entropy Attack', color='red', fmt='o--')
         ax.errorbar(x, loss, yerr=loss_err, label='Loss Attack', color='orange', fmt='o--')
         ax.set_ylabel('MI Attack Accuracy', fontsize=fontsize)
         ax.legend(fontsize=fontsize_lgd)

@@ -132,65 +132,65 @@ class PrivacyLossAttack(BaseEval):
         return attack_data
 
     
-#     def create_attack_data(self, train_data, test_data, sample_size, case='train'):
+    def create_attack_data_true_obj(self, train_data, test_data, sample_size, case='train'):
         
-#         if case == 'train':
-#             train_loss= train_data['loss'][:sample_size]
-#             train_labels= train_data['labels'][:sample_size]
-#             train_obj= train_data['obj'][:sample_size]
+        if case == 'train':
+            train_loss= train_data['loss'][:sample_size]
+            train_labels= train_data['labels'][:sample_size]
+            train_obj= train_data['obj'][:sample_size]
             
-#             test_loss= []
-#             test_labels= []
-#             for idx in range(sample_size):
-#                 obj= train_obj[idx]
-#                 indice= (test_data['obj'] == obj).nonzero()
+            test_loss= []
+            test_labels= []
+            for idx in range(sample_size):
+                obj= train_obj[idx]
+                indice= (test_data['obj'] == obj).nonzero()
                 
-#                 for idx_obj in range(indice.shape[0]):
-#                     curr_indice= indice[idx_obj, 0].item()
-#                     if test_data['free'][curr_indice] == 1:
-#                         test_loss.append(test_data['loss'][curr_indice].view(1))
-#                         #TODO: Change 10 to num_classes
-#                         test_labels.append(test_data['labels'][curr_indice].view(1, 10))
-#                         test_data['free'][curr_indice]= 0        
-#                         break
+                for idx_obj in range(indice.shape[0]):
+                    curr_indice= indice[idx_obj, 0].item()
+                    if test_data['free'][curr_indice] == 1:
+                        test_loss.append(test_data['loss'][curr_indice].view(1))
+                        #TODO: Change 10 to num_classes
+                        test_labels.append(test_data['labels'][curr_indice].view(1, 10))
+                        test_data['free'][curr_indice]= 0        
+                        break
             
-#             test_loss= torch.cat(test_loss, dim=0)
-#             test_labels= torch.cat(test_labels, dim=0)
+            test_loss= torch.cat(test_loss, dim=0)
+            test_labels= torch.cat(test_labels, dim=0)
             
-#         elif case == 'test':
-#             train_loss= train_data['loss'][-1-sample_size:-1]
-#             train_labels= train_data['labels'][-1-sample_size:-1]
-#             train_obj= train_data['obj'][-1-sample_size:-1]
+        elif case == 'test':
+            train_loss= train_data['loss'][-1-sample_size:-1]
+            train_labels= train_data['labels'][-1-sample_size:-1]
+            train_obj= train_data['obj'][-1-sample_size:-1]
 
-#             test_loss= []
-#             test_labels= []
-#             for idx in range(sample_size):
-#                 obj= train_obj[idx]
-#                 indice= (test_data['obj'] == obj).nonzero()
+            test_loss= []
+            test_labels= []
+            for idx in range(sample_size):
+                obj= train_obj[idx]
+                indice= (test_data['obj'] == obj).nonzero()
                 
-#                 for idx_obj in range(indice.shape[0]):
-#                     curr_indice= indice[idx_obj, 0].item()
-#                     if test_data['free'][curr_indice] == 1:
-#                         test_loss.append(test_data['loss'][curr_indice].view(1))
-#                         #TODO: Change 10 to num_classes
-#                         test_labels.append(test_data['labels'][curr_indice].view(1, 10))
-#                         test_data['free'][curr_indice]= 0        
-#                         break
+                for idx_obj in range(indice.shape[0]):
+                    curr_indice= indice[idx_obj, 0].item()
+                    if test_data['free'][curr_indice] == 1:
+                        test_loss.append(test_data['loss'][curr_indice].view(1))
+                        #TODO: Change 10 to num_classes
+                        test_labels.append(test_data['labels'][curr_indice].view(1, 10))
+                        test_data['free'][curr_indice]= 0        
+                        break
             
-#             test_loss= torch.cat(test_loss, dim=0)
-#             test_labels= torch.cat(test_labels, dim=0)
+            test_loss= torch.cat(test_loss, dim=0)
+            test_labels= torch.cat(test_labels, dim=0)
         
-#         print('Attack Dataset Members: ', train_loss.shape, train_labels.shape)
-#         print('Attack Dataset Non Members: ', test_loss.shape, test_labels.shape)
-#         attack_data={}        
-#         attack_data['loss']= torch.cat( (train_loss, test_loss), dim=0 )
-#         attack_data['labels']= torch.cat( (train_labels, test_labels), dim=0 )
-# #         attack_data['members']= torch.cat( (torch.ones((sample_size,1)), torch.zeros((sample_size,1))), dim=0).to(self.cuda)     
-#         attack_data['members']= torch.cat( (torch.ones((train_loss.shape[0], 1)), torch.zeros((test_loss.shape[0],1))), dim=0).to(self.cuda)     
+        print('Attack Dataset Members: ', train_loss.shape, train_labels.shape)
+        print('Attack Dataset Non Members: ', test_loss.shape, test_labels.shape)
+        attack_data={}        
+        attack_data['loss']= torch.cat( (train_loss, test_loss), dim=0 )
+        attack_data['labels']= torch.cat( (train_labels, test_labels), dim=0 )
+#         attack_data['members']= torch.cat( (torch.ones((sample_size,1)), torch.zeros((sample_size,1))), dim=0).to(self.cuda)     
+        attack_data['members']= torch.cat( (torch.ones((train_loss.shape[0], 1)), torch.zeros((test_loss.shape[0],1))), dim=0).to(self.cuda)     
         
-#         print(case, attack_data['loss'].shape, attack_data['labels'].shape, attack_data['members'].shape)
+        print(case, attack_data['loss'].shape, attack_data['labels'].shape, attack_data['members'].shape)
         
-#         return attack_data
+        return attack_data
     
     def eval_entropy_attack(self, data, threshold_data, scale=1.0, case='train'):
         
@@ -261,8 +261,15 @@ class PrivacyLossAttack(BaseEval):
         
         # Create Attack Model train and test dataset
         train_data, test_data= self.get_ce_loss()
-        train_attack_data= self.create_attack_data(train_data, test_data, sample_size, 'train')
-        test_attack_data= self.create_attack_data(train_data, test_data, sample_size, 'test')
+        
+        if self.args.perfect_match:
+            print('MNIST Case Covered')
+            train_attack_data= self.create_attack_data_true_obj(train_data, test_data, sample_size, 'train')
+            test_attack_data= self.create_attack_data_true_obj(train_data, test_data, sample_size, 'test')
+            
+        else:
+            train_attack_data= self.create_attack_data(train_data, test_data, sample_size, 'train')
+            test_attack_data= self.create_attack_data(train_data, test_data, sample_size, 'test')
         
         threshold_data={}
         for y_c in range(self.args.out_classes):        

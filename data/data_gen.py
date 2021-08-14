@@ -98,6 +98,7 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
 
 dataset= sys.argv[1]
 model= sys.argv[2]
+privacy_attack_fmnist= int(sys.argv[3])
 
 #Generate Dataset for Rotated / Fashion MNIST
 #TODO: Manage OS Env from args
@@ -123,8 +124,12 @@ if model == 'resnet18':
     elif dataset == 'fashion_mnist':
         # Genetate 10 random subsets of size 10,000 each for Fashion MNIST
         data_size=60000
-        subset_size=10000
-        val_size= 2000
+        if privacy_attack_fmnist:
+            subset_size=2000
+            val_size= 400
+        else:
+            subset_size=10000
+            val_size= 2000
         total_subset=10
         img_w= 224
         img_h= 224        

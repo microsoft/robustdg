@@ -154,7 +154,9 @@ parser.add_argument('--slab_noise', type=float, default=0.1)
 #Differentiate between resnet, lenet, domainbed cases of mnist
 parser.add_argument('--mnist_case', type=str, default='resnet18', 
                     help='MNIST Dataset Case: resnet18; lenet, domainbed')
-
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
+ 
 #Multiple random matches
 parser.add_argument('--total_matches_per_point', type=int, default=1, 
                     help='Multiple random matches')

@@ -13,12 +13,18 @@ if metric in ['acc', 'match_score', 'feat_eval', 'feat_eval_rand', 'attribute_at
 # test_diff, test_common
 test_case=['test_diff']
     
-methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
+# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
+methods=['irm', 'perf']
 # methods=['erm', 'irm', 'csd', 'rand', 'matchdg']
 # methods=['approx_25', 'approx_50', 'approx_75']
 
 if metric == 'train':
-    base_script= 'python train.py --dataset ' + str(dataset)
+    if dataset in ['rot_mnist', 'rot_mnist_spur']:
+        base_script= 'python train.py --dataset ' + str(dataset)
+    elif dataset in ['fashion_mnist']:
+        #TODO: Make this customizable from the command line
+        aug= 0
+        base_script= 'python train.py --dataset ' + str(dataset) + ' --mnist_aug ' + str(aug)
     res_dir= 'results/' + str(dataset) + '/train_logs' + '/'    
 
 elif metric == 'mia':
@@ -41,7 +47,7 @@ elif metric == 'privacy_loss_attack':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python  test.py --test_metric privacy_loss_attack --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
     elif dataset in ['fashion_mnist']:
-        base_script= 'python  test.py --test_metric privacy_loss_attack --mia_sample_size 10000 --batch_size 64 ' + ' --dataset ' + str(dataset)
+        base_script= 'python  test.py --test_metric privacy_loss_attack --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
 
     res_dir= 'results/'+str(dataset)+'/privacy_loss/'
 

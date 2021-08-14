@@ -1,6 +1,12 @@
 import os
 import sys
 
+'''
+argv1: Method Name (erm, rand, perf, mmd, coral, c-mmd, c-coral, dann, c-dann)
+
+argv2: Case (train, test)
+'''
+
 method= sys.argv[1]
 case= sys.argv[2]
 total_seed= 10

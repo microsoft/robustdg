@@ -32,19 +32,16 @@ def get_base_dir(test_domain, dataset, metric):
         
     return res_dir
 
-    
-#rot_mnist, fashion_mnist, rot_mnist_spur
-dataset=sys.argv[1]
-
 # kaggle, nih, chex
-test_domain= sys.argv[2]
+test_domain= sys.argv[1]
 
 x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Hybrid']
 methods=['erm', 'rand', 'matchdg_erm', 'csd', 'irm', 'hybrid']
+dataset= 'chestxray'
 
 # metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test']
 
-metrics= ['acc:train', 'acc:test', 'privacy_entropy', 'privacy_loss_attack', 'match_score:test']
+metrics= ['acc:train', 'acc:test', 'privacy_loss_attack', 'match_score:test']
 
 acc_train=[]
 acc_train_err=[]
@@ -118,7 +115,7 @@ for idx in range(4):
     
     if idx == 1:
 #         ax.errorbar(x, mia, yerr=mia_err, label='Classifier Attack', color='blue', fmt='o--')        
-        ax.errorbar(x, entropy, yerr=entropy_err, label='Entropy Attack', color='red', fmt='o--')
+#         ax.errorbar(x, entropy, yerr=entropy_err, label='Entropy Attack', color='red', fmt='o--')
         ax.errorbar(x, loss, yerr=loss_err, label='Loss Attack', color='orange', fmt='o--')
         ax.set_ylabel('MI Attack Accuracy', fontsize=fontsize)
         ax.legend(fontsize=fontsize_lgd)

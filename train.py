@@ -108,8 +108,13 @@ parser.add_argument('--cuda_device', type=int, default=0,
                     help='Select the cuda device by id among the avaliable devices' )
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+#Differential Privacy
 parser.add_argument('--dp_noise', type=int, default=0, 
                     help='0: No DP noise; 1: Add DP noise')
+parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+                    help='Epsilon value for Differential Privacy')
+
 
 #MMD, DANN
 parser.add_argument('--d_steps_per_g_step', type=int, default=1)
@@ -127,6 +132,8 @@ parser.add_argument('--slab_noise', type=float, default=0.1)
 #Test Based Args
 parser.add_argument('--test_metric', type=str, default='match_score', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--acc_data_case', type=str, default='test', 
+                    help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
 parser.add_argument('--match_func_aug_case', type=int, default=0, 
@@ -137,6 +144,9 @@ parser.add_argument('--match_func_data_case', type=str, default='val',
 #Differentiate between resnet, lenet, domainbed cases of mnist
 parser.add_argument('--mnist_case', type=str, default='resnet18', 
                     help='MNIST Dataset Case: resnet18; lenet, domainbed')
+
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
 
 #Multiple random matches
 parser.add_argument('--total_matches_per_point', type=int, default=1, 
