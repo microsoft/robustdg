@@ -262,7 +262,7 @@ class PrivacyLossAttack(BaseEval):
         # Create Attack Model train and test dataset
         train_data, test_data= self.get_ce_loss()
         
-        if self.args.perfect_match:
+        if self.args.perfect_match and self.args.dataset_name != 'slab':
             print('MNIST Case Covered')
             train_attack_data= self.create_attack_data_true_obj(train_data, test_data, sample_size, 'train')
             test_attack_data= self.create_attack_data_true_obj(train_data, test_data, sample_size, 'test')

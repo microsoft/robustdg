@@ -19,6 +19,8 @@ import torch.utils.data as data_utils
 
 from utils.match_function import get_matched_pairs
 
+print('From Inside the Algo Class: ', sys.argv[0])
+
 
 def get_noise_multiplier(
     target_epsilon: float,

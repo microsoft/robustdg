@@ -17,6 +17,11 @@ from torch.autograd import Variable
 import pandas as pd
 import pickle
 
+# sys.path.insert(0, '/../utils/')
+import os
+cwd = os.getcwd()
+print(cwd)
+
 import utils.scripts.gpu_utils as gu
 import utils.scripts.gendata as gendata
 
@@ -34,7 +39,7 @@ if not os.path.exists(base_dir):
 num_samples= 10000
 total_slabs= 7
 slab_noise_list= [0.0, 0.10, 0.20]
-spur_corr_list= [0.0, 0.05, 0.10, 0.15, 0.30, 0.50, 0.70, 0.90. 1.0]
+spur_corr_list= [0.0, 0.05, 0.10, 0.15, 0.30, 0.50, 0.70, 0.90, 1.0]
 
 for seed in range(10):
     np.random.seed(seed*10)                     
@@ -91,9 +96,3 @@ for seed in range(10):
                 print(data_dir)                    
                 with open(data_dir + '.pickle', 'wb') as fname:
                     pickle.dump(data, fname, protocol=pickle.HIGHEST_PROTOCOL)
-    
-#         res=np.random.choice(data_size, subset_size)
-#         np.save( data_dir + 'supervised_inds_' + str(idx) +'.npy', res)
-
-#         res=np.random.choice(data_size, val_size)
-#         np.save( data_dir + 'val/' + 'supervised_inds_' + str(idx) +'.npy', res)

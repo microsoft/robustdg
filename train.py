@@ -6,7 +6,11 @@ import argparse
 import copy
 import random
 import json
+import pickle
+
+#Sklearn
 import sklearn
+from sklearn.manifold import TSNE
 
 #Pytorch
 import torch
@@ -109,6 +113,7 @@ parser.add_argument('--cuda_device', type=int, default=0,
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 
+
 #Differential Privacy
 parser.add_argument('--dp_noise', type=int, default=0, 
                     help='0: No DP noise; 1: Add DP noise')
@@ -122,6 +127,7 @@ parser.add_argument('--grad_penalty', type=float, default=0.0)
 parser.add_argument('--conditional', type=int, default=1)
 parser.add_argument('--gaussian', type=int, default=1)
 
+
 #Slab Dataset
 parser.add_argument('--slab_data_dim', type=int, default= 2, 
                     help='Number of features in the slab dataset')
@@ -129,7 +135,20 @@ parser.add_argument('--slab_total_slabs', type=int, default=7)
 parser.add_argument('--slab_num_samples', type=int, default=1000)
 parser.add_argument('--slab_noise', type=float, default=0.1)
 
-#Test Based Args
+
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
+
+
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
+
+# Evaluation specific
 parser.add_argument('--test_metric', type=str, default='match_score', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--acc_data_case', type=str, default='test', 
@@ -140,17 +159,6 @@ parser.add_argument('--match_func_aug_case', type=int, default=0,
                     help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
 parser.add_argument('--match_func_data_case', type=str, default='val', 
                     help='Dataset Train/Val/Test for the match score evaluation metric')
-
-#Differentiate between resnet, lenet, domainbed cases of mnist
-parser.add_argument('--mnist_case', type=str, default='resnet18', 
-                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
-
-parser.add_argument('--mnist_aug', type=int, default=0, 
-                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
-
-#Multiple random matches
-parser.add_argument('--total_matches_per_point', type=int, default=1, 
-                    help='Multiple random matches')
 
 args = parser.parse_args()
 

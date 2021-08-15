@@ -8,6 +8,10 @@ import random
 import json
 import pickle
 
+#Sklearn
+import sklearn
+from sklearn.manifold import TSNE
+
 #Pytorch
 import torch
 from torch.autograd import grad
@@ -17,9 +21,6 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
-
-#Sklearn
-from sklearn.manifold import TSNE
 
 #robustdg
 from utils.helper import *
@@ -40,17 +41,17 @@ def get_logits(model, loader, device, label=1):
 
 # Input Parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_name', type=str, default='rot_mnist', 
+parser.add_argument('--dataset_name', type=str, default='slab', 
                     help='Datasets: rot_mnist; fashion_mnist; pacs')
 parser.add_argument('--method_name', type=str, default='erm_match', 
                     help=' Training Algorithm: erm_match; matchdg_ctr; matchdg_erm')
-parser.add_argument('--model_name', type=str, default='resnet18', 
+parser.add_argument('--model_name', type=str, default='slab', 
                     help='Architecture of the model to be trained')
 parser.add_argument('--train_domains', nargs='+', type=str, default=["15", "30", "45", "60", "75"], 
                     help='List of train domains')
 parser.add_argument('--test_domains', nargs='+', type=str, default=["0", "90"], 
                     help='List of test domains')
-parser.add_argument('--out_classes', type=int, default=10, 
+parser.add_argument('--out_classes', type=int, default=2, 
                     help='Total number of classes in the dataset')
 parser.add_argument('--img_c', type=int, default= 1, 
                     help='Number of channels of the image in dataset')
@@ -71,15 +72,15 @@ parser.add_argument('--pre_trained',type=int, default=0,
 parser.add_argument('--perfect_match', type=int, default=1, 
                     help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', 
-                    help='Optimizer Choice: sgd; adam') 
+                    help='Optimizer Choice: sgd; adam')
+parser.add_argument('--weight_decay', type=float, default=5e-4,
+                   help='Weight Decay in SGD')
 parser.add_argument('--lr', type=float, default=0.01, 
                     help='Learning rate for training the model')
 parser.add_argument('--batch_size', type=int, default=16, 
                     help='Batch size foe training the model')
 parser.add_argument('--epochs', type=int, default=15, 
                     help='Total number of epochs for training the model')
-parser.add_argument('--penalty_w', type=float, default=0.0, 
-                    help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_s', type=int, default=-1, 
                     help='Epoch threshold over which Matching Loss to be optimised')
 parser.add_argument('--penalty_irm', type=float, default=0.0, 
@@ -98,6 +99,10 @@ parser.add_argument('--match_case', type=float, default=1.0,
                     help='0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
 parser.add_argument('--match_interrupt', type=int, default=5, 
                     help='Number of epochs before inferring the match strategy')
+parser.add_argument('--ctr_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
+parser.add_argument('--match_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
 parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
@@ -116,6 +121,47 @@ parser.add_argument('--mnist_seed', type=int, default=0,
                     help='Change it between 0-6 for different subsets of Mnist and Fashion Mnist dataset')
 parser.add_argument('--retain', type=float, default=0, 
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--cuda_device', type=int, default=0, 
+                    help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+
+#Differential Privacy
+parser.add_argument('--dp_noise', type=int, default=0, 
+                    help='0: No DP noise; 1: Add DP noise')
+parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+                    help='Epsilon value for Differential Privacy')
+
+
+#MMD, DANN
+parser.add_argument('--d_steps_per_g_step', type=int, default=1)
+parser.add_argument('--grad_penalty', type=float, default=0.0)
+parser.add_argument('--conditional', type=int, default=1)
+parser.add_argument('--gaussian', type=int, default=1)
+
+
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
+
+
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
+ 
+    
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
+
+# Evaluation specific
 parser.add_argument('--test_metric', type=str, default='acc', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--acc_data_case', type=str, default='test', 
@@ -140,29 +186,6 @@ parser.add_argument('--adv_eps', default=0.3, type=float,
                     help='Epsilon ball dimension for PGD attacks')
 parser.add_argument('--logit_plot_path', default='', type=str,
                     help='File name to save logit/loss plots')
-parser.add_argument('--ctr_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
-parser.add_argument('--match_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
-parser.add_argument('--cuda_device', type=int, default=0, 
-                    help='Select the cuda device by id among the avaliable devices' )
-parser.add_argument('--os_env', type=int, default=0, 
-                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
-
-#Slab Dataset
-parser.add_argument('--slab_data_dim', type=int, default= 2, 
-                    help='Number of features in the slab dataset')
-parser.add_argument('--slab_total_slabs', type=int, default=7)
-parser.add_argument('--slab_num_samples', type=int, default=1000)
-parser.add_argument('--slab_noise', type=float, default=0.1)
-
-#Differentiate between resnet, lenet, domainbed cases of mnist
-parser.add_argument('--mnist_case', type=str, default='resnet18', 
-                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
-
-#Multiple random matches
-parser.add_argument('--total_matches_per_point', type=int, default=1, 
-                    help='Multiple random matches')
 
 args = parser.parse_args()
 
@@ -280,23 +303,23 @@ for run in range(args.n_runs):
     
     
     # compute logit scores
-    std_log = get_logits(model, data['te_dl'], cuda)
-    s_rand_log = get_logits(model, s_rand_dl, cuda)
-    sc_rand_log = get_logits(model, sc_rand_dl, cuda)
+#     std_log = get_logits(model, data['te_dl'], cuda)
+#     s_rand_log = get_logits(model, s_rand_dl, cuda)
+#     sc_rand_log = get_logits(model, sc_rand_dl, cuda)
 
     # plot logit distributions
-    kw = dict(kde=False, bins=20, norm_hist=True, 
-              hist_kws={"histtype": "step", "linewidth": 2, 
-                        "alpha": 0.8, "ls": '-'})
+#     kw = dict(kde=False, bins=20, norm_hist=True, 
+#               hist_kws={"histtype": "step", "linewidth": 2, 
+#                         "alpha": 0.8, "ls": '-'})
 
-    fig, ax = plt.subplots(1,1,figsize=(6,4))
-    ax = sns.distplot(std_log, label='Standard Logits', **kw)
+#     fig, ax = plt.subplots(1,1,figsize=(6,4))
+#     ax = sns.distplot(std_log, label='Standard Logits', **kw)
 #     ax = sns.distplot(s_rand_log, label=r'$S$-Randomized Logits', **kw)
 #     ax = sns.distplot(sc_rand_log, label=r'$S^c$-Randomized Logits', **kw)
 
-    slab_utils.update_ax(ax, 'Logit Distributions of Data', 'Logits', 'Density', 
-                    ticks_fs=13, label_fs=13, title_fs=16, legend_fs=14, legend_loc='upper left')
-    plt.savefig( 'results/slab_test_logit_plot/' + str(args.method_name)+ '_' + str(args.penalty_ws) + '_' + str(run) + '.jpg')
+#     slab_utils.update_ax(ax, 'Logit Distributions of Data', 'Logits', 'Density', 
+#                     ticks_fs=13, label_fs=13, title_fs=16, legend_fs=14, legend_loc='upper left')
+#     plt.savefig( 'results/slab_test_logit_plot/' + str(args.method_name)+ '_' + str(args.penalty_ws) + '_' + str(run) + '.jpg')
 
 print(final_sc_auc)
 print('Standard Acc', np.mean(final_acc), np.std(final_acc))
