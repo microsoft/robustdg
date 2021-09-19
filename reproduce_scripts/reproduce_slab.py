@@ -2,13 +2,15 @@ import os
 import sys
 
 '''
-argv1: Method Name (erm, rand, perf, mmd, coral, c-mmd, c-coral, dann, c-dann)
-
-argv2: Case (train, test)
+argv1: Allowed Values (train, test)
 '''
 
-method= sys.argv[1]
-case= sys.argv[2]
+## TODO
+# Choose a better name for train, test as in the test stage we do not really evalute the test accuracy 
+# Maybe make the train set accuracy also as part of the logs in the train.py phase (Check once if it changes any results from the main paper)
+
+case= sys.argv[1]
+methods=['erm', 'mmd', 'coral', 'dann', 'c-mmd', 'c-coral', 'c-dann', 'rand', 'perf']
 total_seed= 10
 
 if case == 'train':
@@ -22,32 +24,35 @@ res_dir= 'results/slab/logs/'
 if not os.path.exists(res_dir):
     os.makedirs(res_dir)
 
-if method == 'mmd':
-    script= base_script + ' --method_name mmd --gaussian 1 --conditional 0 --penalty_ws 0.1 '
 
-elif method == 'c-mmd':
-    script= base_script + ' --method_name mmd --gaussian 1 --conditional 1 --penalty_ws 0.1 '
-
-elif method == 'coral':
-    script= base_script + ' --method_name mmd --gaussian 0 --conditional 0  --penalty_ws 0.1 '
+for method in methods:
     
-elif method == 'c-coral':    
-    script= base_script + ' --method_name mmd --gaussian 0 --conditional 1  --penalty_ws 0.1 '
+    if method == 'mmd':
+        script= base_script + ' --method_name mmd --gaussian 1 --conditional 0 --penalty_ws 0.1 '
 
-elif method == 'dann':
-    script= base_script + ' --method_name dann --conditional 0 --penalty_ws 0.01 --grad_penalty 0.1 --d_steps_per_g_step 4 '
+    elif method == 'c-mmd':
+        script= base_script + ' --method_name mmd --gaussian 1 --conditional 1 --penalty_ws 0.1 '
 
-elif method == 'c-dann':
-    script= base_script + ' --method_name dann --conditional 1 --penalty_ws 0.01 --grad_penalty 1.0 --d_steps_per_g_step 2 '
+    elif method == 'coral':
+        script= base_script + ' --method_name mmd --gaussian 0 --conditional 0  --penalty_ws 0.1 '
 
-elif method == 'erm':
-    script= base_script + ' --method_name erm_match --match_case 0.0 --penalty_ws 0.0 '
-    
-elif method == 'rand':
-    script= base_script + ' --method_name erm_match --match_case 0.0 --penalty_ws 1.0 '
-    
-elif method == 'perf':
-    script= base_script + ' --method_name erm_match --match_case 1.0 --penalty_ws 1.0 '
+    elif method == 'c-coral':    
+        script= base_script + ' --method_name mmd --gaussian 0 --conditional 1  --penalty_ws 0.1 '
 
-    # script= script + ' > ' + res_dir + str(method) + '.txt'
-os.system(script)
+    elif method == 'dann':
+        script= base_script + ' --method_name dann --conditional 0 --penalty_ws 0.01 --grad_penalty 0.1 --d_steps_per_g_step 4 '
+
+    elif method == 'c-dann':
+        script= base_script + ' --method_name dann --conditional 1 --penalty_ws 0.01 --grad_penalty 1.0 --d_steps_per_g_step 2 '
+
+    elif method == 'erm':
+        script= base_script + ' --method_name erm_match --match_case 0.0 --penalty_ws 0.0 '
+
+    elif method == 'rand':
+        script= base_script + ' --method_name erm_match --match_case 0.0 --penalty_ws 1.0 '
+
+    elif method == 'perf':
+        script= base_script + ' --method_name erm_match --match_case 1.0 --penalty_ws 1.0 '
+
+    script= script + ' > ' + res_dir + str(method) + '.txt'
+    os.system(script)

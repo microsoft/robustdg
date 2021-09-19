@@ -2,6 +2,10 @@ import os
 #rot_mnist, fashion_mnist
 dataset=sys.argv[1]
 
+#TODO 
+#1) Add another argparse arugment for deciding between perfect and non-iterative
+#2) Script for evaluating the match function metrics
+
 base_script= 'python train.py --epochs 50 --batch_size 64 --dataset ' + str(dataset)
 
 #Perf MDG

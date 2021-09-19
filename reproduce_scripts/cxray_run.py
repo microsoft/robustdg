@@ -1,15 +1,24 @@
 import os
 import sys
+import argparse
+
+# Input Parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('--metric', type=str, default='train', 
+                    help='train: Train the models; acc: Evaluate the train/test accuracy; privacy_loss_attack: Evaluate the MI attack robustness; match_score: Evaluate the match function statistics; attribute_attack: Evalute the attribute attack robustness')
+parser.add_argument('--data_case', type=str, default='test', 
+                   help='train: Evaluate the acc/match_score metrics on the train dataset; test: Evaluate the acc/match_score metrics on the test dataset')
+parser.add_argument('--test_domain', type=str, default='kaggle', 
+                   help='nih; chex; kaggle')
+args = parser.parse_args()
+
+metric= args.metric
+test_domain= args.test_domain
+data_case= args.data_case
 
 methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
-
-test_domain= sys.argv[1]
-metric= sys.argv[2]
-# train, acc, mia, privacy_entropy, privacy_loss_attack, match_score, feat_eval
-if metric in ['acc', 'match_score', 'feat_eval', 'feat_eval_rand', 'attribute_attack']:
-    data_case= sys.argv[3]
 
 if metric == 'train':
     base_script= 'python train.py --dataset chestxray --out_classes 2 --perfect_match 0 --img_c 3 --pre_trained 1 --model_name densenet121 '
@@ -91,7 +100,9 @@ for method in methods:
     print('Metric', metric, ' Method: ', method, ' Train Domains: ', train_domains, ' Test Domains: ', curr_test_domain)
     script= script + ' --train_domains ' + train_domains + ' --test_domains ' + curr_test_domain
     
+    #TODO: Won't be ideal to have this manually commented by user for the matchdg paper results
     # 5 seeds to formally define the trends for the privacy part
     script= script + ' --n_runs 5 '
+    
     script= script + ' > ' + res_dir + str(method) + '.txt'
     os.system(script)

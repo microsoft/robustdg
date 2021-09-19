@@ -1,45 +1,61 @@
 import os
 import sys
+import argparse
 
-#rot_mnist, fashion_mnist, rot_mnist_spur
-dataset=sys.argv[1]
-# train_all, train_abl_3, train_abl_2
-train_case= sys.argv[2]
-# train, acc, mia, privacy_entropy, privacy_loss_attack, match_score, feat_eval, attribute_attack
-metric=sys.argv[3]
-if metric in ['acc', 'match_score', 'feat_eval', 'feat_eval_rand', 'attribute_attack']:
-    data_case= sys.argv[4]
+# Input Parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', type=str, default='rot_mnist', 
+                    help='Datasets: rot_mnist; fashion_mnist; rot_mnist_spur')
+parser.add_argument('--train_case', type=str, default='train_all', 
+                    help='train_all: Train with all the 5 domains; train_abl_3: Train with 3 domains; train_abl_2: Train with 2 domains')
+parser.add_argument('--metric', type=str, default='train', 
+                    help='train: Train the models; acc: Evaluate the train/test accuracy; privacy_loss_attack: Evaluate the MI attack robustness; match_score: Evaluate the match function statistics; attribute_attack: Evalute the attribute attack robustness')
+parser.add_argument('--data_case', type=str, default='test', 
+                   help='train: Evaluate the acc/match_score metrics on the train dataset; test: Evaluate the acc/match_score metrics on the test dataset')
+parser.add_argument('--data_aug', type=int, default=1, 
+                   help='0: No data augmentation for fashion mnist; 1: Data augmentation for fashion mnist')
+parser.add_argument('--dp_noise', type=int, default=0, 
+                    help='0: No DP noise; 1: Add DP noise')
+parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+                    help='Epsilon value for Differential Privacy')
+
+args = parser.parse_args()
+
+
+dataset= args.dataset
+train_case= args.train_case
+metric= args.metric
+data_case= args.data_case
+data_aug= args.data_aug
 
 # test_diff, test_common
 test_case=['test_diff']
     
+# List of methods to train/evaluate
+# methods=['erm', 'irm', 'csd', 'rand', 'approx_25', 'approx_50', 'approx_75', 'perf', 'matchdg']
 # methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
-methods=['irm', 'perf']
-# methods=['erm', 'irm', 'csd', 'rand', 'matchdg']
-# methods=['approx_25', 'approx_50', 'approx_75']
+methods=['erm', 'perf']
 
 if metric == 'train':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python train.py --dataset ' + str(dataset)
     elif dataset in ['fashion_mnist']:
-        #TODO: Make this customizable from the command line
-        aug= 0
-        base_script= 'python train.py --dataset ' + str(dataset) + ' --mnist_aug ' + str(aug)
+        base_script= 'python train.py --dataset ' + str(dataset) + ' --mnist_aug ' + str(data_aug)
     res_dir= 'results/' + str(dataset) + '/train_logs' + '/'    
 
 elif metric == 'mia':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
     elif dataset in ['fashion_mnist']:
-        base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 10000 --batch_size 64 ' + ' --dataset ' + str(dataset)
+        base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
 
-    res_dir= 'results/'+str(dataset)+'/privacy/'
+    res_dir= 'results/'+str(dataset)+'/privacy_clf/'
 
 elif metric == 'privacy_entropy':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python  test.py --test_metric privacy_entropy --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
     elif dataset in ['fashion_mnist']:
-        base_script= 'python  test.py --test_metric privacy_entropy --mia_sample_size 10000 --batch_size 64 ' + ' --dataset ' + str(dataset)
+        base_script= 'python  test.py --test_metric privacy_entropy --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
 
     res_dir= 'results/'+str(dataset)+'/privacy_entropy/'
 
@@ -88,6 +104,12 @@ if test_case  == 'test_common':
     base_script += ' --test_domains 30 45'
     res_dir+= 'test_common_domains/'
 
+    
+#Differential Privacy
+if args.dp_noise:
+    base_script += ' --dp_noise ' + str(args.dp_noise) + ' --dp_epsilon ' + str(args.dp_epsilon) + ' '
+    res_dir= res_dir[:-1] + '_epsilon_' + str(args.dp_epsilon) + '/'
+    
 if not os.path.exists(res_dir):
     os.makedirs(res_dir)        
 

@@ -1,16 +1,20 @@
 import os
 import sys
 
+'''
+argv1: Case (train, test)
+
+argv2: Noise in the slab feature (Flip probability)
+'''
+
 case= sys.argv[1]
 slab_noise= float(sys.argv[2])
 total_seed= 3
 
-# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg', 'mask_linear']
-methods=['erm', 'rand', 'perf']
-# metrics= ['auc', 'mi', 'entropy', 'loss']
-metrics= ['auc']
+methods=['erm', 'irm', 'csd', 'rand', 'perf', 'mask_linear']
 # methods=['matchdg']
-# metrics= ['entropy', 'loss']
+# metrics= ['auc', 'mi', 'entropy', 'loss']
+metrics= ['auc', 'loss']
 
 if case == 'train':
     
@@ -34,7 +38,7 @@ if case == 'train':
             script= base_script + ' --method_name mask_linear --match_case 0.0 --penalty_ws 0.0 '
         elif method == 'matchdg':
             #CTR Phase
-            script = base_script + ' --method_name matchdg_ctr --batch_size 256 --match_case 0.0 --match_flag 1 --match_interrupt 5 --pos_metric cos '
+            script = base_script + ' --method_name matchdg_ctr --batch_size 512 --match_case 0.0 --match_flag 1 --match_interrupt 5 --pos_metric cos '
             os.system(script)
             #ERM Phase
             script = base_script + ' --method_name matchdg_erm --match_case -1 --penalty_ws 1.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name slab '            
@@ -47,6 +51,7 @@ elif case == 'test':
 
         if metric == 'auc':
             base_script= 'python test_slab.py --train_domains 0.0 0.10 '
+            
         elif metric == 'mi':
             base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 400 --dataset slab --model_name slab --out_classes 2 --train_domains 0.0 0.10 '
         elif metric == 'entropy':
@@ -81,7 +86,7 @@ elif case == 'test':
                 upd_script = base_script + ' --method_name matchdg_erm --match_case -1 --penalty_ws 1.0 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name slab '                
                 
 #             for test_domain in [0.05, 0.15, 0.3, 0.5, 0.7, 0.9]:
-            for test_domain in [0.2, 0.9]:
+            for test_domain in [0.3, 0.9]:
                 script= upd_script + ' --test_domains ' + str(test_domain) + ' > ' + res_dir + str(method) + '-' + str(metric) + '-' + str(test_domain) + '.txt'
                 os.system(script)
 
@@ -112,32 +117,4 @@ elif case == 'test':
 #             for test_domain in [0.05, 0.15, 0.3, 0.5, 0.7, 0.9]:
 #                 script= upd_script + ' --test_domains ' + str(test_domain) + ' > slab_temp/' + str(method) + '-' + str(metric) + '-' + str(test_domain) + '.txt'
 #                 os.system(script)                
-    
-# #Perf Match
-# base_script= 'python test_slab.py --method_name perf_match --penalty_ws 1.0 --n_runs 3 --train_domains 0.0 0.10 '
 
-# for test_domain in [0.05]:
-# # for test_domain in [0.05, 0.3, 0.5, 0.7, 0.9]:
-#     script= base_script + ' --test_domains ' + str(test_domain) + ' > slab_temp/perf-auc-' + str(test_domain) + '.txt'
-#     os.system(script)
-    
-# base_script= 'python  test.py --test_metric mia --dataset slab --model_name slab --method_name perf_match --penalty_ws 1.0 --mia_logit 1 --mia_sample_size 400 --out_classes 2 --train_domains 0.0 0.10 --n_runs 3'
-
-# for test_domain in [0.05]:
-# # for test_domain in [0.05, 0.3, 0.5, 0.7, 0.9]:
-#     script= base_script + ' --test_domains ' + str(test_domain) + ' > slab_temp/perf-mi-' + str(test_domain) + '.txt'
-#     os.system(script)
-    
-# base_script= 'python  test.py --test_metric privacy_entropy --dataset slab --model_name slab --method_name perf_match --penalty_ws 1.0 --mia_sample_size 400 --out_classes 2 --train_domains 0.0 0.10 --n_runs 3' 
-
-# for test_domain in [0.05]:
-# # for test_domain in [0.05, 0.3, 0.5, 0.7, 0.9]:
-#     script= base_script + ' --test_domains ' + str(test_domain) + ' > slab_temp/perf-entropy-' + str(test_domain) + '.txt'
-#     os.system(script)
-    
-# base_script= 'python  test.py --test_metric privacy_loss_attack --dataset slab --model_name slab --method_name perf_match --penalty_ws 1.0 --mia_sample_size 400 --out_classes 2 --train_domains 0.0 0.10 --n_runs 3  ' 
-
-# for test_domain in [0.05]:
-# # for test_domain in [0.05, 0.3, 0.5, 0.7, 0.9]:
-#     script= base_script + ' --test_domains ' + str(test_domain) + ' > slab_temp/perf-loss-' + str(test_domain) + '.txt'
-#     os.system(script)

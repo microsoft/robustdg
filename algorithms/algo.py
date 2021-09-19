@@ -294,7 +294,7 @@ class BaseAlgo():
 #         self.phi = module_modification.convert_batchnorm_modules(self.phi) 
         inspector.validate(self.phi)
         
-        MAX_GRAD_NORM = 10.0
+        MAX_GRAD_NORM = 5.0
         DELTA = 1.0/(self.total_domains*self.domain_size)
         BATCH_SIZE = self.args.batch_size * self.total_domains
         VIRTUAL_BATCH_SIZE = 10*BATCH_SIZE
@@ -306,20 +306,16 @@ class BaseAlgo():
         
         NOISE_MULTIPLIER = get_noise_multiplier(self.args.dp_epsilon, DELTA, SAMPLE_RATE, self.args.epochs, DEFAULT_ALPHAS)
         
-        print(BATCH_SIZE, SAMPLE_RATE, N_ACCUMULATION_STEPS, SAMPLE_RATE*N_ACCUMULATION_STEPS)        
+        print("Target Epsilon: ", self.args.dp_epsilon)
         print(f"Using sigma={NOISE_MULTIPLIER} and C={MAX_GRAD_NORM}")
         
+#         sys.exit(-1)
+                
         from opacus import PrivacyEngine        
 #         privacy_engine = PrivacyEngine(
 #             self.phi,
 #             sample_rate=SAMPLE_RATE * N_ACCUMULATION_STEPS,
 #             alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
-#             noise_multiplier=NOISE_MULTIPLIER,
-#             max_grad_norm=MAX_GRAD_NORM,
-#         )
-#         privacy_engine = PrivacyEngine(
-#             self.phi,
-#             sample_rate=SAMPLE_RATE * N_ACCUMULATION_STEPS,
 #             noise_multiplier=NOISE_MULTIPLIER,
 #             max_grad_norm=MAX_GRAD_NORM,
 #         )

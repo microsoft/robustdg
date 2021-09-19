@@ -41,10 +41,13 @@ class ErmMatch(BaseAlgo):
             penalty_ws=0
             train_acc= 0.0
             train_size=0
-                    
+            
+            total_grad_norm= []
+            
             #Batch iteration over single epoch
             for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
-                self.opt.zero_grad()
+                
+#                 self.opt.zero_grad()
                 loss_e= torch.tensor(0.0).to(self.cuda)
                 
                 x_e= x_e.to(self.cuda)
@@ -107,16 +110,33 @@ class ErmMatch(BaseAlgo):
 
                         
                 loss_e.backward(retain_graph=False)
-                self.opt.step()
+                 
+                if batch_idx % 10 == 9:
+                    self.opt.step()
+                    self.opt.zero_grad()
+                else:
+                    self.opt.virtual_step()
+
+#                 self.opt.step()
 #                 self.opt.zero_grad()
-                
+                    
+                #Gradient Norm Computation
+#                 batch_grad_norm=0.0
+#                 for p in self.phi.parameters():
+#                     param_norm = p.grad.detach().data.norm(2)
+#                     batch_grad_norm += param_norm.item() ** 2
+#                 batch_grad_norm = batch_grad_norm ** 0.5
+#                 total_grad_norm.append( batch_grad_norm )
+    
 #                 del out
                 del erm_loss
                 del wasserstein_loss 
                 del loss_e
                 torch.cuda.empty_cache()
                         
-   
+
+#             print('Gradient Norm: ', total_grad_norm)
+                    
             print('Train Loss Basic : ',  penalty_erm, penalty_ws )
             print('Train Acc Env : ', 100*train_acc/train_size )
             print('Done Training for epoch: ', epoch)
@@ -139,8 +159,7 @@ class ErmMatch(BaseAlgo):
                 # Sanity check on the test accuracy
 #                 self.test_method.get_model()        
 #                 self.test_method.get_metric_eval()
-#                 print( ' Sanity Check Test Accuracy: ', self.test_method.metric_score )    
-                                
+#                 print( ' Sanity Check Test Accuracy: ', self.test_method.metric_score )                                    
             print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
             
             if epoch > 0 and self.args.model_name in ['domain_bed_mnist', 'lenet']:

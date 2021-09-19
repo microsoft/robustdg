@@ -96,10 +96,17 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
 
 # Main Function
 
-dataset= sys.argv[1]
-model= sys.argv[2]
+# Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST (Train/Val 80-20 split)
+dataset= 'rot_mnist'
+model= 'domain_bed'
+data_size=70000
+subset_size=55000
+val_size= 14000
+total_subset=10
+img_w= 28
+img_h= 28
 
-#Generate Dataset for Rotated / Fashion MNIST
+#Generate Dataset for Rotated MNIST as per the domain bed scheme
 #TODO: Manage OS Env from args
 os_env=0
 if os_env:
@@ -112,17 +119,6 @@ if not os.path.exists(base_dir):
     
 if model == 'domain_bed':
     if dataset == 'rot_mnist':
-        # Generate 10 random subsets of size 0.8*70,000 each for Rotated MNIST (Train/Val 80-20 split)
-        data_size=70000
-        subset_size=55000
-        val_size= 14000
-        total_subset=10
-        img_w= 28
-        img_h= 28
-    else:
-        print('Works only on rotated mnist')
-else:
-    print('Works only for domain_bed model')
     
 data_dir= base_dir + dataset + '_' + model + '/'
 if not os.path.exists(data_dir):

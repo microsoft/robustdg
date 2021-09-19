@@ -1,10 +1,16 @@
 import os
 import sys
 
-# method: erm; rand; matchdg_ctr; matchdg_erm; hybrid
-method= sys.argv[1]
-# model: alexnet; resnet18; resnet50
-model= sys.argv[2]
+# Input Parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('--method', type=str, default='hybrid', 
+                    help='erm; rand; matchdg_ctr; matchdg_erm; hybrid')
+parser.add_argument('--model', type=str, default='resnet18', 
+                    help='alexnet; resnet18; resnet50')
+args = parser.parse_args()
+
+method= args.method
+model= args.model
 domains= ['photo', 'art_painting', 'cartoon', 'sketch']
 
 if method == 'erm' or method == 'rand':
@@ -35,13 +41,13 @@ for test_domain in domains:
     if method == 'erm':        
         if model == 'resnet18':
             if test_domain == 'photo':
-                lr= 0.0005 
+                lr= 0.001 
                 penalty= 0.0
             elif test_domain == 'art_painting':
                 lr= 0.01 
                 penalty= 0.0
             elif test_domain == 'cartoon':
-                lr= 0.001 
+                lr= 0.01 
                 penalty= 0.0
             elif test_domain == 'sketch':
                 lr= 0.01 
@@ -52,10 +58,10 @@ for test_domain in domains:
                 lr= 0.0005 
                 penalty= 0.0
             elif test_domain == 'art_painting':
-                lr= 0.001 
+                lr= 0.01 
                 penalty= 0.0
             elif test_domain == 'cartoon':
-                lr= 0.001
+                lr= 0.01
                 penalty= 0.0
             elif test_domain == 'sketch':
                 lr= 0.01 
@@ -72,47 +78,47 @@ for test_domain in domains:
                 lr= 0.001
                 penalty= 0.0
             elif test_domain == 'sketch':
-                lr= 0.001 
+                lr= 0.0005
                 penalty= 0.0
                 
     elif method == 'rand':        
         if model == 'resnet18':
             if test_domain == 'photo':
                 lr= 0.001 
-                penalty= 0.1
+                penalty= 5.0
             elif test_domain == 'art_painting':
                 lr= 0.01 
-                penalty= 0.5
-            elif test_domain == 'cartoon':
-                lr= 0.01 
                 penalty= 0.1
+            elif test_domain == 'cartoon':
+                lr= 0.001 
+                penalty= 5.0
             elif test_domain == 'sketch':
                 lr= 0.01 
-                penalty= 0.1
+                penalty= 0.5
 
         elif model == 'resnet50':
             if test_domain == 'photo':
                 lr= 0.0005 
-                penalty= 0.1
+                penalty= 5.0
             elif test_domain == 'art_painting':
-                lr= 0.001 
-                penalty= 0.5
+                lr= 0.01 
+                penalty= 0.1
             elif test_domain == 'cartoon':
-                lr= 0.0005
-                penalty= 0.5
+                lr= 0.01
+                penalty= 0.01
             elif test_domain == 'sketch':
                 lr= 0.01 
                 penalty= 0.1            
                 
         elif model == 'alexnet':
             if test_domain == 'photo':
-                lr= 0.001 
+                lr= 0.0005 
                 penalty= 0.1
             elif test_domain == 'art_painting':
                 lr= 0.001 
                 penalty= 0.1
             elif test_domain == 'cartoon':
-                lr= 0.001
+                lr= 0.001 
                 penalty= 0.5
             elif test_domain == 'sketch':
                 lr= 0.001 
@@ -122,10 +128,10 @@ for test_domain in domains:
         if model == 'resnet18':
             if test_domain == 'photo':
                 lr= 0.0005 
-                penalty= 0.1
+                penalty= 1.0
             elif test_domain == 'art_painting':
                 lr= 0.001 
-                penalty= 0.5
+                penalty= 5.0
             elif test_domain == 'cartoon':
                 lr= 0.001 
                 penalty= 1.0
@@ -136,27 +142,27 @@ for test_domain in domains:
         elif model == 'resnet50':
             if test_domain == 'photo':
                 lr= 0.0005 
-                penalty= 0.1
-            elif test_domain == 'art_painting':
-                lr= 0.001 
-                penalty= 0.1
-            elif test_domain == 'cartoon':
-                lr= 0.0005
-                penalty= 1.0
-            elif test_domain == 'sketch':
-                lr= 0.001 
-                penalty= 0.5    
-                
-        elif model == 'alexnet':
-            if test_domain == 'photo':
-                lr= 0.0005 
-                penalty= 0.5
+                penalty= 0.01
             elif test_domain == 'art_painting':
                 lr= 0.001 
                 penalty= 0.1
             elif test_domain == 'cartoon':
                 lr= 0.001
+                penalty= 0.01
+            elif test_domain == 'sketch':
+                lr= 0.0005
+                penalty= 5.0    
+                
+        elif model == 'alexnet':
+            if test_domain == 'photo':
+                lr= 0.0005 
                 penalty= 0.1
+            elif test_domain == 'art_painting':
+                lr= 0.001 
+                penalty= 1.0
+            elif test_domain == 'cartoon':
+                lr= 0.001
+                penalty= 1.0
             elif test_domain == 'sketch':
                 lr= 0.001 
                 penalty= 0.1
@@ -178,7 +184,7 @@ for test_domain in domains:
                 penalty_aug= 0.1
             elif test_domain == 'sketch':
                 lr= 0.01 
-                penalty= 0.5
+                penalty= 0.01
                 penalty_aug= 0.1
 
         elif model == 'resnet50':
@@ -232,5 +238,5 @@ for test_domain in domains:
         script= script + ' --img_w 256 ' + ' --img_h 256 '
     
     save_dir= res_dir + str(method) + '_' + str(model) + '.txt'
-#     script= script + ' > ' + save_dir    
+    script= script + ' > ' + save_dir    
     os.system(script)

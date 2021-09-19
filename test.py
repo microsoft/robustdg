@@ -195,7 +195,7 @@ final_metric_score=[]
 res_dir= 'results/'
 if args.dp_noise:
     base_res_dir=(
-                res_dir + args.dataset_name + '/' + 'dp_' + args.method_name + '/' + args.match_layer 
+                res_dir + args.dataset_name + '/' + 'dp_' +  str(args.dp_epsilon) + '_' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )    
 else:
@@ -203,6 +203,8 @@ else:
                 res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )
+
+print('Result Base Dir: ', base_res_dir)
 
 #TODO: Handle slab noise case in helper functions
 if args.dataset_name == 'slab':
