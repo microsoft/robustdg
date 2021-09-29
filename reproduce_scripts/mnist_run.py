@@ -14,10 +14,17 @@ parser.add_argument('--data_case', type=str, default='test',
                    help='train: Evaluate the acc/match_score metrics on the train dataset; test: Evaluate the acc/match_score metrics on the test dataset')
 parser.add_argument('--data_aug', type=int, default=1, 
                    help='0: No data augmentation for fashion mnist; 1: Data augmentation for fashion mnist')
+
+parser.add_argument('--methods', nargs='+', type=str, default=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg'], 
+                    help='List of methods: erm, irm, csd, rand, approx_25, approx_50, approx_75, perf, matchdg')
+
+
 parser.add_argument('--dp_noise', type=int, default=0, 
                     help='0: No DP noise; 1: Add DP noise')
-parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+parser.add_argument('--dp_epsilon', type=float, default=100.0, 
                     help='Epsilon value for Differential Privacy')
+parser.add_argument('--dp_attach_opt', type=int, default=1, 
+                    help='0: Infinite Epsilon; 1: Finite Epsilion')
 
 args = parser.parse_args()
 
@@ -27,14 +34,13 @@ train_case= args.train_case
 metric= args.metric
 data_case= args.data_case
 data_aug= args.data_aug
+methods= args.methods
 
 # test_diff, test_common
 test_case=['test_diff']
     
 # List of methods to train/evaluate
-# methods=['erm', 'irm', 'csd', 'rand', 'approx_25', 'approx_50', 'approx_75', 'perf', 'matchdg']
-# methods=['erm', 'irm', 'csd', 'rand', 'perf', 'matchdg']
-methods=['erm', 'perf']
+# methods=[]
 
 if metric == 'train':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
@@ -46,7 +52,6 @@ if metric == 'train':
 elif metric == 'mia':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
-    elif dataset in ['fashion_mnist']:
         base_script= 'python  test.py --test_metric mia --mia_logit 1 --mia_sample_size 2000 --batch_size 64 ' + ' --dataset ' + str(dataset)
 
     res_dir= 'results/'+str(dataset)+'/privacy_clf/'
@@ -107,7 +112,7 @@ if test_case  == 'test_common':
     
 #Differential Privacy
 if args.dp_noise:
-    base_script += ' --dp_noise ' + str(args.dp_noise) + ' --dp_epsilon ' + str(args.dp_epsilon) + ' '
+    base_script += ' --dp_noise ' + str(args.dp_noise) + ' --dp_epsilon ' + str(args.dp_epsilon) + ' --dp_attach_opt ' + str(args.dp_attach_opt) + ' ' 
     res_dir= res_dir[:-1] + '_epsilon_' + str(args.dp_epsilon) + '/'
     
 if not os.path.exists(res_dir):

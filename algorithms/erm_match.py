@@ -110,15 +110,16 @@ class ErmMatch(BaseAlgo):
 
                         
                 loss_e.backward(retain_graph=False)
-                 
-                if batch_idx % 10 == 9:
+                
+                if self.args.dp_noise and self.args.dp_attach_opt:
+                    if batch_idx % 10 == 9:
+                        self.opt.step()
+                        self.opt.zero_grad()
+                    else:
+                        self.opt.virtual_step()                        
+                else:                    
                     self.opt.step()
                     self.opt.zero_grad()
-                else:
-                    self.opt.virtual_step()
-
-#                 self.opt.step()
-#                 self.opt.zero_grad()
                     
                 #Gradient Norm Computation
 #                 batch_grad_norm=0.0
@@ -156,10 +157,6 @@ class ErmMatch(BaseAlgo):
                 self.max_epoch= epoch
                 self.save_model()
                 
-                # Sanity check on the test accuracy
-#                 self.test_method.get_model()        
-#                 self.test_method.get_metric_eval()
-#                 print( ' Sanity Check Test Accuracy: ', self.test_method.metric_score )                                    
             print('Current Best Epoch: ', self.max_epoch, ' with Test Accuracy: ', self.final_acc[self.max_epoch])
             
             if epoch > 0 and self.args.model_name in ['domain_bed_mnist', 'lenet']:

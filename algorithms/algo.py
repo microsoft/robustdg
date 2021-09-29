@@ -77,12 +77,6 @@ def get_noise_multiplier(
 class BaseAlgo():
     def __init__(self, args, train_dataset, val_dataset, test_dataset, base_res_dir, run, cuda):
         
-#         from evaluation.base_eval import BaseEval
-#         self.test_method= BaseEval(
-#                               args, train_dataset, val_dataset,
-#                               test_dataset, base_res_dir,
-#                               run, cuda
-#                              )
         
         self.args= args
         self.train_dataset= train_dataset['data_loader']
@@ -111,7 +105,7 @@ class BaseAlgo():
         self.val_acc=[]
         self.train_acc=[]
         
-#         if self.args.method_name == 'dp_erm':
+        # Differentially Private Noise
         if self.args.dp_noise:
             self.privacy_engine= self.get_dp_noise()
     
@@ -297,28 +291,16 @@ class BaseAlgo():
         MAX_GRAD_NORM = 5.0
         DELTA = 1.0/(self.total_domains*self.domain_size)
         BATCH_SIZE = self.args.batch_size * self.total_domains
-        VIRTUAL_BATCH_SIZE = 10*BATCH_SIZE
-        assert VIRTUAL_BATCH_SIZE % BATCH_SIZE == 0 # VIRTUAL_BATCH_SIZE should be divisible by BATCH_SIZE
-        N_ACCUMULATION_STEPS = int(VIRTUAL_BATCH_SIZE / BATCH_SIZE)        
         SAMPLE_RATE = BATCH_SIZE /(self.total_domains*self.domain_size)
         DEFAULT_ALPHAS = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
-        
-        
+                
         NOISE_MULTIPLIER = get_noise_multiplier(self.args.dp_epsilon, DELTA, SAMPLE_RATE, self.args.epochs, DEFAULT_ALPHAS)
         
         print("Target Epsilon: ", self.args.dp_epsilon)
         print(f"Using sigma={NOISE_MULTIPLIER} and C={MAX_GRAD_NORM}")
         
-#         sys.exit(-1)
                 
         from opacus import PrivacyEngine        
-#         privacy_engine = PrivacyEngine(
-#             self.phi,
-#             sample_rate=SAMPLE_RATE * N_ACCUMULATION_STEPS,
-#             alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
-#             noise_multiplier=NOISE_MULTIPLIER,
-#             max_grad_norm=MAX_GRAD_NORM,
-#         )
         privacy_engine = PrivacyEngine(
             self.phi,
             batch_size= BATCH_SIZE,
@@ -326,6 +308,11 @@ class BaseAlgo():
             noise_multiplier=NOISE_MULTIPLIER,
             max_grad_norm=MAX_GRAD_NORM,
         )
-    
-        privacy_engine.attach(self.opt)
+        
+        if self.args.dp_attach_opt:
+            print('Standard DP Training with finite epsilon')
+            privacy_engine.attach(self.opt)
+        else:
+            print('DP Training with infinite epsilon')
+            
         return privacy_engine

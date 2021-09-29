@@ -61,7 +61,7 @@ dataset=sys.argv[1]
 test_case=['test_diff']
 
 matplotlib.rcParams.update({'errorbar.capsize': 2})
-fig, ax = plt.subplots(1, 3, figsize=(33, 8))
+fig, ax = plt.subplots(1, 4, figsize=(33, 8))
 fontsize=35
 fontsize_lgd= fontsize/1.2
 x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Perf']
@@ -70,7 +70,7 @@ methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
 
 metrics= ['acc:train', 'acc:test', 'privacy_loss_attack', 'match_score:test']
 
-for idx in range(3):
+for idx in range(4):
     
     marker_list = ['o', '^', '*']
     legend_count = 0
@@ -154,7 +154,8 @@ for idx in range(3):
     
         if idx == 0:
             ax[idx].errorbar(x, acc_test, yerr=acc_test_err, label=legend_label, marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
-            ax[idx].set_ylabel('OOD Accuracy', fontsize=fontsize)
+            ax[idx].set_ylabel('OOD Accuracy', fontsize=fontsize)            
+            
             
         if idx == 1:
             ax[idx].errorbar(x, loss, yerr=loss_err, label=legend_label, marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
@@ -165,10 +166,8 @@ for idx in range(3):
             ax[idx].set_ylabel('Mean Rank', fontsize=fontsize)
 
         if idx == 3:
-            ax[idx].errorbar(x, np.array(acc_train) - np.array(acc_test), yerr=acc_train_err, label=legend_label, fmt='o--')
-    #         ax.set_xlabel('Models', fontsize=fontsize)
-            ax[idx].set_ylabel('Train-Test Accuracy Gap of ML Model', fontsize=fontsize)
-#             ax[idx].legend(fontsize=fontsize_lgd)
+            ax[idx].errorbar(x, np.array(acc_train) - np.array(acc_test), yerr=acc_train_err, marker= 's', markersize= fontsize_lgd, linewidth=4, fmt='o--')
+            ax[idx].set_ylabel('Generalization Gap', fontsize=fontsize)
         
         legend_count+= 1 
     

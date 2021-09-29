@@ -16,7 +16,11 @@ metric= args.metric
 test_domain= args.test_domain
 data_case= args.data_case
 
-methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
+if metric == 'train':
+    methods=['erm', 'irm', 'csd', 'rand', 'matchdg_ctr', 'matchdg_erm', 'hybrid']
+else:
+    methods=['erm', 'irm', 'csd', 'rand', 'matchdg_erm', 'hybrid']
+
 domains= ['nih', 'chex', 'kaggle']
 dataset= 'chestxray'
 

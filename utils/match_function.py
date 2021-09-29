@@ -229,7 +229,9 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                     if perfect_match == 1:
                         ## Find all instances among the curr_domain with same object as obj_base[idx]
                         ## .nonzero() converts True matche to match indexes; [0, 0] takes into the first match of same base object in the curr domain
-                        perfect_match_rank.append( (obj_curr[sort_idx] == obj_base[idx]).nonzero()[0,0].item() )                    
+                        
+                        if obj_base[idx] in obj_curr[sort_idx]:                        
+                            perfect_match_rank.append( (obj_curr[sort_idx] == obj_base[idx]).nonzero()[0,0].item() )                    
 #                 print('Time Taken in CTR Loop: ', time.time()-start_time)
 
             elif inferred_match == 0 and perfect_match == 1:
@@ -242,6 +244,7 @@ def get_matched_pairs(args, cuda, train_dataset, domain_size, total_domains, tra
                     
                     # Select random matches with perm_prob probability
                     if rand_vars[idx]:
+                        
                         rand_indices = np.arange(ordered_curr_indices.size()[0])
                         np.random.shuffle(rand_indices)           
                         curr_indices= ordered_curr_indices[rand_indices][:total_matches_per_point]

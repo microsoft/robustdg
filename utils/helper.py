@@ -286,18 +286,13 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         data_obj= ChestXRay(args, domains, '/chestxray_spur/', data_case=data_case, match_func=match_func)
         
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist', 'rot_mnist_spur']:       
-        if data_case == 'test' and args.mnist_case not in ['lenet', 'lenet_mdg']:
+        if data_case == 'test' and args.mnist_case not in ['lenet']:
             #TODO: Infer this based on the total number of seed values for the mnist case
             # Actually by default the seeds 0, 1, 2 are for training and seed 9 is for test; mention that properly in comments
             mnist_subset= 9
         else:
             mnist_subset= run            
-        
-        #TODO: Only Temporary, in order to see if it changes results on MNIST
-#         if eval_case:
-#             if args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
-#                 mnist_subset=run
-        
+                
         print('MNIST Subset: ', mnist_subset)
         data_obj=  MnistRotated(args, domains, mnist_subset, '/mnist/', data_case=data_case, match_func=match_func)
         

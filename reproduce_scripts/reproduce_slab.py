@@ -2,12 +2,8 @@ import os
 import sys
 
 '''
-argv1: Allowed Values (train, test)
+argv1: Allowed Values (train, evaluate)
 '''
-
-## TODO
-# Choose a better name for train, test as in the test stage we do not really evalute the test accuracy 
-# Maybe make the train set accuracy also as part of the logs in the train.py phase (Check once if it changes any results from the main paper)
 
 case= sys.argv[1]
 methods=['erm', 'mmd', 'coral', 'dann', 'c-mmd', 'c-coral', 'c-dann', 'rand', 'perf']
@@ -16,7 +12,7 @@ total_seed= 10
 if case == 'train':
     base_script= 'python train.py --dataset slab --model_name slab --batch_size 128 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 1.0 --slab_data_dim 2 --slab_noise 0.1 ' + ' --n_runs ' + str(total_seed)
 
-elif case == 'test':
+elif case == 'evaluate':
     base_script= 'python test.py --test_metric per_domain_acc --acc_data_case train --dataset slab --model_name slab --batch_size 128 --lr 0.1 --epochs 100 --out_classes 2 --train_domains 0.0 0.10 --test_domains 1.0 --slab_data_dim 2 --slab_noise 0.1 ' + ' --n_runs ' + str(total_seed)
 
     

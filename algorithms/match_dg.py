@@ -178,6 +178,9 @@ class MatchDG(BaseAlgo):
 #                             print('Weird! Positive Matches are more than the negative matches?', pos_feat_match.shape[0], neg_feat_match.shape[0])
 
                         # If no instances of label y_c in the current batch then continue
+                        
+                        print(pos_feat_match.shape[0], neg_feat_match.shape[0], y_c)
+        
                         if pos_feat_match.shape[0] ==0 or neg_feat_match.shape[0] == 0:
                             continue
 
@@ -229,6 +232,9 @@ class MatchDG(BaseAlgo):
                 
                     loss_e += ( ( epoch- self.args.penalty_s )/(self.args.epochs -self.args.penalty_s) )*diff_hinge_loss
                         
+                if not loss_e.requires_grad:
+                    continue
+                    
                 loss_e.backward(retain_graph=False)
                 self.opt.step()
                 

@@ -119,6 +119,9 @@ parser.add_argument('--dp_noise', type=int, default=0,
                     help='0: No DP noise; 1: Add DP noise')
 parser.add_argument('--dp_epsilon', type=float, default=1.0, 
                     help='Epsilon value for Differential Privacy')
+# Special case when you want to check results with the dp setting for the infinite epsilon case
+parser.add_argument('--dp_attach_opt', type=int, default=1, 
+                    help='0: Infinite Epsilon; 1: Finite Epsilion')
 
 
 #MMD, DANN

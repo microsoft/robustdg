@@ -276,7 +276,10 @@ for run in range(args.n_runs):
     model= test_method.phi
     
     test_method.get_metric_eval()
-    std_acc= test_method.metric_score['test accuracy']
+    if args.acc_data_case == 'train':        
+        std_acc= test_method.metric_score['train accuracy']
+    elif args.acc_data_case == 'test':
+        std_acc= test_method.metric_score['test accuracy']
     print('Test Accuracy: ', std_acc)
 
     spur_prob= float(test_domains[0])
