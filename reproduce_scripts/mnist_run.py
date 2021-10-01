@@ -39,9 +39,6 @@ methods= args.methods
 # test_diff, test_common
 test_case=['test_diff']
     
-# List of methods to train/evaluate
-# methods=[]
-
 if metric == 'train':
     if dataset in ['rot_mnist', 'rot_mnist_spur']:
         base_script= 'python train.py --dataset ' + str(dataset)
@@ -155,7 +152,7 @@ for method in methods:
             script= base_script + ' --method_name erm_match --penalty_ws 10.0 --match_case 1.0 --epochs 25 ' +  ' > ' + case + '.txt' 
         else:
             script= base_script + ' --method_name erm_match --penalty_ws 0.1 --match_case 1.0 --epochs 25 ' +  ' > ' + case + '.txt' 
-            os.system(script)
+        os.system(script)
 
     elif method == 'matchdg':
         if metric == 'train':

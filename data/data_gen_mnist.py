@@ -18,7 +18,7 @@ import torch
 import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
-def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, domain, save_dir, img_w, img_h):    
+def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute):    
 
     # Get total number of labeled examples
     mnist_labels = labels[indices]
@@ -64,9 +64,11 @@ def generate_rotated_domain_data(imgs, labels, data_case, dataset, indices, doma
             if rand_var[i]:
                 # Change colors per label for test domains relative to the train domains
                 if data_case == 'test':
-                    curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
-                    # Choose this for test domain with permuted colors
-#                     curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[(mnist_labels[i].item()+1)%10]  )
+                    if cmnist_permute:
+                        # Choose this for test domain with permuted colors
+                        curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[(mnist_labels[i].item()+1)%10] )
+                    else:
+                        curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
                 else:
                     curr_image = ImageOps.colorize(curr_image, black ="black", white =color_list[mnist_labels[i].item()])    
             else:
@@ -107,6 +109,7 @@ parser.add_argument('--data_size', type=int, default=60000)
 parser.add_argument('--subset_size', type=int, default=2000)
 parser.add_argument('--img_w', type=int, default=224)
 parser.add_argument('--img_h', type=int, default=224)
+parser.add_argument('--cmnist_permute', type=int, default=0)
 
 args = parser.parse_args()
 
@@ -117,6 +120,7 @@ img_h= args.img_h
 data_size= args.data_size
 subset_size= args.subset_size
 val_size= int(args.subset_size/5)
+cmnist_permute= args.cmnist_permute
 
 #Generate Dataset for Rotated / Fashion MNIST
 #TODO: Manage OS Env from args
@@ -184,7 +188,18 @@ for seed in seed_list:
     res=np.random.choice(data_size, subset_size+val_size)
     print('Seed: ', seed)
     for domain in domains:        
-                
+        
+        # The case of permuted test domain for colored rotated MNIST, only update test data
+        if dataset == 'rot_mnist_spur' and cmnist_permute:            
+            #Test
+            data_case= 'test'            
+            save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+            indices= res[:subset_size]        
+            if seed in [9] and domain in [0, 15, 30, 45, 60, 75, 90]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)         
+            
+            continue
+            
         #Train
         data_case= 'train'
         if not os.path.exists(data_dir + data_case +  '/'):
@@ -195,10 +210,10 @@ for seed in seed_list:
 
         if model == 'resnet18':
             if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                   
         elif model in ['lenet']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                   
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                   
                     
         #Val 
         data_case= 'val'
@@ -210,10 +225,10 @@ for seed in seed_list:
         
         if model == 'resnet18':
             if seed in [0, 1, 2] and domain in [15, 30, 45, 60, 75]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                
         elif model in ['lenet']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                
             
         #Test
         data_case= 'test'
@@ -222,10 +237,38 @@ for seed in seed_list:
             
         save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
         indices= res[:subset_size]
-        
+                
         if model == 'resnet18':
             if seed in [0, 1, 2, 9] and domain in [0, 90]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)             
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)             
         elif model in ['lenet', 'lenet_mdg']:
             if seed in [0, 1, 2] and domain in [0, 15, 30, 45, 60, 75]:
-                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h)                     
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)
+
+                
+        # Extra data sampling for carrying out the attribute attack on spurious rotated mnist
+        if dataset == 'rot_mnist_spur':
+            
+            #Train
+            data_case= 'train'
+            save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+            indices= res[:subset_size]      
+            if seed in [0, 1, 2] and domain in [0, 90]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                   
+                    
+            #Val 
+            data_case= 'val'
+            save_dir= data_dir + data_case +  '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+            indices= res[subset_size:]        
+            if seed in [0, 1, 2] and domain in [0, 90]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)                
+            
+            #Test
+            data_case= 'test'            
+            save_dir= data_dir + data_case + '/' + 'seed_' + str(seed) + '_domain_' + str(domain)
+            indices= res[:subset_size]        
+            if seed in [9] and domain in [15, 30, 45, 60, 75]:
+                generate_rotated_domain_data(mnist_imgs, mnist_labels, data_case, dataset, indices, domain, save_dir, img_w, img_h, cmnist_permute)             
+
+            
+            

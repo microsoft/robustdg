@@ -287,7 +287,6 @@ def get_dataloader(args, run, domains, data_case, eval_case, kwargs):
         
     elif args.dataset_name in ['rot_mnist', 'fashion_mnist', 'rot_mnist_spur']:       
         if data_case == 'test' and args.mnist_case not in ['lenet']:
-            #TODO: Infer this based on the total number of seed values for the mnist case
             # Actually by default the seeds 0, 1, 2 are for training and seed 9 is for test; mention that properly in comments
             mnist_subset= 9
         else:

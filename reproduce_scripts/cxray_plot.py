@@ -45,12 +45,11 @@ fontsize_lgd= fontsize/1.2
 for idx in range(3):
         
     marker_list = ['o', '^', '*']
+    legend_list = ['RSNA', 'NIH', 'Chex']
     legend_count = 0
     for test_domain in ['kaggle', 'nih', 'chex']:
 
-        # metrics= ['acc:train', 'acc:test', 'mia', 'privacy_entropy', 'privacy_loss_attack', 'match_score:train', 'match_score:test']
-
-        metrics= ['acc:train', 'acc:test', 'privacy_loss_attack', 'match_score:test']
+        metrics= ['acc:train', 'acc:test', 'privacy_loss_attack']
 
         acc_train=[]
         acc_train_err=[]
@@ -110,11 +109,11 @@ for idx in range(3):
         ax[idx].set_xticklabels(x, rotation=25)
     
         if idx == 0:
-            ax[idx].errorbar(x, acc_test, yerr=acc_test_err, label=test_domain, marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
+            ax[idx].errorbar(x, acc_test, yerr=acc_test_err, label= legend_list[legend_count], marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
             ax[idx].set_ylabel('OOD Accuracy', fontsize=fontsize)
 
         if idx == 1:
-            ax[idx].errorbar(x, loss, yerr=loss_err, label=test_domain, marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
+            ax[idx].errorbar(x, loss, yerr=loss_err, label= legend_list[legend_count], marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
             ax[idx].set_ylabel('MI Attack Accuracy', fontsize=fontsize)
 
 #         if idx == 2:
@@ -125,7 +124,7 @@ for idx in range(3):
 #             ax[idx].legend(fontsize=fontsize_lgd)
 
         if idx == 2:
-            ax[idx].errorbar(x, np.array(acc_train) - np.array(acc_test), yerr=acc_train_err, label=test_domain, marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
+            ax[idx].errorbar(x, np.array(acc_train) - np.array(acc_test), yerr=acc_train_err, label= legend_list[legend_count], marker= marker_list[legend_count], markersize= fontsize_lgd, linewidth=4, fmt='o--')
             ax[idx].set_ylabel('Train-Test Accuracy Gap ', fontsize=fontsize)
     
     

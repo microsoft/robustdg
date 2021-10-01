@@ -90,8 +90,8 @@ for test_domain in [0.2, 0.9]:
     ax[count].errorbar(x, s_auc, yerr=s_auc_err, marker= marker_list[1], markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Linear-RAUC')
     ax[count].errorbar(x, loss, yerr=loss_err, marker= marker_list[2], markersize= fontsize_lgd, linewidth=4, label='Loss Attack', fmt='o--')
     
-    gen_gap= np.array(train_acc) - np.array(acc)
-    ax[count].errorbar(x, gen_gap, yerr=0*gen_gap, marker= 's', markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Gen Gap')
+#     gen_gap= np.array(train_acc) - np.array(acc)
+#     ax[count].errorbar(x, gen_gap, yerr=0*gen_gap, marker= 's', markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Gen Gap')
     
     ax[count].set_ylabel('Metric Score', fontsize=fontsize)
     ax[count].set_title('Test Domain: ' + str(test_domain), fontsize=fontsize)
