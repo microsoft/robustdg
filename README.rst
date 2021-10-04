@@ -5,7 +5,9 @@ Toolkit for Building Robust ML models that generalize to unseen domains (RobustD
 `Amit Sharma <http://www.amitsharma.in>`_
 
 `Privacy & Causal Learning (ICML 2020) <https://arxiv.org/abs/1909.12732>`_ 
+
 `MatchDG: Causal View of DG (ICML 2021) <http://proceedings.mlr.press/v139/mahajan21b.html>`_ 
+
 `Privacy & DG Connection paper <http://divy.at/privacy_dg.pdf>`_
 
 For machine learning models to be reliable, they need to generalize to data
