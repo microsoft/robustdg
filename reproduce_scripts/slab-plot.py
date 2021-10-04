@@ -87,11 +87,11 @@ for test_domain in [0.2, 0.9]:
     ax[count].set_xticklabels(x, rotation=25)
     
     ax[count].errorbar(x, acc, yerr=acc_err, marker= marker_list[0], markersize= fontsize_lgd, linewidth=4, fmt='o--', label='OOD Acc')
-    ax[count].errorbar(x, s_auc, yerr=s_auc_err, marker= marker_list[1], markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Linear-RAUC')
-    ax[count].errorbar(x, loss, yerr=loss_err, marker= marker_list[2], markersize= fontsize_lgd, linewidth=4, label='Loss Attack', fmt='o--')
+    ax[count].errorbar(x, s_auc, yerr=s_auc_err, marker= marker_list[1], markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Stable Features (Linear-RAUC)')
+    ax[count].errorbar(x, loss, yerr=loss_err, marker= marker_list[2], markersize= fontsize_lgd, linewidth=4, label='MI Attack Acc', fmt='o--')
     
 #     gen_gap= np.array(train_acc) - np.array(acc)
-#     ax[count].errorbar(x, gen_gap, yerr=0*gen_gap, marker= 's', markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Gen Gap')
+#     ax[count].errorbar(x, gen_gap, yerr=0*gen_gap, marker= 's', markersize= fontsize_lgd, linewidth=4, fmt='o--', label='Generalization Gap')
     
     ax[count].set_ylabel('Metric Score', fontsize=fontsize)
     ax[count].set_title('Test Domain: ' + str(test_domain), fontsize=fontsize)
@@ -99,7 +99,7 @@ for test_domain in [0.2, 0.9]:
     count+=1
     
 lines, labels = fig.axes[-1].get_legend_handles_labels()    
-lgd= fig.legend(lines, labels, loc="lower center", bbox_to_anchor=(0.5, -0.15), fontsize=fontsize, ncol=3)
+lgd= fig.legend(lines, labels, loc="lower center", bbox_to_anchor=(0.5, -0.15), fontsize=fontsize, ncol=4)
 
 save_dir= 'results/slab/plots/'
 if not os.path.exists(save_dir):

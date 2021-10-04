@@ -61,7 +61,7 @@ dataset=sys.argv[1]
 test_case=['test_diff']
 
 matplotlib.rcParams.update({'errorbar.capsize': 2})
-fig, ax = plt.subplots(1, 4, figsize=(33, 8))
+fig, ax = plt.subplots(1, 3, figsize=(33, 8))
 fontsize=35
 fontsize_lgd= fontsize/1.2
 x=['ERM', 'Rand', 'MatchDG', 'CSD', 'IRM', 'Perf']
@@ -70,7 +70,7 @@ methods=['erm', 'rand', 'matchdg', 'csd', 'irm', 'perf']
 
 metrics= ['acc:train', 'acc:test', 'privacy_loss_attack', 'match_score:test']
 
-for idx in range(4):
+for idx in range(3):
     
     marker_list = ['o', '^', '*']
     legend_count = 0
