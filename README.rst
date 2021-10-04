@@ -4,7 +4,7 @@ Toolkit for Building Robust ML models that generalize to unseen domains (RobustD
 `Shruti Tople <https://www.microsoft.com/en-us/research/people/shtople/>`_, 
 `Amit Sharma <http://www.amitsharma.in>`_
 
-`ICML 2020 Paper <https://arxiv.org/abs/1909.12732>`_ | `MatchDG paper <https://arxiv.org/abs/2006.07500>`_ | `Privacy & DG Connection paper <http://divy.at/privacy_dg.pdf>`_
+` Privacy & Causal Learning (ICML 2020) <https://arxiv.org/abs/1909.12732>`_ | ` MatchDG: Causal View of DG (ICML 2021) <http://proceedings.mlr.press/v139/mahajan21b.html>`_ | `Privacy & DG Connection paper <http://divy.at/privacy_dg.pdf>`_
 
 For machine learning models to be reliable, they need to generalize to data
 beyond the train distribution. In addition, ML models should be robust to
@@ -28,8 +28,7 @@ Let's first load the rotatedMNIST dataset in a suitable format for the resnet18 
 
 .. code:: shell
 
-    cd data/
-    python data_gen.py resnet18
+    python data/data_gen_mnist.py --dataset rot_mnist --model resnet18 --img_h 224 --img_w 224 --subset_size 2000
 
 **Train and evaluate ML model**
 
@@ -37,13 +36,14 @@ The following commands would train and evalute the MatchDG method on the Rotated
 
 .. code:: shell
 
-    python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 100 --batch_size 256 --pos_metric cos 
+
+    python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.0 --match_flag 1 --epochs 50 --batch_size 64 --pos_metric cos --match_func_aug_case 1
     
-    python train.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --penalty_ws 0.1 --epochs 25 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18
-      
-    python test.py --dataset rot_mnist --method_name matchdg_erm --match_case -1 --penalty_ws 0.1 --epochs 25 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --test_metric acc
+    python train.py --dataset rot_mnist --method_name matchdg_erm --penalty_ws 0.1 --match_case -1 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --epochs 25
     
-    python test.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --pos_metric cos --test_metric match_score
+    python test.py --dataset rot_mnist --method_name matchdg_erm --penalty_ws 0.1 --match_case -1 --ctr_match_case 0.0 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --epochs 25 --test_metric acc
+    
+    python test.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.0 --match_flag 1 --pos_metric cos --test_metric match_score    
 
 
 Demo
@@ -51,7 +51,7 @@ Demo
 
 A quick introduction on how to use our repository can be accessed here in the `Getting Started notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/robustdg_getting_started.ipynb>`_.
 
-If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/reproducing_results_matchdg_paper.ipynb>`_. 
+If you are interested in reproducing results from the MatchDG paper, check out the `Reproducing results notebook <https://github.com/microsoft/robustdg/blob/master/docs/notebooks/reproduce_results.ipynb>`_. 
 
 Roadmap
 -------
