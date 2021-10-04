@@ -6,7 +6,11 @@ import argparse
 import copy
 import random
 import json
+import pickle
+
+#Sklearn
 import sklearn
+from sklearn.manifold import TSNE
 
 #Pytorch
 import torch
@@ -109,12 +113,52 @@ parser.add_argument('--cuda_device', type=int, default=0,
 parser.add_argument('--os_env', type=int, default=0, 
                     help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 
-#Test Based Args
+
+#Differential Privacy
+parser.add_argument('--dp_noise', type=int, default=0, 
+                    help='0: No DP noise; 1: Add DP noise')
+parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+                    help='Epsilon value for Differential Privacy')
+# Special case when you want to check results with the dp setting for the infinite epsilon case
+parser.add_argument('--dp_attach_opt', type=int, default=1, 
+                    help='0: Infinite Epsilon; 1: Finite Epsilion')
+
+
+#MMD, DANN
+parser.add_argument('--d_steps_per_g_step', type=int, default=1)
+parser.add_argument('--grad_penalty', type=float, default=0.0)
+parser.add_argument('--conditional', type=int, default=1)
+parser.add_argument('--gaussian', type=int, default=1)
+
+
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
+
+
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
+
+
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
+
+# Evaluation specific
 parser.add_argument('--test_metric', type=str, default='match_score', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
+parser.add_argument('--acc_data_case', type=str, default='test', 
+                    help='Dataset Train/Val/Test for the accuracy evaluation metric')
 parser.add_argument('--top_k', type=int, default=10, 
                     help='Top K matches to consider for the match score evaluation metric')
-parser.add_argument('--match_func_aug_case', type=int, default=1, 
+parser.add_argument('--match_func_aug_case', type=int, default=0, 
                     help='0: Evaluate match func on train domains; 1: Evaluate match func on self augmentations')
 parser.add_argument('--match_func_data_case', type=str, default='val', 
                     help='Dataset Train/Val/Test for the match score evaluation metric')
@@ -139,17 +183,30 @@ if args.os_env:
     res_dir= os.getenv('PT_OUTPUT_DIR') + '/'
 else:
     res_dir= 'results/'
-base_res_dir=(
+
+if args.dp_noise:
+    base_res_dir=(
+                res_dir + args.dataset_name + '/' + 'dp_' +  str(args.dp_epsilon) + '_' + args.method_name + '/' + args.match_layer 
+                + '/' + 'train_' + str(args.train_domains)
+            )    
+else:
+    base_res_dir=(
                 res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
                 + '/' + 'train_' + str(args.train_domains)
             )
+
+#TODO: Handle slab noise case in helper functions
+if args.dataset_name == 'slab':
+    base_res_dir= base_res_dir + '/slab_noise_'  + str(args.slab_noise)
+    
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
 #Execute the method for multiple runs ( total args.n_runs )
 for run in range(args.n_runs):
-    
+    print('Run', run)
     #Seed for repoduability
+    random.seed(run*10)
     np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
@@ -165,7 +222,7 @@ for run in range(args.n_runs):
 #     print('Train Domains, Domain Size, BaseDomainIdx, Total Domains: ', train_domains, total_domains, domain_size, training_list_size)
     
     #Import the module as per the current training method
-    if args.method_name == 'erm_match':
+    if args.method_name == 'erm_match' or args.method_name == 'mask_linear' or args.method_name == 'dp_erm':
         from algorithms.erm_match import ErmMatch    
         train_method= ErmMatch(
                                 args, train_dataset, val_dataset,
@@ -219,6 +276,20 @@ for run in range(args.n_runs):
     elif args.method_name == 'csd':
         from algorithms.csd import CSD   
         train_method= CSD(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )
+    elif args.method_name == 'mmd':
+        from algorithms.mmd import MMD    
+        train_method= MMD(
+                                args, train_dataset, val_dataset,
+                                test_dataset, base_res_dir, 
+                                run, cuda
+                              )           
+    elif args.method_name == 'dann':
+        from algorithms.dann import DANN    
+        train_method= DANN(
                                 args, train_dataset, val_dataset,
                                 test_dataset, base_res_dir, 
                                 run, cuda

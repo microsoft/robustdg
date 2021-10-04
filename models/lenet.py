@@ -42,5 +42,4 @@ class LeNet5(torch.nn.Module):
 #         x= x.view(-1, 1, 28, 28)
         out= self.predict_conv_net(x)
         out= out.view(-1,out.shape[1]*out.shape[2]*out.shape[3])
-        out= self.predict_fc_net(out)
-        return out
+        return self.predict_fc_net(out)

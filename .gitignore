@@ -2,19 +2,23 @@
 data/datasets/
 
 #python environment
-envs/
+amt_envs/
+matchdg-env/
 
 #Results dir
 results/
 
 #extra-files
-*.sh
+#*.sh
 
 #philly_tools
 .ptignore
+.amltignore
 pt/
-*.yaml
+amlt/
+#*.yaml
 .ptconfig
+.amltconfig
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

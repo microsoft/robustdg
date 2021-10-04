@@ -8,6 +8,10 @@ import random
 import json
 import pickle
 
+#Sklearn
+import sklearn
+from sklearn.manifold import TSNE
+
 #Pytorch
 import torch
 from torch.autograd import grad
@@ -17,9 +21,6 @@ from torchvision import datasets, transforms
 from torchvision.utils import save_image
 from torch.autograd import Variable
 import torch.utils.data as data_utils
-
-#Sklearn
-from sklearn.manifold import TSNE
 
 #robustdg
 from utils.helper import *
@@ -58,17 +59,21 @@ parser.add_argument('--pre_trained',type=int, default=0,
 parser.add_argument('--perfect_match', type=int, default=1, 
                     help='0: No perfect match known (PACS); 1: perfect match known (MNIST)')
 parser.add_argument('--opt', type=str, default='sgd', 
-                    help='Optimizer Choice: sgd; adam') 
+                    help='Optimizer Choice: sgd; adam')
+parser.add_argument('--weight_decay', type=float, default=5e-4,
+                   help='Weight Decay in SGD')
 parser.add_argument('--lr', type=float, default=0.01, 
                     help='Learning rate for training the model')
 parser.add_argument('--batch_size', type=int, default=16, 
                     help='Batch size foe training the model')
 parser.add_argument('--epochs', type=int, default=15, 
                     help='Total number of epochs for training the model')
-parser.add_argument('--penalty_w', type=float, default=0.0, 
-                    help='Penalty weight for IRM invariant classifier loss')
 parser.add_argument('--penalty_s', type=int, default=-1, 
                     help='Epoch threshold over which Matching Loss to be optimised')
+parser.add_argument('--penalty_irm', type=float, default=0.0, 
+                    help='Penalty weight for IRM invariant classifier loss')
+parser.add_argument('--penalty_aug', type=float, default=1.0, 
+                    help='Penalty weight for Augmentation in Hybrid approach loss')
 parser.add_argument('--penalty_ws', type=float, default=0.1, 
                     help='Penalty weight for Matching Loss')
 parser.add_argument('--penalty_diff_ctr',type=float, default=1.0, 
@@ -81,6 +86,10 @@ parser.add_argument('--match_case', type=float, default=1.0,
                     help='0: Random Match; 1: Perfect Match. 0.x" x% correct Match')
 parser.add_argument('--match_interrupt', type=int, default=5, 
                     help='Number of epochs before inferring the match strategy')
+parser.add_argument('--ctr_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
+parser.add_argument('--match_abl', type=int, default=0, 
+                    help='0: Randomization til class level ; 1: Randomization completely')
 parser.add_argument('--n_runs', type=int, default=3, 
                     help='Number of iterations to repeat the training process')
 parser.add_argument('--n_runs_matchdg_erm', type=int, default=1, 
@@ -99,6 +108,50 @@ parser.add_argument('--mnist_seed', type=int, default=0,
                     help='Change it between 0-6 for different subsets of Mnist and Fashion Mnist dataset')
 parser.add_argument('--retain', type=float, default=0, 
                     help='0: Train from scratch in MatchDG Phase 2; 2: Finetune from MatchDG Phase 1 in MatchDG is Phase 2')
+parser.add_argument('--cuda_device', type=int, default=0, 
+                    help='Select the cuda device by id among the avaliable devices' )
+parser.add_argument('--os_env', type=int, default=0, 
+                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
+
+
+#Differential Privacy
+parser.add_argument('--dp_noise', type=int, default=0, 
+                    help='0: No DP noise; 1: Add DP noise')
+parser.add_argument('--dp_epsilon', type=float, default=1.0, 
+                    help='Epsilon value for Differential Privacy')
+parser.add_argument('--dp_attach_opt', type=int, default=1, 
+                    help='0: Infinite Epsilon; 1: Finite Epsilion')
+
+
+
+#MMD, DANN
+parser.add_argument('--d_steps_per_g_step', type=int, default=1)
+parser.add_argument('--grad_penalty', type=float, default=0.0)
+parser.add_argument('--conditional', type=int, default=1)
+parser.add_argument('--gaussian', type=int, default=1)
+
+
+#Slab Dataset
+parser.add_argument('--slab_data_dim', type=int, default= 2, 
+                    help='Number of features in the slab dataset')
+parser.add_argument('--slab_total_slabs', type=int, default=7)
+parser.add_argument('--slab_num_samples', type=int, default=1000)
+parser.add_argument('--slab_noise', type=float, default=0.1)
+
+
+#Differentiate between resnet, lenet, domainbed cases of mnist
+parser.add_argument('--mnist_case', type=str, default='resnet18', 
+                    help='MNIST Dataset Case: resnet18; lenet, domainbed')
+parser.add_argument('--mnist_aug', type=int, default=0, 
+                    help='MNIST Data Augmentation: 0 (MNIST, FMNIST Privacy Evaluation); 1 (FMNIST)')
+ 
+    
+#Multiple random matches
+parser.add_argument('--total_matches_per_point', type=int, default=1, 
+                    help='Multiple random matches')
+
+
+# Evaluation specific
 parser.add_argument('--test_metric', type=str, default='acc', 
                     help='Evaluation Metrics: acc; match_score, t_sne, mia')
 parser.add_argument('--acc_data_case', type=str, default='test', 
@@ -123,14 +176,6 @@ parser.add_argument('--adv_eps', default=0.3, type=float,
                     help='Epsilon ball dimension for PGD attacks')
 parser.add_argument('--logit_plot_path', default='', type=str,
                     help='File name to save logit/loss plots')
-parser.add_argument('--ctr_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
-parser.add_argument('--match_abl', type=int, default=0, 
-                    help='0: Randomization til class level ; 1: Randomization completely')
-parser.add_argument('--cuda_device', type=int, default=0, 
-                    help='Select the cuda device by id among the avaliable devices' )
-parser.add_argument('--os_env', type=int, default=0, 
-                    help='0: Code execution on local server/machine; 1: Code execution in docker/clusters' )
 
 args = parser.parse_args()
 
@@ -149,10 +194,25 @@ test_domains= args.test_domains
 
 #Initialize
 final_metric_score=[]
-base_res_dir=(
-                "results/" + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
-                + '/' + 'train_' + str(args.train_domains)  
+
+res_dir= 'results/'
+if args.dp_noise:
+    base_res_dir=(
+                res_dir + args.dataset_name + '/' + 'dp_' +  str(args.dp_epsilon) + '_' + args.method_name + '/' + args.match_layer 
+                + '/' + 'train_' + str(args.train_domains)
+            )    
+else:
+    base_res_dir=(
+                res_dir + args.dataset_name + '/' + args.method_name + '/' + args.match_layer 
+                + '/' + 'train_' + str(args.train_domains)
             )
+
+print('Result Base Dir: ', base_res_dir)
+
+#TODO: Handle slab noise case in helper functions
+if args.dataset_name == 'slab':
+    base_res_dir= base_res_dir + '/slab_noise_'  + str(args.slab_noise)
+
 if not os.path.exists(base_res_dir):
     os.makedirs(base_res_dir)    
 
@@ -169,6 +229,7 @@ if args.perfect_match == 0 and args.test_metric == 'match_score' and args.match_
 for run in range(args.n_runs):
     
     #Seed for repoduability
+    random.seed(run*10) 
     np.random.seed(run*10) 
     torch.manual_seed(run*10)    
     if torch.cuda.is_available():
@@ -178,22 +239,25 @@ for run in range(args.n_runs):
     train_dataset= torch.empty(0)
     val_dataset= torch.empty(0)
     test_dataset= torch.empty(0)
-    if args.test_metric == 'match_score':
+    if args.test_metric in ['match_score', 'feat_eval', 'slab_feat_eval']:
         if args.match_func_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         elif args.match_func_data_case== 'val':
             val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
         elif args.match_func_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'acc':
+    elif args.test_metric in ['acc', 'per_domain_acc']:
         if args.acc_data_case== 'train':
             train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
+        elif args.acc_data_case== 'val':
+            val_dataset= get_dataloader( args, run, train_domains, 'val', 1, kwargs )
         elif args.acc_data_case== 'test':
             test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
     elif args.test_metric in ['mia', 'privacy_entropy', 'privacy_loss_attack']:
         train_dataset= get_dataloader( args, run, train_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, test_domains, 'test', 1, kwargs )
-    elif args.test_metric == 'attribute_attack':        
+    elif args.test_metric == 'attribute_attack':
+        print( train_domains + test_domains)
         train_dataset= get_dataloader( args, run, train_domains + test_domains, 'train', 1, kwargs )
         test_dataset= get_dataloader( args, run, train_domains + test_domains, 'test', 1, kwargs )        
     else:
@@ -209,6 +273,14 @@ for run in range(args.n_runs):
                               test_dataset, base_res_dir,
                               run, cuda
                              )
+
+    elif args.test_metric == 'per_domain_acc':
+        from evaluation.per_domain_acc import PerDomainAcc
+        test_method= PerDomainAcc(
+                              args, train_dataset, val_dataset,
+                              test_dataset, base_res_dir,
+                              run, cuda
+                             )
         
     elif args.test_metric == 'match_score':
         from evaluation.match_eval import MatchEval
@@ -217,6 +289,22 @@ for run in range(args.n_runs):
                                test_dataset, base_res_dir, 
                                run, cuda
                               )   
+
+    elif args.test_metric == 'feat_eval':
+        from evaluation.feat_eval import FeatEval
+        test_method= FeatEval(
+                               args, train_dataset, val_dataset,
+                               test_dataset, base_res_dir, 
+                               run, cuda
+                              )   
+        
+    elif args.test_metric == 'slab_feat_eval':
+        from evaluation.slab_feat_eval import SlabFeatEval
+        test_method= SlabFeatEval(
+                               args, train_dataset, val_dataset,
+                               test_dataset, base_res_dir, 
+                               run, cuda
+                              )         
 
     elif args.test_metric == 't_sne':
         from evaluation.t_sne import TSNE
@@ -277,7 +365,7 @@ for run in range(args.n_runs):
     #Testing Phase
     with torch.no_grad():
         if args.test_metric == 'mia':
-            for mia_run in range(3):
+            for mia_run in range(2):
                 if args.method_name in ['matchdg_erm', 'hybrid']:
                     for run_matchdg_erm in range(args.n_runs_matchdg_erm):   
                         test_method.get_model(run_matchdg_erm)        

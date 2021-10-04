@@ -16,10 +16,10 @@ from torchvision import datasets, transforms
 from .data_loader import BaseDataLoader
 
 class PACS(BaseDataLoader):
-    def __init__(self, args, list_train_domains, root, transform=None, data_case='train', match_func=False):
+    def __init__(self, args, list_domains, root, transform=None, data_case='train', match_func=False):
         
-        super().__init__(args, list_train_domains, root, transform, data_case, match_func) 
-        self.train_data, self.train_labels, self.train_domain, self.train_indices = self._get_data()
+        super().__init__(args, list_domains, root, transform, data_case, match_func) 
+        self.data, self.labels, self.domains, self.indices, self.objects = self._get_data()
 
     def _get_data(self):
         
@@ -28,11 +28,11 @@ class PACS(BaseDataLoader):
         to_tensor = transforms.ToTensor()
         
         # Choose subsets that should be included into the training
-        training_list_img = []
-        training_list_labels = []
-        training_list_idx= []
-        training_list_size= []
-        training_out_classes=[]
+        list_img = []
+        list_labels = []
+        list_idx= []
+        list_size= []
+        list_classes=[]
        
         if self.data_case == 'train':
             to_tensor=  transforms.Compose([
@@ -52,7 +52,7 @@ class PACS(BaseDataLoader):
             ])
             
 
-        for domain in self.list_train_domains:
+        for domain in self.list_domains:
             if self.data_case == 'train':
                 domain_data = h5py.File(data_dir + domain + '_' + 'train.hdf5','r')
             elif self.data_case == 'val':
@@ -74,11 +74,11 @@ class PACS(BaseDataLoader):
                 pacs_idx.append(i)
 
             print('Source Domain ', domain)
-            training_list_img.append(pacs_img_trans)
-            training_list_labels.append(torch.tensor(pacs_labels).long())
-            training_list_idx.append( pacs_idx )
-            training_list_size.append(len(pacs_imgs))            
-            training_out_classes.append( len(np.unique(pacs_labels)) )
+            list_img.append(pacs_img_trans)
+            list_labels.append(torch.tensor(pacs_labels).long())
+            list_idx.append( pacs_idx )
+            list_size.append(len(pacs_imgs))            
+            list_classes.append( len(np.unique(pacs_labels)) )
         
         if self.match_func:
             print('Match Function Updates')
@@ -86,9 +86,9 @@ class PACS(BaseDataLoader):
             for y_c in range(num_classes):
                 base_class_size=0
                 base_class_idx=-1
-                for d_idx, domain in enumerate( self.list_train_domains ):
-                    class_idx= training_list_labels[d_idx] == y_c
-                    curr_class_size= training_list_labels[d_idx][class_idx].shape[0]
+                for d_idx, domain in enumerate( self.list_domains ):
+                    class_idx= list_labels[d_idx] == y_c
+                    curr_class_size= list_labels[d_idx][class_idx].shape[0]
                     if base_class_size < curr_class_size:
                         base_class_size= curr_class_size
                         base_class_idx= d_idx
@@ -96,40 +96,44 @@ class PACS(BaseDataLoader):
                 print('Max Class Size: ', base_class_size, ' Base Domain Idx: ', base_class_idx, ' Class Label: ', y_c )        
                 
         # Stack
-        train_imgs = torch.cat(training_list_img)
-        train_labels = torch.cat(training_list_labels)
-        train_indices = np.array(training_list_idx)
-        train_indices= np.hstack(train_indices)
-        self.training_list_size = training_list_size            
-    
+        data_imgs = torch.cat(list_img)
+        data_labels = torch.cat(list_labels)
+        data_indices = np.array(list_idx)
+        data_indices= np.hstack(data_indices)
+        self.training_list_size = list_size            
+
+        #No ground truth objects in PACS, for reference we set them same as data indices
+        data_objects= copy.deepcopy(data_indices)
+        
         # Create domain labels
-        train_domains = torch.zeros(train_labels.size())
+        data_domains = torch.zeros(data_labels.size())
         domain_start=0
-        for idx in range(len(self.list_train_domains)):
+        for idx in range(len(self.list_domains)):
             curr_domain_size= self.training_list_size[idx]
-            train_domains[ domain_start: domain_start+ curr_domain_size ] += idx
+            data_domains[ domain_start: domain_start+ curr_domain_size ] += idx
             domain_start+= curr_domain_size
            
         # Shuffle everything one more time
-        inds = np.arange(train_labels.size()[0])
+        inds = np.arange(data_labels.size()[0])
         np.random.shuffle(inds)
-        train_imgs = train_imgs[inds]
-        train_labels = train_labels[inds]
-        train_domains = train_domains[inds].long()
-        train_indices = train_indices[inds]
+        data_imgs = data_imgs[inds]
+        data_labels = data_labels[inds]
+        data_domains = data_domains[inds].long()
+        data_indices = data_indices[inds]
+        data_objects = data_objects[inds]
 
         # Convert to onehot
-        out_classes= training_out_classes[0]
+        out_classes= list_classes[0]
         y = torch.eye(out_classes)
-        train_labels = y[train_labels]
+        data_labels = y[data_labels]
 
         # Convert to onehot
-        d = torch.eye(len(self.list_train_domains))
-        train_domains = d[train_domains]
+        d = torch.eye(len(self.list_domains))
+        data_domains = d[data_domains]
         
         # If shape (B,H,W) change it to (B,C,H,W) with C=1
-        if len(train_imgs.shape)==3:
-            train_imgs= train_imgs.unsqueeze(1)
+        if len(data_imgs.shape)==3:
+            data_imgs= data_imgs.unsqueeze(1)
             
-        print('Shape: Data ', train_imgs.shape, ' Labels ', train_labels.shape, ' Domains ', train_domains.shape, ' Objects ', train_indices.shape)
-        return train_imgs, train_labels, train_domains, train_indices
+        print('Shape: Data ', data_imgs.shape, ' Labels ', data_labels.shape, ' Domains ', data_domains.shape, ' Indices ', data_indices.shape, ' Objects ', data_objects.shape)
+        return data_imgs, data_labels, data_domains, data_indices, data_objects

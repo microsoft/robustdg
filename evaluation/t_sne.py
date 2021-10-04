@@ -58,7 +58,7 @@ class TSNE(BaseEval):
         domain_all=[]
 
 
-        for batch_idx, (x_e, y_e, d_e, idx_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e, d_e, idx_e, obj_e) in enumerate(dataset):
             x_e= x_e.to(self.cuda)
             y_e= torch.argmax(y_e, dim=1)
             d_e= torch.argmax(d_e, dim=1)

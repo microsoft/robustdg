@@ -5,6 +5,10 @@ import torchvision
 from torchvision.models.resnet import BasicBlock, model_urls, Bottleneck
 import os
 
+class GroupNorm(torch.nn.GroupNorm):
+    def __init__(self, num_channels, num_groups=32, **kwargs):
+        super().__init__(num_groups, num_channels, **kwargs)
+
 # bypass layer
 class Identity(nn.Module):
     def __init__(self,n_inputs):
@@ -15,14 +19,20 @@ class Identity(nn.Module):
         return x
 
     
-def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained, os_env):    
+def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained, dp_noise, os_env):    
     if model_name == 'resnet18':
         if os_env:        
             model=  torchvision.models.resnet18()
             if pre_trained:
                 model.load_state_dict(torch.load( os.getenv('PT_DATA_DIR') + '/checkpoints/resnet18-5c106cde.pth' ))
         else:
-            model=  torchvision.models.resnet18(pre_trained)
+            if dp_noise:
+                #TODO
+                #This cannot work with pre trained model, as the batch norm weights have been replaced by group norm
+                model=  torchvision.models.resnet18(pre_trained, norm_layer=GroupNorm)
+#                 model=  torchvision.models.resnet18(pre_trained)
+            else:
+                model=  torchvision.models.resnet18(pre_trained)
             
         n_inputs = model.fc.in_features
         n_outputs= classes
@@ -33,7 +43,10 @@ def get_resnet(model_name, classes, fc_layer, num_ch, pre_trained, os_env):
             if pre_trained:
                 model.load_state_dict(torch.load( os.getenv('PT_DATA_DIR') + '/checkpoints/resnet50-19c8e357.pth' ))
         else:
-            model=  torchvision.models.resnet50(pre_trained)
+            if dp_noise:
+                model=  torchvision.models.resnet50(pre_trained, norm_layer=GroupNorm)                
+            else:
+                model=  torchvision.models.resnet50(pre_trained)
             
         n_inputs = model.fc.in_features
         n_outputs= classes

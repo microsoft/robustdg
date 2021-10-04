@@ -15,7 +15,7 @@ from torch.autograd import Variable
 import torch.utils.data as data_utils
 
 from .base_eval import BaseEval
-from utils.match_function import get_matched_pairs, perfect_match_score
+from utils.match_function import get_matched_pairs
 
 class MatchEval(BaseEval):
     
@@ -53,14 +53,21 @@ class MatchEval(BaseEval):
         else:
             perfect_match= self.args.perfect_match
             
-        data_match_tensor, label_match_tensor, indices_matched, perfect_match_rank= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, perfect_match, inferred_match )
+        data_matched, domain_data, perfect_match_rank= get_matched_pairs( self.args, self.cuda, dataset, base_domain_size, total_domains, domain_size_list, self.phi, self.args.match_case, perfect_match, inferred_match )
         
-        score= perfect_match_score(indices_matched)
         perfect_match_rank= np.array(perfect_match_rank)            
 
-        self.metric_score['Perfect Match Score']= score
+        self.metric_score['Perfect Match Score']= 100*np.sum( perfect_match_rank < 1 )/perfect_match_rank.shape[0]
         self.metric_score['TopK Perfect Match Score']= 100*np.sum( perfect_match_rank < self.args.top_k )/perfect_match_rank.shape[0]
         self.metric_score['Perfect Match Rank']= np.mean(perfect_match_rank)
+        
+        print('Perfect Match Score: ', self.metric_score['Perfect Match Score']   )                    
+        print('TopK Perfect Match Score: ', self.metric_score['TopK Perfect Match Score'] )          
+        print('Perfect Match Rank: ', self.metric_score['Perfect Match Rank'] )            
+#         print('Perfect Match Distance: ', self.metric_score['Perfect Match Distance'])
+        return 
+
+
 
         # Perfect Match Prediction Discrepancy
 #         perm = torch.randperm(data_match_tensor.size(0))
@@ -111,9 +118,3 @@ class MatchEval(BaseEval):
 #             penalty_ws+= float(wasserstein_loss)                            
         
 #         self.metric_score['Perfect Match Distance']= penalty_ws
-        
-        print('Perfect Match Score: ', self.metric_score['Perfect Match Score']   )                    
-        print('TopK Perfect Match Score: ', self.metric_score['TopK Perfect Match Score'] )          
-        print('Perfect Match Rank: ', self.metric_score['Perfect Match Rank'] )            
-#         print('Perfect Match Distance: ', self.metric_score['Perfect Match Distance'])
-        return 

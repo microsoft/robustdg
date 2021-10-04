@@ -1,0 +1,46 @@
+description: MNIST Dat Setup
+
+target:
+  service: amlk8s
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  name: itpeusp100cl
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements_new.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+ 
+
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+
+- name: rot_mnist_resnet18
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" &&  python data/data_gen.py rot_mnist resnet18
+
+#- name: fashion_mnist_resnet18
+#  # one gpu
+#  sku: G1
+#  command:
+#  - echo "--debug" &&  python data/data_gen.py fashion_mnist resnet18
+
+#- name: rot_mnist_lenet
+#  # one gpu
+#  sku: G1
+#  command:
+#  - echo "--debug" &&  python data/data_gen.py rot_mnist lenet
+

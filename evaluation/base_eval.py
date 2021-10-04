@@ -62,6 +62,14 @@ class BaseEval():
         if self.args.model_name == 'lenet':
             from models.lenet import LeNet5
             phi= LeNet5()
+            
+        if self.args.model_name == 'slab':
+            from models.slab import SlabClf
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer
+            phi= SlabClf(self.args.slab_data_dim, self.args.out_classes, fc_layer)
                         
         if self.args.model_name == 'fc':
             from models.fc import FC
@@ -73,7 +81,11 @@ class BaseEval():
             
         if self.args.model_name == 'domain_bed_mnist':
             from models.domain_bed_mnist import DomainBed
-            phi= DomainBed( self.args.img_c )
+            if self.args.method_name in ['csd', 'matchdg_ctr']:
+                fc_layer=0
+            else:
+                fc_layer= self.args.fc_layer                        
+            phi= DomainBed(self.args.img_c, fc_layer)
             
         if self.args.model_name == 'alexnet':
             from models.alexnet import alexnet
@@ -91,7 +103,7 @@ class BaseEval():
             else:
                 fc_layer= self.args.fc_layer
             phi= get_resnet(self.args.model_name, self.args.out_classes, fc_layer, 
-                            self.args.img_c, self.args.pre_trained, self.args.os_env)
+                            self.args.img_c, self.args.pre_trained, self.args.dp_noise, self.args.os_env)
             
         if 'densenet' in self.args.model_name:
             from models.densenet import get_densenet
@@ -111,7 +123,7 @@ class BaseEval():
     
     def load_model(self, run_matchdg_erm):
         
-        if self.args.method_name in ['erm_match', 'csd', 'irm']:
+        if self.args.method_name in ['erm_match', 'csd', 'irm', 'perf_match', 'rand_match', 'mask_linear', 'mmd', 'dann']:
             self.save_path= self.base_res_dir + '/Model_' + self.post_string
                 
         elif self.args.method_name == 'matchdg_ctr':
@@ -128,7 +140,7 @@ class BaseEval():
         self.phi.load_state_dict( torch.load(self.save_path + '.pth') )
         self.phi.eval()      
         
-        if self.args.method_name == 'csd':
+        if self.args.method_name in ['csd', 'csd_slab']:
             self.save_path= self.base_res_dir + '/Sms_' + self.post_string 
             self.sms= torch.load(self.save_path + '.pt')
             
@@ -139,7 +151,7 @@ class BaseEval():
     
     def forward(self, x_e):
         
-        if self.args.method_name == 'csd':
+        if self.args.method_name in ['csd', 'csd_slab']:
             x_e = self.phi(x_e)        
             w_c, b_c = self.sms[0, :, :], self.sm_biases[0, :]
             logits= torch.matmul(x_e, w_c) + b_c            
@@ -152,7 +164,7 @@ class BaseEval():
 
         #Train Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -170,7 +182,7 @@ class BaseEval():
 
         #Test Environment Logits
         final_out=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             x_e= x_e[ torch.randperm(x_e.size()[0]) ]
 
@@ -214,11 +226,10 @@ class BaseEval():
         
         test_acc= 0.0
         test_size=0
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(dataset):
             with torch.no_grad():
                 x_e= x_e.to(self.cuda)
                 y_e= torch.argmax(y_e, dim=1).to(self.cuda)
-                d_e = torch.argmax(d_e, dim=1).numpy()       
 
                 #Forward Pass
                 out= self.forward(x_e)                

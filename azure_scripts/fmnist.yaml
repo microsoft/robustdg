@@ -1,0 +1,89 @@
+description: Fashion MNIST Dataset
+
+target:
+  service: philly
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  cluster: rr1
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+ 
+
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+
+- name: erm
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 0.01 --penalty_ws 0.0 --epochs 60  --os_env 1
+
+
+- name: random_match
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 0.01 --penalty_ws 0.1 --epochs 60  --os_env 1
+
+
+# - name: approx_25
+#   # one gpu
+#   sku: G1
+#   command:
+#   - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 0.25 --penalty_ws 0.1 --epochs 25  --os_env 1
+
+
+# - name: approx_50
+#   # one gpu
+#   sku: G1
+#   command:
+#   - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 0.50 --penalty_ws 0.1 --epochs 25  --os_env 1
+
+
+# - name: approx_75
+#   # one gpu
+#   sku: G1
+#   command:
+#   - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 0.75 --penalty_ws 0.1 --epochs 25  --os_env 1
+
+
+- name: perfect
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name erm_match --match_case 1.0 --penalty_ws 0.1 --epochs 60  --os_env 1
+
+
+- name: csd
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name csd --match_case 0.01 --penalty_ws 0.0 --rep_dim 512 --epochs 60  --os_env 1
+
+
+- name: irm
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name irm --match_case 0.01 --penalty_irm 0.05 --penalty_s -1   --epochs 60  --os_env 1
+
+  
+- name: matchdg
+  # one gpu
+  sku: G1
+  command: 
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name matchdg_erm --match_case -1 --penalty_ws 0.1 --epochs 60 --ctr_match_case 0.01 --ctr_match_flag 1 --ctr_match_interrupt 5 --ctr_model_name resnet18 --n_runs 3  --os_env 1

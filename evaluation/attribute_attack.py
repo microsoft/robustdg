@@ -36,11 +36,12 @@ class SpurCorrDataLoader(data_utils.Dataset):
     def __init__(self, dataloader):
         super(SpurCorrDataLoader, self).__init__()
         
-        self.x= dataloader.train_data
-        self.y= dataloader.train_labels
-        self.d= dataloader.train_domain
-        self.indices= dataloader.train_indices
-        self.spur_corr= dataloader.train_spur
+        self.x= dataloader.data
+        self.y= dataloader.labels
+        self.d= dataloader.domains
+        self.indices= dataloader.indices
+        self.objects= dataloader.objects
+        self.spur_corr= dataloader.spur
         
 
     def __len__(self):
@@ -51,9 +52,10 @@ class SpurCorrDataLoader(data_utils.Dataset):
         batch_y = self.y[index]
         batch_d = self.d[index]
         batch_idx = self.indices[index]
+        batch_obj= self.objects[index]
         batch_spur= self.spur_corr[index]
             
-        return batch_x, batch_y, batch_d, batch_idx, batch_spur        
+        return batch_x, batch_y, batch_d, batch_idx, batch_obj, batch_spur        
 
 class AttributeAttack(BaseEval):
     
@@ -72,7 +74,7 @@ class AttributeAttack(BaseEval):
         dataset= SpurCorrDataLoader(self.train_dataset['data_obj'])            
         dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
         
-        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e, spur_e) in enumerate(dataset):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -101,7 +103,7 @@ class AttributeAttack(BaseEval):
         dataset= SpurCorrDataLoader(self.test_dataset['data_obj'])            
         dataset= data_utils.DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True, **self.args.kwargs )        
         
-        for batch_idx, (x_e, y_e ,d_e, idx_e, spur_e) in enumerate(dataset):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e, spur_e) in enumerate(dataset):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -133,7 +135,7 @@ class AttributeAttack(BaseEval):
         train_data={}
         train_data['logits']=[]
         train_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]
@@ -157,7 +159,7 @@ class AttributeAttack(BaseEval):
         test_data={}
         test_data['logits']=[]
         test_data['labels']=[]
-        for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.test_dataset['data_loader']):
+        for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.test_dataset['data_loader']):
             #Random Shuffling along the batch axis
             rand_indices= torch.randperm(x_e.size()[0])
             x_e= x_e[rand_indices]

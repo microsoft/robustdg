@@ -1,0 +1,41 @@
+description: Hyperparam sweep on IRM MNIST
+
+target:
+  service: philly
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  cluster: rr1
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements.txt
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+
+search:
+  job_template:
+    # you may use {random_string:s} to avoid job name collisions
+    # {auto:3s} generates lr_0.00000_mom_0.5, .. etc
+    # {auto:2s} generates lr_0.00000_mo_0.5, .. etc
+    name: search_{experiment_name:s}_{auto:5s}
+    sku: G1
+    command:
+    - python train.py --dataset fashion_mnist --method_name irm --match_case 0.01 --lr 0.01 --penalty_irm {penalty} --penalty_s {threshold} --epochs 60 --os_env 1
+  type: grid
+  max_trials: 60
+  params:
+    - name: penalty
+      spec: discrete
+      values: [0.05, 0.1, 0.5, 1.0, 5.0]
+    - name: threshold
+      spec: discrete
+      values: [-1, 5, 15, 30, 45 ]

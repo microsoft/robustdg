@@ -28,21 +28,20 @@ class Irm(BaseAlgo):
         self.max_val_acc=0.0
         for epoch in range(self.args.epochs):   
             
-            if epoch ==0 or (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
-                data_match_tensor, label_match_tensor= self.get_match_function(epoch)
+            if epoch ==0:
+                inferred_match= 0                
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
+            elif (epoch % self.args.match_interrupt == 0 and self.args.match_flag):
+                inferred_match= 1
+                self.data_matched, self.domain_data= self.get_match_function(inferred_match, self.phi)
             
             penalty_erm=0
             penalty_irm=0
             train_acc= 0.0
             train_size=0
-    
-            perm = torch.randperm(data_match_tensor.size(0))            
-            data_match_tensor_split= torch.split(data_match_tensor[perm], self.args.batch_size, dim=0)
-            label_match_tensor_split= torch.split(label_match_tensor[perm], self.args.batch_size, dim=0)
-            print('Split Matched Data: ', len(data_match_tensor_split), data_match_tensor_split[0].shape, len(label_match_tensor_split))
-    
+        
             #Batch iteration over single epoch
-            for batch_idx, (x_e, y_e ,d_e, idx_e) in enumerate(self.train_dataset):
+            for batch_idx, (x_e, y_e ,d_e, idx_e, obj_e) in enumerate(self.train_dataset):
         #         print('Batch Idx: ', batch_idx)
 
                 self.opt.zero_grad()
@@ -58,18 +57,20 @@ class Irm(BaseAlgo):
                 irm_loss=torch.tensor(0.0).to(self.cuda)
                 erm_loss= torch.tensor(0.0).to(self.cuda) 
                 
-                # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split
-                total_batch_size= len(data_match_tensor_split)
+                # To cover the varying size of the last batch for data_match_tensor_split, label_match_tensor_split         
+                total_batch_size= len(self.data_matched)
                 if batch_idx >= total_batch_size:
-                    break
-                curr_batch_size= data_match_tensor_split[batch_idx].shape[0]
-
-                data_match= data_match_tensor_split[batch_idx].to(self.cuda)
-                data_match= data_match.view( data_match.shape[0]*data_match.shape[1], data_match.shape[2], data_match.shape[3], data_match.shape[4] )                            
+                    break                    
+                
+                # Sample batch from matched data points
+                data_match_tensor, label_match_tensor, curr_batch_size= self.get_match_function_batch(batch_idx)
+                    
+                data_match= data_match_tensor.to(self.cuda)
+                data_match= data_match.flatten(start_dim=0, end_dim=1)
                 feat_match= self.phi( data_match )
             
-                label_match= label_match_tensor_split[batch_idx].to(self.cuda)
-                label_match= label_match.view( label_match.shape[0]*label_match.shape[1] )
+                label_match= label_match_tensor.to(self.cuda)
+                label_match= torch.squeeze( label_match.flatten(start_dim=0, end_dim=1) )
                 
                 erm_loss+= F.cross_entropy(feat_match, label_match.long()).to(self.cuda)
                 penalty_erm+= float(erm_loss)                
@@ -79,16 +80,8 @@ class Irm(BaseAlgo):
                 train_size+= label_match.shape[0]                
                         
                 # Creating tensor of shape ( domain size, total domains, feat size )
-                if len(feat_match.shape) == 4:
-                    feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1]*feat_match.shape[2]*feat_match.shape[3] )
-                else:
-                     feat_match= feat_match.view( curr_batch_size, len(self.train_domains), feat_match.shape[1] )
-
-                label_match= label_match.view( curr_batch_size, len(self.train_domains) )
-
-        #             print(feat_match.shape)
-        
-                data_match= data_match.view( curr_batch_size, len(self.train_domains), data_match.shape[1], data_match.shape[2], data_match.shape[3] )                
+                feat_match= torch.stack(torch.split(feat_match, len(self.train_domains)))                    
+                label_match= torch.stack(torch.split(label_match, len(self.train_domains)))
 
                 #IRM Penalty
                 domain_counter=0

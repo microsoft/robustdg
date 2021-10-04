@@ -1,0 +1,61 @@
+description: MNIST Dataset Constrastive Learning
+
+target:
+  service: philly
+  # which virtual cluster you belong to (msrlabs, etc.). Everyone has access to "msrlabs".
+  vc: resrchvc 
+  # physical cluster to use (cam, gcr, rr1, rr2) or Azure clusters (eu1, eu2, etc.)
+  cluster: rr1
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  setup:
+    - pip install --user -r requirements.txt
+    
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR
+
+data:
+    local_dir: $CONFIG_DIR/data/datasets/
+    remote_dir: data/datasets/
+    
+# list of jobs to run, we run 2 jobs in this example
+jobs:
+  # name must be unique across the jobs
+- name: fmnist_ctr_standard
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 60 --batch_size 64 --pos_metric cos --os_env 1
+  
+- name: fmnist_ctr_perfect
+  # one gpu
+  sku: G1
+  command:
+  - echo "--debug" && python train.py --dataset fashion_mnist --method_name matchdg_ctr --match_case 1.0 --match_flag 1 --epochs 60 --batch_size 64 --pos_metric cos --os_env 1
+  
+- name: fmnist_ctr_non_iterative
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset fashion_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 0 --epochs 60 --batch_size 256 --pos_metric cos --os_env 1
+  
+- name: rmnist_ctr_standard
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 1 --epochs 100 --batch_size 256 --pos_metric cos --train_domains 30 45 --os_env 1
+  
+- name: rmnist_ctr_perfect
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 1.0 --match_flag 1 --epochs 100 --batch_size 256 --pos_metric cos --os_env 1
+  
+- name: rmnist_ctr_non_iterative
+  # one gpu
+  sku: G1
+  command:
+  - python train.py --dataset rot_mnist --method_name matchdg_ctr --match_case 0.01 --match_flag 0 --epochs 100 --batch_size 256 --pos_metric cos --os_env 1
