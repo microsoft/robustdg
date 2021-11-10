@@ -56,7 +56,7 @@ seaborn==0.11.1
 six==1.15.0
 tensorboard==1.15.0
 tensorflow-estimator==1.15.1
-tensorflow-gpu==1.15.2
+tensorflow-gpu==2.5.2
 termcolor==1.1.0
 threadpoolctl==2.1.0
 tifffile==2021.3.17
