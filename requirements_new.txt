@@ -18,7 +18,7 @@ ipykernel==5.5.5
 ipython==7.24.0
 ipython-genutils==0.2.0
 jedi==0.18.0
-joblib==1.0.1
+joblib==1.2.0
 jupyter-client==6.1.12
 jupyter-core==4.7.1
 Keras-Applications==1.0.8
