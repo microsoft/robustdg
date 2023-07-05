@@ -9,7 +9,7 @@ cycler==0.10.0
 decorator==4.4.2
 gast==0.2.2
 google-pasta==0.2.0
-grpcio==1.36.1
+grpcio==1.53.0
 h5py==3.2.1
 idna==2.10
 imageio==2.9.0
