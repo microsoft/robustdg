@@ -3,7 +3,7 @@ advertorch==0.2.3
 astor==0.8.1
 backcall==0.2.0
 cached-property==1.5.2
-certifi==2020.12.5
+certifi==2023.7.22
 chardet==4.0.0
 cycler==0.10.0
 decorator==4.4.2
