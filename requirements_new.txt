@@ -63,7 +63,7 @@ tifffile==2021.3.17
 torch==1.8.1
 torchvision==0.9.1
 torchxrayvision==0.0.24
-tornado==6.1
+tornado==6.3.3
 tqdm==4.59.0
 traitlets==5.0.5
 typing-extensions==3.7.4.3
